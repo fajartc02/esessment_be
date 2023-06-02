@@ -1,0 +1,59 @@
+[
+  {
+    "_id": "b45b0e32-79ea-4cd1-ba63-4a0a0e70fb85",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "0a17bdde-cec2-412c-9d23-75bc17551568",
+    "name": "Companies",
+    "url": "",
+    "method": "GET",
+    "sortNum": 10000,
+    "created": "2023-06-01T13:50:40.895Z",
+    "modified": "2023-06-01T13:50:40.895Z",
+    "headers": []
+  },
+  {
+    "_id": "aeddcca9-0ce1-4b56-a472-b3cf001c3dde",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "56f909c1-dee1-49e5-bb69-fa6a01c02e00",
+    "name": "Login",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/login",
+    "method": "POST",
+    "sortNum": 10000,
+    "created": "2023-06-01T13:51:13.243Z",
+    "modified": "2023-06-01T16:22:25.868Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"noreg\": \"1527511\",\n  \"password\": \"toyota123\"\n}",
+      "form": []
+    },
+    "tests": [
+      {
+        "type": "set-env-var",
+        "custom": "json.data.token",
+        "action": "setto",
+        "value": "{{token}}"
+      }
+    ]
+  },
+  {
+    "_id": "38b67324-587d-4cf1-96a3-7aa9205b43a3",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "56f909c1-dee1-49e5-bb69-fa6a01c02e00",
+    "name": "Register",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/register",
+    "method": "POST",
+    "sortNum": 20000,
+    "created": "2023-06-01T14:40:58.254Z",
+    "modified": "2023-06-01T16:21:06.829Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"noreg\": \"1527511\",\n  \"line_id\": \"fd85482c-9e54-4832-96c8-321f574e8536\",\n  \"group_id\": \"e9fd36b0-e4f8-4be7-a7ff-0f85158ce823\",\n  \"fullname\": \"Dita Nurlita\",\n  \"password\": \"toyota123\",\n  \"phone_number\": \"081385678582\",\n  \"is_activated\": true\n}",
+      "form": []
+    },
+    "tests": []
+  }
+]

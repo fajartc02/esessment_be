@@ -1,0 +1,28 @@
+[
+  {
+    "_id": "bc065ec0-718e-403a-bd64-25924d1e955b",
+    "name": "development",
+    "default": true,
+    "sortNum": 10000,
+    "created": "2023-06-01T13:51:24.053Z",
+    "modified": "2023-06-01T13:51:24.053Z",
+    "data": [
+      {
+        "name": "protocol",
+        "value": "http://"
+      },
+      {
+        "name": "hostname",
+        "value": "localhost:3200"
+      },
+      {
+        "name": "apiVersion",
+        "value": "/api/v1"
+      },
+      {
+        "name": "token",
+        "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub3JlZyI6IjE1Mjc1MTEiLCJpYXQiOjE2ODU2MzY1NTR9.wbVCTGKbQTCoqPwxtlA-Y23OMYV6ZybjrWEZgWN-byk"
+      }
+    ]
+  }
+]

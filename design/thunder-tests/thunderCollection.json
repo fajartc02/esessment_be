@@ -1,0 +1,24 @@
+[
+  {
+    "_id": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "colName": "E-asessment",
+    "created": "2023-06-01T13:49:58.571Z",
+    "sortNum": 10000,
+    "folders": [
+      {
+        "_id": "0a17bdde-cec2-412c-9d23-75bc17551568",
+        "name": "Master",
+        "containerId": "",
+        "created": "2023-06-01T13:50:16.897Z",
+        "sortNum": 10000
+      },
+      {
+        "_id": "56f909c1-dee1-49e5-bb69-fa6a01c02e00",
+        "name": "Auth",
+        "containerId": "",
+        "created": "2023-06-01T15:44:35.870Z",
+        "sortNum": 20000
+      }
+    ]
+  }
+]
