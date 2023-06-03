@@ -55,5 +55,46 @@
       "form": []
     },
     "tests": []
+  },
+  {
+    "_id": "af495d6a-3048-41a8-9bf3-b0ad69bd1f53",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "999eb8cd-205d-43a9-9ce0-e42936c6cf1d",
+    "name": "Add Schedule Observation",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/operational/observation/schedule",
+    "method": "POST",
+    "sortNum": 10000,
+    "created": "2023-06-03T07:10:07.479Z",
+    "modified": "2023-06-03T08:55:49.068Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"pos_id\": \"91808253-13a0-44ab-978d-7c38a6630b63\",\n  \"job_id\": \"abd21128-2389-4045-b59a-219f3f4f7e54\",\n  \"group_id\": \"36ad3451-e2fe-4b50-84b0-2d6ca942ae1e\",\n  \"plan_check_dt\": \"2023-06-10 07:00:00\",\n  \"member_nm\": \"Fajar\",\n  \"checkers\": [{\n    \"checker_nm\": \"Sulaeman\"\n  },{\n    \"checker_nm\": \"Supriyanto\"\n  }]\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "c0bae5e0-82d6-4ca6-9281-1392e1360cf2",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "999eb8cd-205d-43a9-9ce0-e42936c6cf1d",
+    "name": "Schedule Observations",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/operational/observation/schedule",
+    "method": "GET",
+    "sortNum": 40000,
+    "created": "2023-06-03T08:34:42.117Z",
+    "modified": "2023-06-03T08:42:40.176Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
   }
 ]

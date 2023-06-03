@@ -1,10 +1,11 @@
 const jwt = require('jsonwebtoken');
 const response = require('./response')
 const { queryGET } = require('./query')
+const { v4 } = require('uuid');
 
 async function userCheck(noreg) {
     const table = 'tb_m_users'
-    return await queryGET(table, `WHERE noreg = '${noreg}'`, ['noreg', 'name'])
+    return await queryGET(table, `WHERE noreg = '${noreg}'`, ['noreg', 'fullname'])
         .then((result) => {
             return result[0]
         }).catch((err) => {
@@ -31,6 +32,7 @@ module.exports = {
             let userDataVerify = await jwt.verify(token, process.env.SECRET_KEY)
             let userData = await userCheck(userDataVerify.noreg)
             req.user = userData
+            req.uuid = v4
             next()
         } catch (error) {
             response.notAllowed(res, 'Token Is Invalid');
