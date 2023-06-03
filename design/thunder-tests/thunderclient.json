@@ -96,5 +96,41 @@
       "bearer": "{{token}}"
     },
     "tests": []
+  },
+  {
+    "_id": "e4744515-8223-494c-8778-c157b17f9fff",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "999eb8cd-205d-43a9-9ce0-e42936c6cf1d",
+    "name": "Summary Observations",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/operational/observation/summary",
+    "method": "GET",
+    "sortNum": 50000,
+    "created": "2023-06-03T09:44:43.382Z",
+    "modified": "2023-06-03T09:44:56.404Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "a911221f-d971-4893-8575-49ff849185c0",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "0bb2929a-acf9-4a50-b511-09b1ebaf4f55",
+    "name": "Lines (opts)",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/lines/opts",
+    "method": "GET",
+    "sortNum": 70000,
+    "created": "2023-06-03T11:55:26.261Z",
+    "modified": "2023-06-03T11:55:54.033Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
   }
 ]

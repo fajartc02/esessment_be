@@ -1,12 +1,7 @@
-// const router = require('express')()
-// const { lines } = require('../../../controllers/index')
-// const auth = require('../../../helpers/auth')
+const router = require('express')()
+const { getLinesOpts } = require('../../../controllers/master/lines.controllers')
+const auth = require('../../../helpers/auth')
 
-// router.get('/', auth.verifyToken, lines.getData)
-// router.get('/:_id', auth.verifyToken, lines.getData)
-// router.post('/', auth.verifyToken, lines.postDataLine)
-// router.put('/:line_id', auth.verifyToken, lines.editData)
-// router.delete('/:line_id', auth.verifyToken, lines.deleteDataSoft)
+router.get('/opts', auth.verifyToken, getLinesOpts)
 
-
-// module.exports = router
+module.exports = router

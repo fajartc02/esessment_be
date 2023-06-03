@@ -106,6 +106,7 @@ module.exports = {
     queryCustom: async(sql) => {
         return new Promise(async(resolve, reject) => {
             let q = sql
+            console.log(q);
             await database.query(q)
                 .then((result) => {
                     resolve(result)
