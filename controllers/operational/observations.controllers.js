@@ -1,10 +1,13 @@
 const table = require('../../config/table')
-const { queryPOST, queryBulkPOST, queryCustom, queryGET } = require('../../helpers/query')
+const { queryPOST, queryBulkPOST, queryCustom, queryGET, queryPUT } = require('../../helpers/query')
 
 const response = require('../../helpers/response')
 const getLastIdData = require('../../helpers/getLastIdData')
 const uuidToId = require('../../helpers/uuidToId')
+const idToUuid = require('../../helpers/idToUuid')
+
 const attrsUserInsertData = require('../../helpers/addAttrsUserInsertData')
+const addAttrsUserUpdateData = require('../../helpers/addAttrsUserUpdateData')
 const condDataNotDeleted = `deleted_dt IS NULL`
 
 module.exports = {
@@ -146,6 +149,19 @@ module.exports = {
                 WHERE 
                     ${'tro.' + condDataNotDeleted}
                     AND tro.uuid = '${req.params.id}'`)
+                // let checkers = checker nanti dulu yapps
+
+            const obsId = await uuidToId(table.tb_r_observations, 'observation_id', req.params.id)
+            let resChecks = await queryGET(table.tb_r_obs_results, `WHERE observation_id = ${obsId}`, ['category_id', 'judgment_id', 'factor_id', 'findings'])
+            let mapChecks = await resChecks.map(async check => {
+                check.category_id = await idToUuid(table.tb_m_categories, 'category_id', check.category_id)
+                if (check.factor_id) check.factor_id = await idToUuid(table.tb_m_factors, 'factor_id', check.factor_id)
+                check.judgment_id = await idToUuid(table.tb_m_judgments, 'judgment_id', check.judgment_id)
+                return check
+            })
+            const waitResChecks = await Promise.all(mapChecks)
+            console.log(waitResChecks);
+            obser.rows.push(waitResChecks)
             response.success(res, 'Success to get schedule observation', obser.rows)
         } catch (error) {
             console.log(error);
@@ -191,6 +207,36 @@ module.exports = {
         } catch (error) {
             console.log(error);
             response.failed(res, 'Error to add schedule observation')
+        }
+    },
+    addCheckObservation: async(req, res) => {
+        // observation_id
+        // category_id,judgement_id, factor_id(opt), findings ARRAY
+        try {
+            const obsId = await uuidToId(table.tb_r_observations, 'observation_id', req.body.observation_id)
+            const lastIdResCheck = await getLastIdData(table.tb_r_obs_results, 'obs_result_id') + 1
+            let mapResultChecks = await req.body.results_check.map(async(item, i) => {
+                item.observation_id = obsId
+                item.obs_result_id = lastIdResCheck + i
+                item.uuid = req.uuid()
+                console.log(item);
+                item.category_id = await uuidToId(table.tb_m_categories, 'category_id', item.category_id)
+                item.judgment_id = await uuidToId(table.tb_m_judgments, 'judgment_id', item.judgment_id)
+                if (item.factor_id) item.factor_id = await uuidToId(table.tb_m_factors, 'factor_id', item.factor_id)
+                return item
+            })
+            let waitMap = await Promise.all(mapResultChecks)
+            const addAttrsUserInst = await attrsUserInsertData(req, waitMap)
+
+            let resInstCheck = await queryBulkPOST(table.tb_r_obs_results, addAttrsUserInst)
+            let updateActual = { actual_check_dt: req.body.actual_check_dt }
+            let attrsUserUpd = await addAttrsUserUpdateData(req, updateActual)
+            await queryPUT(table.tb_r_observations, attrsUserUpd, `WHERE observation_id = '${obsId}'`)
+            console.log(resInstCheck);
+            response.success(res, 'Success to add CHECK observation')
+        } catch (error) {
+            console.log(error);
+            response.failed(res, 'Error to add CHECK observation')
         }
     }
 }

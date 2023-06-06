@@ -3,7 +3,9 @@ const {
     addScheduleObservation,
     getScheduleObservations,
     getSummaryObservations,
-    getDetailObservation
+    getDetailObservation,
+    addCheckObservation,
+    getResultCheckObs
 } = require('../../../controllers/operational/observations.controllers')
 const auth = require('../../../helpers/auth')
 
@@ -11,6 +13,9 @@ router.get('/summary', auth.verifyToken, getSummaryObservations)
 router.get('/schedule', auth.verifyToken, getScheduleObservations)
 router.get('/schedule/:id', auth.verifyToken, getDetailObservation)
 router.post('/schedule', auth.verifyToken, addScheduleObservation)
+
+// router.get('/check', auth.verifyToken, getResultCheckObs)
+router.post('/check', auth.verifyToken, addCheckObservation)
 
 
 module.exports = router

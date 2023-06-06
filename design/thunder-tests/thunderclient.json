@@ -138,13 +138,18 @@
     "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
     "containerId": "999eb8cd-205d-43a9-9ce0-e42936c6cf1d",
     "name": "Observation Check",
-    "url": "{{protocol}}{{hostname}}{{apiVersion}}/operational/observation/schedule",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/operational/observation/check",
     "method": "POST",
     "sortNum": 80000,
     "created": "2023-06-03T15:32:03.211Z",
-    "modified": "2023-06-03T15:32:18.160Z",
+    "modified": "2023-06-06T17:05:04.541Z",
     "headers": [],
     "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"observation_id\": \"7595dd63-da4a-43fe-8971-8a9e38f699d8\",\n  \"actual_check_dt\": \"2023-06-06 20:00:00\",\n  \"results_check\": [{\n    \"category_id\": \"3ce06d66-fe82-4e0a-a1fd-ce927ec85167\",\n    \"factor_id\": null,\n    \"judgment_id\": \"c4f5ff30-1b95-4ad8-8af8-e3e9d90bd942\",\n    \"findings\": \"\"\n  },{\n    \"category_id\": \"df3719df-f436-4771-9fda-4500b58f1caa\",\n    \"factor_id\": \"c8895db9-e57d-454f-b70a-9133aa2453e3\",\n    \"judgment_id\": \"2e247c66-3e9c-44b6-951a-0a26791ad37d\",\n    \"findings\": \"potensi member terpeleset\"\n  },{\n    \"category_id\": \"5b5bfd20-f5f7-4edc-8030-1d3e3f15d0e6\",\n    \"factor_id\": null,\n    \"judgment_id\": \"c4f5ff30-1b95-4ad8-8af8-e3e9d90bd942\",\n    \"findings\": \"\"\n  },{\n    \"category_id\": \"3eb378fd-08c2-4176-96c7-403f10baebf5\",\n    \"factor_id\": null,\n    \"judgment_id\": \"c4f5ff30-1b95-4ad8-8af8-e3e9d90bd942\",\n    \"findings\": \"\"\n  },{\n    \"category_id\": \"f31243b9-b9f1-4391-9744-1d6094d47b1e\",\n    \"factor_id\": null,\n    \"judgment_id\": \"c4f5ff30-1b95-4ad8-8af8-e3e9d90bd942\",\n    \"findings\": \"\"\n  }]\n}",
+      "form": []
+    },
     "auth": {
       "type": "bearer",
       "bearer": "{{token}}"
@@ -163,6 +168,84 @@
     "modified": "2023-06-03T15:36:01.060Z",
     "headers": [],
     "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "9010dc64-e6d7-4af4-8909-97354f2e0df1",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "dd2c7379-7a73-40c9-944e-49937e9e5c83",
+    "name": "Users",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/users",
+    "method": "GET",
+    "sortNum": 10000,
+    "created": "2023-06-06T16:05:31.693Z",
+    "modified": "2023-06-06T16:07:14.596Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "357a61eb-f6bf-4d0d-9847-ebf0a06d56a5",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "2f232237-a19f-4b76-b728-9ddd5af62122",
+    "name": "Factors",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/factors",
+    "method": "GET",
+    "sortNum": 10000,
+    "created": "2023-06-06T16:14:12.371Z",
+    "modified": "2023-06-06T16:14:25.424Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "ee07f90e-0585-44da-bf3b-527cd624ffc4",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "2b4f414c-9e81-42aa-8c0c-8a3a18a14318",
+    "name": "Judgments",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/judgments",
+    "method": "GET",
+    "sortNum": 10000,
+    "created": "2023-06-06T16:15:29.048Z",
+    "modified": "2023-06-06T16:15:40.307Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "70e9cd96-6a09-48b7-81b7-5b9ab2b46f2b",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "999eb8cd-205d-43a9-9ce0-e42936c6cf1d",
+    "name": "Observation Check Results",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/operational/observation/check?observation_id=7595dd63-da4a-43fe-8971-8a9e38f699d8",
+    "method": "GET",
+    "sortNum": 90000,
+    "created": "2023-06-06T17:11:01.034Z",
+    "modified": "2023-06-06T17:11:57.828Z",
+    "headers": [],
+    "params": [
+      {
+        "name": "observation_id",
+        "value": "7595dd63-da4a-43fe-8971-8a9e38f699d8",
+        "isPath": false
+      }
+    ],
     "auth": {
       "type": "bearer",
       "bearer": "{{token}}"

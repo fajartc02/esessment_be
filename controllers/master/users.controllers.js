@@ -1,5 +1,5 @@
 const table = require('../../config/table')
-const { queryGET } = require('../../helpers/query')
+const { queryPOST, queryCustom, queryGET } = require('../../helpers/query')
 
 const response = require('../../helpers/response')
 const getLastIdData = require('../../helpers/getLastIdData')
@@ -9,13 +9,13 @@ const condDataNotDeleted = `deleted_dt IS NULL`
 
 
 module.exports = {
-    getCategories: async(req, res) => {
+    getUsersOpts: async(req, res) => {
         try {
-            const categories = await queryGET(table.tb_m_categories, null, ['uuid as id', 'category_nm', 'category_desc'])
-            response.success(res, 'Success to get Categories', categories)
+            const users = await queryGET(table.tb_m_users, `WHERE ${condDataNotDeleted}`, ['uuid as id', 'noreg', 'fullname as text'])
+            response.success(res, 'Success to get users', users)
         } catch (error) {
             console.log(error);
-            response.failed(res, 'Error to get Categories')
+            response.failed(res, 'Error to get users')
         }
     }
 }
