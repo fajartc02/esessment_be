@@ -170,43 +170,59 @@ module.exports = {
     },
     getSummaryObservations: async(req, res) => {
         try {
+            let { month, year, currentDate, line_id } = req.query
+
+            var whereLineId = ``
+            console.log(req.query);
+            if (line_id) {
+                whereLineId = `AND tmp.line_id = ${await uuidToId(table.tb_m_lines, 'line_id', line_id)}`
+            }
+
             const delay = await queryCustom(`
             SELECT 
                 COUNT(observation_id) as delay_count
-            FROM tb_r_observations
+            FROM tb_r_observations tro
+            JOIN tb_m_pos tmp
+                ON tro.pos_id = tmp.pos_id
             WHERE
-                deleted_dt IS NULL
-                AND (EXTRACT(month from  plan_check_dt), EXTRACT('year' from plan_check_dt))=(6,2023)
-                AND plan_check_dt < '2023-06-11'
+                ${'tro.' + condDataNotDeleted}
+                AND (EXTRACT(month from  plan_check_dt), EXTRACT('year' from plan_check_dt))=(${month},${year})
+                AND plan_check_dt < '${currentDate}'
                 AND actual_check_dt IS NULL
+                ${whereLineId}
             `)
             const done = await queryCustom(`
             SELECT 
                 COUNT(observation_id) as done_count
-            FROM tb_r_observations
+            FROM tb_r_observations tro
+            JOIN tb_m_pos tmp
+                ON tro.pos_id = tmp.pos_id
             WHERE
-                deleted_dt IS NULL
-                AND (EXTRACT(month from  plan_check_dt), EXTRACT('year' from plan_check_dt))=(6,2023)
+                ${'tro.' + condDataNotDeleted}
+                AND (EXTRACT(month from  plan_check_dt), EXTRACT('year' from plan_check_dt))=(${month},${year})
                 AND actual_check_dt IS NOT NULL
+                ${whereLineId}
             `)
             const total = await queryCustom(`
             SELECT 
                 COUNT(observation_id) as total_count
-            FROM tb_r_observations
+            FROM tb_r_observations tro
+            JOIN tb_m_pos tmp
+                ON tro.pos_id = tmp.pos_id
             WHERE
-                deleted_dt IS NULL
-                AND (EXTRACT(month from  plan_check_dt), EXTRACT('year' from plan_check_dt))=(6,2023)
-                AND actual_check_dt IS NOT NULL
+                ${'tro.' + condDataNotDeleted}
+                AND (EXTRACT(month from  plan_check_dt), EXTRACT('year' from plan_check_dt))=(${month},${year})
+                ${whereLineId}
             `)
             const objRes = {
                 delay: +delay.rows[0].delay_count,
                 done: +done.rows[0].done_count,
                 total: +total.rows[0].total_count
             }
-            response.success(res, 'Success to add schedule observation', objRes)
+            response.success(res, 'Success to get summary observation', objRes)
         } catch (error) {
             console.log(error);
-            response.failed(res, 'Error to add schedule observation')
+            response.failed(res, 'Error to get summary observation')
         }
     },
     addCheckObservation: async(req, res) => {
