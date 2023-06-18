@@ -5,17 +5,17 @@ const response = require('../../helpers/response')
 const getLastIdData = require('../../helpers/getLastIdData')
 const uuidToId = require('../../helpers/uuidToId')
 const attrsUserInsertData = require('../../helpers/addAttrsUserInsertData')
-const condDataNotDeleted = `deleted_dt IS NULL`
+const condDataNotDeleted = `WHERE deleted_dt IS NULL`
 
 
 module.exports = {
-    getLinesOpts: async(req, res) => {
+    getGroups: async(req, res) => {
         try {
-            const lines = await queryGET(table.tb_m_lines, `WHERE ${condDataNotDeleted}`)
-            response.success(res, 'Success to get Lines', lines)
+            const groups = await queryGET(table.tb_m_groups, condDataNotDeleted, ['uuid as id', 'group_nm as text'])
+            response.success(res, 'Success to get groups', groups)
         } catch (error) {
             console.log(error);
-            response.failed(res, 'Error to get Lines')
+            response.failed(res, 'Error to get groups')
         }
     }
 }

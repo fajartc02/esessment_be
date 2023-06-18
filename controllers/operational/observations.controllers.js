@@ -46,8 +46,7 @@ module.exports = {
             const { month, year, line } = req.query
             let whereCond = ``
             if (month && year) whereCond = `AND (EXTRACT(month from  tro.plan_check_dt), EXTRACT('year' from tro.plan_check_dt))=(${+month},${+year})`
-            if (line != "0" && line) whereCond += ` AND tmm.line_id = ${await uuidToId(table.tb_m_lines, 'line_id', line)}`
-            console.log(req.query);
+            if (line != "0" && line && line != -1) whereCond += ` AND tmm.line_id = ${await uuidToId(table.tb_m_lines, 'line_id', line)}`
             let observations = await queryCustom(`
                 SELECT 
                     tro.uuid as observation_id,
@@ -88,7 +87,6 @@ module.exports = {
                 obser.checkers = await checkersData.map(mp => {
                     return mp.checker_nm
                 })
-
                 return obser
             })
             let waitDataObs = await Promise.all(mapObs)
@@ -96,7 +94,6 @@ module.exports = {
             for (let i = 0; i < waitDataObs.length; i++) {
                 const item = waitDataObs[i];
                 let posAvail = containerGroup.find(child => child.pos_id === item.pos_id)
-
                 if (!posAvail) {
                     item.children = []
                     item.children.push(JSON.parse(JSON.stringify(item)))
@@ -123,10 +120,14 @@ module.exports = {
                     tml.line_snm,
                     tmp.pos_nm,
                     tmm.machine_nm,
+                    tmg.uuid as group_id,
                     tmg.group_nm,
                     tmj.uuid as job_id,
                     tmj.job_no,
                     tmj.job_nm,
+                    tmj.attachment as sop,
+                    tmtsk.attachment as tsk,
+                    tmtskk.attachment as tskk,
                     tmjt.job_type_nm,
                     tmjt.colors as job_type_color,
                     member_nm,
@@ -136,7 +137,11 @@ module.exports = {
                 FROM ${table.tb_r_observations} tro
                 JOIN ${table.tb_m_pos} tmp
                     ON tro.pos_id = tmp.pos_id
-                JOIN ${table.tb_m_groups} tmg
+                LEFT JOIN ${table.tb_m_tsk} tmtsk
+                    ON tmtsk.pos_id = tmp.pos_id
+                LEFT JOIN ${table.tb_m_tskk} tmtskk
+                    ON tmtskk.pos_id = tmp.pos_id    
+                LEFT JOIN ${table.tb_m_groups} tmg
                     ON tro.group_id = tmg.group_id
                 JOIN ${table.tb_m_jobs} tmj
                     ON tro.job_id = tmj.job_id
@@ -149,7 +154,6 @@ module.exports = {
                 WHERE 
                     ${'tro.' + condDataNotDeleted}
                     AND tro.uuid = '${req.params.id}'`)
-                // let checkers = checker nanti dulu yapps
 
             const obsId = await uuidToId(table.tb_r_observations, 'observation_id', req.params.id)
             let resChecks = await queryGET(table.tb_r_obs_results, `WHERE observation_id = ${obsId}`, ['category_id', 'judgment_id', 'factor_id', 'findings'])
@@ -235,7 +239,6 @@ module.exports = {
                 item.observation_id = obsId
                 item.obs_result_id = lastIdResCheck + i
                 item.uuid = req.uuid()
-                console.log(item);
                 item.category_id = await uuidToId(table.tb_m_categories, 'category_id', item.category_id)
                 item.judgment_id = await uuidToId(table.tb_m_judgments, 'judgment_id', item.judgment_id)
                 if (item.factor_id) item.factor_id = await uuidToId(table.tb_m_factors, 'factor_id', item.factor_id)
@@ -245,7 +248,7 @@ module.exports = {
             const addAttrsUserInst = await attrsUserInsertData(req, waitMap)
 
             let resInstCheck = await queryBulkPOST(table.tb_r_obs_results, addAttrsUserInst)
-            let updateActual = { actual_check_dt: req.body.actual_check_dt }
+            let updateActual = { actual_check_dt: req.body.actual_check_dt,group_id: req.body.group_id }
             let attrsUserUpd = await addAttrsUserUpdateData(req, updateActual)
             await queryPUT(table.tb_r_observations, attrsUserUpd, `WHERE observation_id = '${obsId}'`)
             console.log(resInstCheck);

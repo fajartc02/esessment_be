@@ -84,6 +84,7 @@ module.exports = {
             }
 
             let q = `UPDATE ${table} SET ${containerSetValues.join(',')} ${whereCond} RETURNING *`
+            console.log(q);
             await database.query(q)
                 .then((result) => {
                     resolve(result)

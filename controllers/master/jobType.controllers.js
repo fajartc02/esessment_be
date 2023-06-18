@@ -1,5 +1,5 @@
 const table = require('../../config/table')
-const { queryPOST, queryCustom, queryGET } = require('../../helpers/query')
+const { queryGET } = require('../../helpers/query')
 
 const response = require('../../helpers/response')
 const getLastIdData = require('../../helpers/getLastIdData')
@@ -9,13 +9,13 @@ const condDataNotDeleted = `deleted_dt IS NULL`
 
 
 module.exports = {
-    getJudgmentsOpts: async(req, res) => {
+    getJobType: async(req, res) => {
         try {
-            const judgments = await queryGET(table.tb_m_judgments, `WHERE ${condDataNotDeleted}`, ['uuid as id', 'judgment_nm as text', 'is_abnormal'])
-            response.success(res, 'Success to get judgments', judgments)
+            const jobType = await queryGET(table.tb_m_job_types, `WHERE ${condDataNotDeleted}`)
+            response.success(res, 'Success to get jobType', jobType)
         } catch (error) {
             console.log(error);
-            response.failed(res, 'Error to get judgments')
+            response.failed(res, 'Error to get jobType')
         }
     }
 }

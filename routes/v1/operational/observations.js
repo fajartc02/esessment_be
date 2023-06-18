@@ -14,7 +14,6 @@ router.get('/schedule', auth.verifyToken, getScheduleObservations)
 router.get('/schedule/:id', auth.verifyToken, getDetailObservation)
 router.post('/schedule', auth.verifyToken, addScheduleObservation)
 
-// router.get('/check', auth.verifyToken, getResultCheckObs)
 router.post('/check', auth.verifyToken, addCheckObservation)
 
 

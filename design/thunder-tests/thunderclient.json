@@ -119,7 +119,7 @@
     "_id": "a911221f-d971-4893-8575-49ff849185c0",
     "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
     "containerId": "0bb2929a-acf9-4a50-b511-09b1ebaf4f55",
-    "name": "Lines (opts)",
+    "name": "Lines",
     "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/lines/opts",
     "method": "GET",
     "sortNum": 70000,
@@ -243,6 +243,316 @@
       {
         "name": "observation_id",
         "value": "7595dd63-da4a-43fe-8971-8a9e38f699d8",
+        "isPath": false
+      }
+    ],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "fc37c68e-56d9-49bd-ab32-b15cd90d60d9",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "56f909c1-dee1-49e5-bb69-fa6a01c02e00",
+    "name": "Verify",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/verify",
+    "method": "GET",
+    "sortNum": 100000,
+    "created": "2023-06-15T14:32:16.017Z",
+    "modified": "2023-06-15T14:37:13.941Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "a98f2752-cf4f-43a9-a7af-307929406603",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "3771dc77-91c8-44eb-b4fc-e0f3cdd73f9a",
+    "name": "Groups",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/groups",
+    "method": "GET",
+    "sortNum": 10000,
+    "created": "2023-06-17T15:49:42.811Z",
+    "modified": "2023-06-17T15:59:51.812Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "aa43427c-f6a1-4cb9-87ea-52f52c038223",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "",
+    "name": "FileAccess",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/file?path=./uploads/sop/CH-OP010-LLD-0004-Ambil Work dari Shuter Raw Material 1 Pcs.pdf",
+    "method": "GET",
+    "sortNum": 110000,
+    "created": "2023-06-17T16:24:32.599Z",
+    "modified": "2023-06-17T16:28:32.652Z",
+    "headers": [],
+    "params": [
+      {
+        "name": "path",
+        "value": "./uploads/sop/CH-OP010-LLD-0004-Ambil Work dari Shuter Raw Material 1 Pcs.pdf",
+        "isPath": false
+      }
+    ],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "2563f935-cd86-4a35-a571-43bf68d85747",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "98db21fa-914b-48cf-abcb-ea389f855dcc",
+    "name": "Pos",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/pos",
+    "method": "GET",
+    "sortNum": 10000,
+    "created": "2023-06-17T16:59:11.593Z",
+    "modified": "2023-06-17T16:59:31.044Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "837ee503-c46a-427c-91b6-fc5c1b86f32b",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "98db21fa-914b-48cf-abcb-ea389f855dcc",
+    "name": "Add Pos",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/pos",
+    "method": "POST",
+    "sortNum": 20000,
+    "created": "2023-06-17T17:53:47.026Z",
+    "modified": "2023-06-17T17:58:50.468Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"line_id\": \"74e48531-9896-4844-a3a5-4c5a9e6245a3\",\n  \"pos_nm\": \"test\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "7562d8e4-6586-4068-99e9-2853631adb19",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "98db21fa-914b-48cf-abcb-ea389f855dcc",
+    "name": "Edit Pos",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/pos/f13286d7-7fd5-462c-a169-6714a4a9a80a",
+    "method": "PUT",
+    "sortNum": 30000,
+    "created": "2023-06-17T18:12:39.884Z",
+    "modified": "2023-06-17T18:21:35.910Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"line_id\": \"74e48531-9896-4844-a3a5-4c5a9e6245a3\",\n  \"pos_nm\": \"test 30\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "5d6c66af-8ada-4300-abcd-a42e19ec3ea9",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "98db21fa-914b-48cf-abcb-ea389f855dcc",
+    "name": "Delete Pos",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/pos/f13286d7-7fd5-462c-a169-6714a4a9a80a",
+    "method": "DELETE",
+    "sortNum": 40000,
+    "created": "2023-06-17T19:06:50.774Z",
+    "modified": "2023-06-17T19:07:06.306Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "0c7652b6-d5d0-49d2-91e8-f387babaaab5",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "3658e81e-3232-4ae1-b965-b0310044df4a",
+    "name": "Job",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/job",
+    "method": "GET",
+    "sortNum": 10000,
+    "created": "2023-06-18T04:18:30.338Z",
+    "modified": "2023-06-18T04:18:51.984Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "cd1cb73d-bc9f-4e81-971c-f0fc11c0eb80",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "3658e81e-3232-4ae1-b965-b0310044df4a",
+    "name": "Add Job",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/job",
+    "method": "POST",
+    "sortNum": 20000,
+    "created": "2023-06-18T04:18:30.339Z",
+    "modified": "2023-06-18T05:04:37.580Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "formdata",
+      "raw": "",
+      "form": [
+        {
+          "name": "machine_id",
+          "value": "1dc5b32d-aafd-45b7-9757-668eff1a16b6"
+        },
+        {
+          "name": "job_type_id",
+          "value": "880c68aa-35d8-4bda-aefa-95765730bbbe"
+        },
+        {
+          "name": "pos_id",
+          "value": "91eb45f5-a71d-4796-bb28-b70a09b804ae"
+        },
+        {
+          "name": "job_nm",
+          "value": "TEST JOB"
+        },
+        {
+          "name": "job_no",
+          "value": "DDL-01-02"
+        },
+        {
+          "name": "dest",
+          "value": "sop"
+        }
+      ],
+      "files": [
+        {
+          "name": "attachment",
+          "value": "../../../../../../Desktop/Screenshot 2023-06-10 at 17.58.34.png"
+        }
+      ]
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "636defbb-95eb-48d2-be2d-4838b3742774",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "3658e81e-3232-4ae1-b965-b0310044df4a",
+    "name": "Delete Job",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/job/b1cf6ce7-fd3c-45ed-a56c-edcdc0e2f881",
+    "method": "DELETE",
+    "sortNum": 40000,
+    "created": "2023-06-18T04:18:30.341Z",
+    "modified": "2023-06-18T06:16:50.604Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "559a63ce-a316-4163-b152-525bc7a341fb",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "3658e81e-3232-4ae1-b965-b0310044df4a",
+    "name": "Edit Job",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/job/b1cf6ce7-fd3c-45ed-a56c-edcdc0e2f881",
+    "method": "PUT",
+    "sortNum": 25000,
+    "created": "2023-06-18T05:23:00.098Z",
+    "modified": "2023-06-18T06:03:46.711Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "formdata",
+      "raw": "",
+      "form": [
+        {
+          "name": "machine_id",
+          "value": "1dc5b32d-aafd-45b7-9757-668eff1a16b6"
+        },
+        {
+          "name": "job_type_id",
+          "value": "880c68aa-35d8-4bda-aefa-95765730bbbe"
+        },
+        {
+          "name": "pos_id",
+          "value": "91eb45f5-a71d-4796-bb28-b70a09b804ae"
+        },
+        {
+          "name": "job_nm",
+          "value": "TEST JOB 2"
+        },
+        {
+          "name": "job_no",
+          "value": "DDL-01-02"
+        },
+        {
+          "name": "dest",
+          "value": "sop"
+        }
+      ],
+      "files": [
+        {
+          "name": "attachment",
+          "value": "../../../../../../Desktop/Screenshot 2023-06-10 at 18.08.22.png"
+        }
+      ]
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "1fec0ac9-9697-43ad-a818-89b6b9aa9bc3",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "c50a8036-ae41-4753-a609-022d1a106845",
+    "name": "Machines",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/machines?line_id=fd85482c-9e54-4832-96c8-321f574e8536",
+    "method": "GET",
+    "sortNum": 10000,
+    "created": "2023-06-18T08:00:36.089Z",
+    "modified": "2023-06-18T08:05:25.604Z",
+    "headers": [],
+    "params": [
+      {
+        "name": "line_id",
+        "value": "fd85482c-9e54-4832-96c8-321f574e8536",
         "isPath": false
       }
     ],

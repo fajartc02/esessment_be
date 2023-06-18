@@ -3,7 +3,6 @@ const notAllowed = (res, message) => {
             status: 401,
             message: message
         }
-        // console.log(response);
     res.status(401).json(response)
 }
 const success = (res, message, data) => {
