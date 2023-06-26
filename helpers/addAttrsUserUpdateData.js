@@ -6,13 +6,13 @@ function attrsUserUpdateData(req, data) {
         let mapData = data.map(itm => {
             return {
                 ...itm,
-                changed_by: req.user.noreg,
+                changed_by: req.user.fullname,
                 changed_dt: moment().format().split('+')[0].split('T').join(' ')
             }
         })
         containerData = mapData
     } else {
-        containerData.changed_by = req.user.noreg
+        containerData.changed_by = req.user.fullname
         containerData.changed_dt = moment().format().split('+')[0].split('T').join(' ')
     }
     return containerData

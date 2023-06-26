@@ -9,17 +9,20 @@ const uuidToId = require('../../helpers/uuidToId')
 const attrsUserInsertData = require('../../helpers/addAttrsUserInsertData')
 const attrsUserUpdateData = require('../../helpers/addAttrsUserUpdateData')
 const condDataNotDeleted = `WHERE tmj.deleted_dt IS NULL`
+const orderBy = `ORDER BY tmj.created_dt ASC`
 
 
 module.exports = {
     getJob: async(req, res) => {
         try {
-            let { id } = req.query
+            let { id, line_id, pos_id } = req.query
             let containerQuery = ''
             if (id) containerQuery += ` AND tmj.uuid = '${id}'`
+            if (pos_id && pos_id != -1 && pos_id != 'null') containerQuery += ` AND tmp.uuid = '${pos_id}'`
+            if (line_id && line_id != -1 && line_id != 'null') containerQuery += ` AND tml.uuid = '${line_id}'`
             let q = `
                 SELECT 
-                    tmj.uuid as job_id,
+                    tmj.uuid as id,
                     tmj.uuid,
                     tmj.job_no,
                     tmj.job_nm,
@@ -35,12 +38,13 @@ module.exports = {
                     tmj.created_by,
                     tmj.created_dt
                 FROM ${table.tb_m_jobs} tmj
-                JOIN ${table.tb_m_job_types} tmjt ON tmj.job_type_id = tmjt.job_type_id
-                JOIN ${table.tb_m_pos} tmp ON tmp.pos_id = tmj.pos_id
-                JOIN ${table.tb_m_machines} tmm ON tmm.machine_id = tmj.machine_id
-                JOIN ${table.tb_m_lines} tml ON tml.line_id = tmm.line_id
+                LEFT JOIN ${table.tb_m_job_types} tmjt ON tmj.job_type_id = tmjt.job_type_id
+                LEFT JOIN ${table.tb_m_pos} tmp ON tmp.pos_id = tmj.pos_id
+                LEFT JOIN ${table.tb_m_machines} tmm ON tmj.machine_id = tmm.machine_id 
+                LEFT JOIN ${table.tb_m_lines} tml ON tmp.line_id = tml.line_id
                 ${condDataNotDeleted}
                 ${containerQuery}
+                ${orderBy}
             `
             const job = await queryCustom(q)
             response.success(res, 'Success to get job', job.rows)
@@ -57,11 +61,19 @@ module.exports = {
             let idLast = await getLastIdData(table.tb_m_jobs, 'job_id') + 1
             req.body.job_id = idLast
             req.body.uuid = req.uuid()
-            req.body.machine_id = await uuidToId(table.tb_m_machines, 'machine_id', req.body.machine_id)
+            if (req.body.machine_id != 'null' && req.body.machine_id) {
+                req.body.machine_id = await uuidToId(table.tb_m_machines, 'machine_id', req.body.machine_id)
+            } else {
+                req.body.machine_id = null
+                delete req.body.machine_id
+            }
             req.body.job_type_id = await uuidToId(table.tb_m_job_types, 'job_type_id', req.body.job_type_id)
             req.body.pos_id = await uuidToId(table.tb_m_pos, 'pos_id', req.body.pos_id)
-            console.log(req.file.path);
-            req.body.attachment = `./${req.file.path}`
+                // console.log(req.file);
+            if (req.file) {
+                req.body.attachment = `./${req.file.path}`
+                delete req.body.attachment
+            }
             delete req.body.dest
 
             let attrsUserInsert = await attrsUserInsertData(req, req.body)
@@ -75,7 +87,12 @@ module.exports = {
     editJob: async(req, res) => {
         try {
             console.log(req.body);
-            req.body.machine_id = await uuidToId(table.tb_m_machines, 'machine_id', req.body.machine_id)
+            if (req.body.machine_id != 'null' && req.body.machine_id) {
+                req.body.machine_id = await uuidToId(table.tb_m_machines, 'machine_id', req.body.machine_id)
+            } else {
+                req.body.machine_id = null
+                delete req.body.machine_id
+            }
             req.body.job_type_id = await uuidToId(table.tb_m_job_types, 'job_type_id', req.body.job_type_id)
             req.body.pos_id = await uuidToId(table.tb_m_pos, 'pos_id', req.body.pos_id)
             if (req.file) {

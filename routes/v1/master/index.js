@@ -2,6 +2,10 @@ const router = require('express')()
 
 const users = require('./users')
 
+const companies = require('./companies')
+const plants = require('./plants')
+
+const shops = require('./shops')
 const lines = require('./lines')
 const machines = require('./machines')
 const pos = require('./pos')
@@ -13,6 +17,10 @@ const categories = require('./categories')
 const factors = require('./factors')
 const judgments = require('./judgments')
 
+router.use('/companies', companies)
+router.use('/plants', plants)
+
+router.use('/shops', shops)
 router.use('/lines', lines)
 router.use('/machines', machines)
 

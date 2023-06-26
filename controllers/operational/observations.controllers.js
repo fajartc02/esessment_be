@@ -10,6 +10,8 @@ const attrsUserInsertData = require('../../helpers/addAttrsUserInsertData')
 const addAttrsUserUpdateData = require('../../helpers/addAttrsUserUpdateData')
 const condDataNotDeleted = `deleted_dt IS NULL`
 
+const moment = require('moment')
+
 module.exports = {
     addScheduleObservation: async(req, res) => {
         try {
@@ -41,6 +43,51 @@ module.exports = {
             response.failed(res, 'Error to add schedule observation')
         }
     },
+    getObservationScheduleList: async(req, res) => {
+        try {
+            let { id } = req.query
+            let containerQuery = ''
+            if (id) containerQuery += ` AND tro.uuid = '${id}'`
+            let observationList = await queryCustom(`
+                SELECT 
+                    tro.uuid as id,
+                    tro.member_nm,
+                    tro.plan_check_dt,
+                    tro.actual_check_dt,
+                    tro.created_dt,
+                    tro.created_by,
+                    tmp.uuid as pos_id,
+                    tmp.pos_nm,
+                    tml.uuid as line_id,
+                    tml.line_nm,
+                    tmj.uuid as job_id,
+                    tmj.job_nm,
+                    tmjt.job_type_nm,
+                    tmj.attachment as sop,
+                    tmg.uuid as group_id,
+                    tmg.group_nm
+                FROM ${table.tb_r_observations} tro
+                JOIN ${table.tb_m_pos} tmp ON tmp.pos_id = tro.pos_id
+                JOIN ${table.tb_m_lines} tml ON tml.line_id = tmp.line_id
+                JOIN ${table.tb_m_jobs} tmj ON tmj.job_id = tro.job_id
+                JOIN ${table.tb_m_job_types} tmjt ON tmjt.job_type_id = tmj.job_type_id
+                JOIN ${table.tb_m_groups} tmg ON tmg.group_id = tro.group_id
+                WHERE tro.${condDataNotDeleted}
+                ${containerQuery}
+            `)
+            let mapObsCheckers = await observationList.rows.map(async obs => {
+                let obsUuidtoId = await uuidToId(table.tb_r_observations, 'observation_id', obs.id)
+                let checkers = await queryGET(table.tb_r_obs_checker, `WHERE observation_id = '${obsUuidtoId}'`, ['uuid as id', 'checker_nm'])
+                obs.checkers = checkers
+                return obs
+            })
+            const waitObser = await Promise.all(mapObsCheckers)
+            response.success(res, 'Success to get schedule observation list', waitObser)
+        } catch (error) {
+            console.log(error);
+            response.failed(res, 'Error to get schedule observation list')
+        }
+    },
     getScheduleObservations: async(req, res) => {
         try {
             const { month, year, line } = req.query
@@ -63,7 +110,8 @@ module.exports = {
                     member_nm,
                     tro.plan_check_dt,
                     tro.actual_check_dt,
-                    EXTRACT('day' from  tro.plan_check_dt) as idxDate
+                    EXTRACT('day' from  tro.plan_check_dt) as idxDate,
+                    tro.deleted_dt
                 FROM ${table.tb_r_observations} tro
                 JOIN ${table.tb_m_pos} tmp
                     ON tro.pos_id = tmp.pos_id
@@ -81,6 +129,7 @@ module.exports = {
                     ${'tro.' + condDataNotDeleted}
                     ${whereCond}
             `)
+            console.log(`${'tro.' + condDataNotDeleted}`);
             let mapObs = observations.rows.map(async obser => {
                 let obserId = await uuidToId(table.tb_r_observations, 'observation_id', obser.observation_id)
                 let checkersData = await queryGET(table.tb_r_obs_checker, `WHERE observation_id = ${obserId}`, ['uuid as obs_checker_id', 'checker_nm'])
@@ -126,8 +175,8 @@ module.exports = {
                     tmj.job_no,
                     tmj.job_nm,
                     tmj.attachment as sop,
-                    tmtsk.attachment as tsk,
-                    tmtskk.attachment as tskk,
+                    tmp.tsk,
+                    tmp.tskk,
                     tmjt.job_type_nm,
                     tmjt.colors as job_type_color,
                     member_nm,
@@ -136,11 +185,7 @@ module.exports = {
                     EXTRACT('day' from  tro.plan_check_dt) as idxDate
                 FROM ${table.tb_r_observations} tro
                 JOIN ${table.tb_m_pos} tmp
-                    ON tro.pos_id = tmp.pos_id
-                LEFT JOIN ${table.tb_m_tsk} tmtsk
-                    ON tmtsk.pos_id = tmp.pos_id
-                LEFT JOIN ${table.tb_m_tskk} tmtskk
-                    ON tmtskk.pos_id = tmp.pos_id    
+                    ON tro.pos_id = tmp.pos_id  
                 LEFT JOIN ${table.tb_m_groups} tmg
                     ON tro.group_id = tmg.group_id
                 JOIN ${table.tb_m_jobs} tmj
@@ -248,7 +293,7 @@ module.exports = {
             const addAttrsUserInst = await attrsUserInsertData(req, waitMap)
 
             let resInstCheck = await queryBulkPOST(table.tb_r_obs_results, addAttrsUserInst)
-            let updateActual = { actual_check_dt: req.body.actual_check_dt,group_id: req.body.group_id }
+            let updateActual = { actual_check_dt: req.body.actual_check_dt, group_id: req.body.group_id }
             let attrsUserUpd = await addAttrsUserUpdateData(req, updateActual)
             await queryPUT(table.tb_r_observations, attrsUserUpd, `WHERE observation_id = '${obsId}'`)
             console.log(resInstCheck);
@@ -256,6 +301,21 @@ module.exports = {
         } catch (error) {
             console.log(error);
             response.failed(res, 'Error to add CHECK observation')
+        }
+    },
+    deleteScheduleObservation: async(req, res) => {
+        try {
+            let obj = {
+                deleted_dt: moment().format().split('+')[0].split('T').join(' '),
+                deleted_by: req.user.fullname
+            }
+            let attrsUserUpdate = await addAttrsUserUpdateData(req, obj)
+            console.log(attrsUserUpdate);
+            const result = await queryPUT(table.tb_r_observations, attrsUserUpdate, `WHERE uuid = '${req.params.id}'`)
+            response.success(res, 'Success to soft delete obser', result)
+        } catch (error) {
+            console.log(error);
+            response.failed(res, 'Error to delete schedule observation list')
         }
     }
 }

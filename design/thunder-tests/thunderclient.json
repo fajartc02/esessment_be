@@ -20,12 +20,12 @@
     "method": "POST",
     "sortNum": 10000,
     "created": "2023-06-01T13:51:13.243Z",
-    "modified": "2023-06-01T16:22:25.868Z",
+    "modified": "2023-06-24T17:04:55.888Z",
     "headers": [],
     "params": [],
     "body": {
       "type": "json",
-      "raw": "{\n  \"noreg\": \"1527511\",\n  \"password\": \"toyota123\"\n}",
+      "raw": "{\n  \"noreg\": \"1629083\",\n  \"password\": \"toyota123\"\n}",
       "form": []
     },
     "tests": [
@@ -120,11 +120,11 @@
     "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
     "containerId": "0bb2929a-acf9-4a50-b511-09b1ebaf4f55",
     "name": "Lines",
-    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/lines/opts",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/lines",
     "method": "GET",
     "sortNum": 70000,
     "created": "2023-06-03T11:55:26.261Z",
-    "modified": "2023-06-03T11:55:54.033Z",
+    "modified": "2023-06-24T15:22:01.942Z",
     "headers": [],
     "params": [],
     "auth": {
@@ -179,11 +179,11 @@
     "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
     "containerId": "dd2c7379-7a73-40c9-944e-49937e9e5c83",
     "name": "Users",
-    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/users",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/users/opts",
     "method": "GET",
     "sortNum": 10000,
     "created": "2023-06-06T16:05:31.693Z",
-    "modified": "2023-06-06T16:07:14.596Z",
+    "modified": "2023-06-24T16:38:13.212Z",
     "headers": [],
     "params": [],
     "auth": {
@@ -317,13 +317,19 @@
     "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
     "containerId": "98db21fa-914b-48cf-abcb-ea389f855dcc",
     "name": "Pos",
-    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/pos",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/pos?line_id=74e48531-9896-4844-a3a5-4c5a9e6245a3",
     "method": "GET",
     "sortNum": 10000,
     "created": "2023-06-17T16:59:11.593Z",
-    "modified": "2023-06-17T16:59:31.044Z",
+    "modified": "2023-06-24T17:36:57.657Z",
     "headers": [],
-    "params": [],
+    "params": [
+      {
+        "name": "line_id",
+        "value": "74e48531-9896-4844-a3a5-4c5a9e6245a3",
+        "isPath": false
+      }
+    ],
     "auth": {
       "type": "bearer",
       "bearer": "{{token}}"
@@ -543,19 +549,804 @@
     "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
     "containerId": "c50a8036-ae41-4753-a609-022d1a106845",
     "name": "Machines",
-    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/machines?line_id=fd85482c-9e54-4832-96c8-321f574e8536",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/machines",
     "method": "GET",
     "sortNum": 10000,
     "created": "2023-06-18T08:00:36.089Z",
-    "modified": "2023-06-18T08:05:25.604Z",
+    "modified": "2023-06-24T16:48:42.312Z",
     "headers": [],
     "params": [
       {
         "name": "line_id",
         "value": "fd85482c-9e54-4832-96c8-321f574e8536",
+        "isDisabled": true,
         "isPath": false
       }
     ],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "cf497b25-7681-48b8-bd9c-3aea515d7349",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "f267b546-1e6f-4bbd-8d1e-6f6870cd7f75",
+    "name": "Add Category",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/categories",
+    "method": "POST",
+    "sortNum": 20000,
+    "created": "2023-06-24T14:20:01.008Z",
+    "modified": "2023-06-24T14:24:49.873Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"category_nm\": \"testing\",\n  \"category_desc\": \"desc testing\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "da8f9e6f-cb77-48fe-aa2b-1277c8dc1496",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "f267b546-1e6f-4bbd-8d1e-6f6870cd7f75",
+    "name": "Edit Category",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/categories/edit/e178a33a-ceb4-4dbe-9b10-adf3b375c3ba",
+    "method": "PUT",
+    "sortNum": 30000,
+    "created": "2023-06-24T14:25:46.109Z",
+    "modified": "2023-06-24T14:37:12.909Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"category_nm\": \"testing 2\",\n  \"category_desc\": \"desc testing\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "2e71daa3-c105-48e4-abff-cb442c1d4a02",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "f267b546-1e6f-4bbd-8d1e-6f6870cd7f75",
+    "name": "Delete Category",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/categories/delete/e178a33a-ceb4-4dbe-9b10-adf3b375c3ba",
+    "method": "DELETE",
+    "sortNum": 40000,
+    "created": "2023-06-24T14:36:48.643Z",
+    "modified": "2023-06-24T14:37:55.091Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "9f57530e-6e9d-48c3-ace2-96bb2fcd36fa",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "2f232237-a19f-4b76-b728-9ddd5af62122",
+    "name": "Add Factors",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/factors",
+    "method": "POST",
+    "sortNum": 20000,
+    "created": "2023-06-24T14:42:15.611Z",
+    "modified": "2023-06-24T14:44:04.864Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"factor_nm\": \"test factor\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "2c306704-bffb-4e3b-b6d7-9650f8782f00",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "2f232237-a19f-4b76-b728-9ddd5af62122",
+    "name": "Edit Factors",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/factors/edit/af5e0aa2-d7c3-4ff1-9f89-1a6b3c490470",
+    "method": "PUT",
+    "sortNum": 30000,
+    "created": "2023-06-24T14:45:38.752Z",
+    "modified": "2023-06-24T14:46:11.803Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"factor_nm\": \"test factor 1\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "6512853d-b124-41b4-a6cb-ed1dd038f377",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "2f232237-a19f-4b76-b728-9ddd5af62122",
+    "name": "Delete Factors",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/factors/delete/af5e0aa2-d7c3-4ff1-9f89-1a6b3c490470",
+    "method": "DELETE",
+    "sortNum": 40000,
+    "created": "2023-06-24T14:46:16.985Z",
+    "modified": "2023-06-24T14:46:33.711Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"factor_nm\": \"test factor 1\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "f5336209-e0d8-4b7e-96bc-c6dd9a86d519",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "2b4f414c-9e81-42aa-8c0c-8a3a18a14318",
+    "name": "Add Judgments",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/judgments",
+    "method": "POST",
+    "sortNum": 20000,
+    "created": "2023-06-24T14:49:44.853Z",
+    "modified": "2023-06-24T14:50:22.426Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"judgment_nm\": \"testing\",\n  \"is_abnormal\": false\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "8f6911e6-d600-4639-8390-9f63fb69be63",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "2b4f414c-9e81-42aa-8c0c-8a3a18a14318",
+    "name": "Edit Judgments",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/judgments/edit/dcb12fa6-0d1e-4d29-ab3d-7576c863ed2e",
+    "method": "PUT",
+    "sortNum": 30000,
+    "created": "2023-06-24T14:51:33.022Z",
+    "modified": "2023-06-24T14:52:32.888Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"judgment_nm\": \"test\",\n  \"is_abnormal\": false\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "7af17c06-06df-40d6-85fb-0d331f616386",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "2b4f414c-9e81-42aa-8c0c-8a3a18a14318",
+    "name": "Delete Judgments",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/judgments/delete/dcb12fa6-0d1e-4d29-ab3d-7576c863ed2e",
+    "method": "DELETE",
+    "sortNum": 40000,
+    "created": "2023-06-24T14:52:43.755Z",
+    "modified": "2023-06-24T14:52:55.315Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"judgment_nm\": \"test\",\n  \"is_abnormal\": false\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "7c61ad9c-1b5e-4206-8a46-d057b9d701ee",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "7bad9dbb-136f-42d5-82c1-79dc19fa4f98",
+    "name": "Companies",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/companies",
+    "method": "GET",
+    "sortNum": 10000,
+    "created": "2023-06-24T14:56:40.594Z",
+    "modified": "2023-06-24T14:56:53.728Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "689acbea-183c-4a29-9adc-f05705588deb",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "7bad9dbb-136f-42d5-82c1-79dc19fa4f98",
+    "name": "Add Company",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/companies",
+    "method": "POST",
+    "sortNum": 20000,
+    "created": "2023-06-24T14:56:40.595Z",
+    "modified": "2023-06-24T14:58:55.121Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"company_nm\": \"testing company\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "ee1293d1-1732-4f5e-a8d2-f49d473a02e2",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "7bad9dbb-136f-42d5-82c1-79dc19fa4f98",
+    "name": "Edit Company",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/companies/edit/7284b4ac-ec1b-466a-a4fe-8c36c2dcb6be",
+    "method": "PUT",
+    "sortNum": 30000,
+    "created": "2023-06-24T14:56:40.596Z",
+    "modified": "2023-06-24T15:00:07.845Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"company_nm\": \"testing company 1\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "2d2fa40f-c9fa-4da4-9856-b56bf7febede",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "7bad9dbb-136f-42d5-82c1-79dc19fa4f98",
+    "name": "Delete Company",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/companies/delete/7284b4ac-ec1b-466a-a4fe-8c36c2dcb6be",
+    "method": "DELETE",
+    "sortNum": 40000,
+    "created": "2023-06-24T14:56:40.597Z",
+    "modified": "2023-06-24T15:00:38.874Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "3ada1fb0-c920-4c63-b26f-609aa85f11fd",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "34b43304-f110-4aab-b8ec-415c6792a150",
+    "name": "Plants",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/plants",
+    "method": "GET",
+    "sortNum": 10000,
+    "created": "2023-06-24T15:05:59.475Z",
+    "modified": "2023-06-24T15:06:14.240Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "df07005d-b797-4b4d-aad2-defe82344b53",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "34b43304-f110-4aab-b8ec-415c6792a150",
+    "name": "Add Plant",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/plants",
+    "method": "POST",
+    "sortNum": 20000,
+    "created": "2023-06-24T15:05:59.476Z",
+    "modified": "2023-06-24T15:07:10.692Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"plant_nm\": \"testing plant\",\n  \"company_id\": \"6a698c03-9f92-4db1-b7a2-399b0b2b2157\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "6b8ca13c-e3ab-47ee-8ef7-ec803aa0593c",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "34b43304-f110-4aab-b8ec-415c6792a150",
+    "name": "Edit Plant",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/plants/edit/6447011d-53eb-4cf4-998a-e6d16ab6935b",
+    "method": "PUT",
+    "sortNum": 30000,
+    "created": "2023-06-24T15:05:59.477Z",
+    "modified": "2023-06-24T15:08:32.125Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"plant_nm\": \"testing plant 1\",\n  \"company_id\": \"7284b4ac-ec1b-466a-a4fe-8c36c2dcb6be\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "fc9e6496-1496-43b3-9530-2914afcb8811",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "34b43304-f110-4aab-b8ec-415c6792a150",
+    "name": "Delete Plant",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/plants/delete/6447011d-53eb-4cf4-998a-e6d16ab6935b",
+    "method": "DELETE",
+    "sortNum": 40000,
+    "created": "2023-06-24T15:05:59.478Z",
+    "modified": "2023-06-24T15:09:02.212Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "22e4d800-0f4c-423f-8a20-3697aab3aa08",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "3d0be541-c952-4a98-891b-c1310f9cddcc",
+    "name": "Shops",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/shops",
+    "method": "GET",
+    "sortNum": 10000,
+    "created": "2023-06-24T15:12:27.512Z",
+    "modified": "2023-06-24T15:12:39.389Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "5fe4f717-6533-4e16-be61-68986b1d9c5a",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "3d0be541-c952-4a98-891b-c1310f9cddcc",
+    "name": "Add Shop",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/shops",
+    "method": "POST",
+    "sortNum": 20000,
+    "created": "2023-06-24T15:12:27.513Z",
+    "modified": "2023-06-24T15:14:40.150Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"shop_nm\": \"testing shop\",\n  \"plant_id\": \"6447011d-53eb-4cf4-998a-e6d16ab6935b\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "97a3ded8-ed6d-486e-82df-483ed64653ed",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "3d0be541-c952-4a98-891b-c1310f9cddcc",
+    "name": "Edit Plant",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/shops/edit/6d69f66e-8264-4b38-bad7-5b54a87131ba",
+    "method": "PUT",
+    "sortNum": 30000,
+    "created": "2023-06-24T15:12:27.514Z",
+    "modified": "2023-06-24T15:20:14.563Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"shop_nm\": \"testing shop 1\",\n  \"plant_id\": \"6447011d-53eb-4cf4-998a-e6d16ab6935b\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "a646c0ae-426c-4970-9142-fe3044c599e8",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "3d0be541-c952-4a98-891b-c1310f9cddcc",
+    "name": "Delete Plant",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/shops/delete/6d69f66e-8264-4b38-bad7-5b54a87131ba",
+    "method": "DELETE",
+    "sortNum": 40000,
+    "created": "2023-06-24T15:12:27.515Z",
+    "modified": "2023-06-24T15:21:02.641Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "f03fae4d-24c1-4178-8652-26029cf54056",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "0bb2929a-acf9-4a50-b511-09b1ebaf4f55",
+    "name": "Add Line",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/lines",
+    "method": "POST",
+    "sortNum": 80000,
+    "created": "2023-06-24T15:28:45.922Z",
+    "modified": "2023-06-24T15:29:53.081Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"line_nm\": \"test line\",\n  \"line_snm\": \"tl\",\n  \"line_desc\": \"tes dsc\",\n  \"shop_id\": \"6d69f66e-8264-4b38-bad7-5b54a87131ba\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "a404bbfe-a8dc-48db-8d09-46022e1d5441",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "0bb2929a-acf9-4a50-b511-09b1ebaf4f55",
+    "name": "Edit Line",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/lines/edit/02cb08dd-0e17-46fe-8113-ee78336199e6",
+    "method": "PUT",
+    "sortNum": 90000,
+    "created": "2023-06-24T15:31:10.715Z",
+    "modified": "2023-06-24T15:33:00.335Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"line_nm\": \"test line 1\",\n  \"line_snm\": \"tl 1\",\n  \"line_desc\": \"tes dsc 1\",\n  \"shop_id\": \"f371d51c-729f-46b8-b1c1-dafd520380fb\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "6b097cbf-7b92-495c-b93c-8fd3e20c279f",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "0bb2929a-acf9-4a50-b511-09b1ebaf4f55",
+    "name": "Delete Line",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/lines/delete/02cb08dd-0e17-46fe-8113-ee78336199e6",
+    "method": "DELETE",
+    "sortNum": 100000,
+    "created": "2023-06-24T15:33:15.115Z",
+    "modified": "2023-06-24T15:33:39.550Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "1354b4ad-4be5-4caf-ac55-c3ce1be3048a",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "dd2c7379-7a73-40c9-944e-49937e9e5c83",
+    "name": "Add Users",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/users/edit/f2247616-8a40-4c0f-bbd2-33b059e834ad",
+    "method": "PUT",
+    "sortNum": 20000,
+    "created": "2023-06-24T15:41:26.420Z",
+    "modified": "2023-06-24T15:44:39.084Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"line_id\": \"74e48531-9896-4844-a3a5-4c5a9e6245a3\",\n  \"group_id\": \"36ad3451-e2fe-4b50-84b0-2d6ca942ae1e\",\n  \"fullname\": \"Fajar Tri Cahyono 1\",\n  \"noreg\": \"1629083\",\n  \"phone_number\": \"08123\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "85728195-fcb2-4aa7-b6d8-df0e82f54a8f",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "dd2c7379-7a73-40c9-944e-49937e9e5c83",
+    "name": "Delete Users",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/users/delete/f2247616-8a40-4c0f-bbd2-33b059e834ad",
+    "method": "DELETE",
+    "sortNum": 30000,
+    "created": "2023-06-24T15:44:51.660Z",
+    "modified": "2023-06-24T15:45:06.197Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "975d54e5-48c7-4ca3-9f1e-c5b9f22f4076",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "3771dc77-91c8-44eb-b4fc-e0f3cdd73f9a",
+    "name": "Add Group",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/groups",
+    "method": "POST",
+    "sortNum": 20000,
+    "created": "2023-06-24T16:44:25.254Z",
+    "modified": "2023-06-24T16:44:56.924Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"group_nm\": \"Test\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "25d5c075-6203-45ec-8568-ddf7ca4dd364",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "3771dc77-91c8-44eb-b4fc-e0f3cdd73f9a",
+    "name": "Edit Group",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/groups/edit/822ea1d3-174c-42f2-b86b-2bdb50480097",
+    "method": "PUT",
+    "sortNum": 30000,
+    "created": "2023-06-24T16:45:36.154Z",
+    "modified": "2023-06-24T16:46:24.605Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"group_nm\": \"Test 1\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "1870fa39-164d-47a2-b920-04001c50b323",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "3771dc77-91c8-44eb-b4fc-e0f3cdd73f9a",
+    "name": "Delete Group",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/groups/delete/822ea1d3-174c-42f2-b86b-2bdb50480097",
+    "method": "DELETE",
+    "sortNum": 40000,
+    "created": "2023-06-24T16:46:47.974Z",
+    "modified": "2023-06-24T16:47:12.860Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "edbd3948-15cf-42ba-9ea7-c6edf359bfb3",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "c50a8036-ae41-4753-a609-022d1a106845",
+    "name": "Add Machine",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/machines",
+    "method": "POST",
+    "sortNum": 20000,
+    "created": "2023-06-24T16:58:55.716Z",
+    "modified": "2023-06-24T17:00:26.274Z",
+    "headers": [],
+    "params": [
+      {
+        "name": "line_id",
+        "value": "fd85482c-9e54-4832-96c8-321f574e8536",
+        "isDisabled": true,
+        "isPath": false
+      }
+    ],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"line_id\": \"74e48531-9896-4844-a3a5-4c5a9e6245a3\",\n  \"machine_nm\": \"test\",\n  \"op_no\": \"OPTEST\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "a49a6f98-410c-4f50-929d-77deaf462039",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "c50a8036-ae41-4753-a609-022d1a106845",
+    "name": "Edit Machine",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/machines/edit/2e3368f1-fbe2-4849-8eb2-4be9835325d8",
+    "method": "PUT",
+    "sortNum": 30000,
+    "created": "2023-06-24T17:01:55.504Z",
+    "modified": "2023-06-24T17:02:35.678Z",
+    "headers": [],
+    "params": [
+      {
+        "name": "line_id",
+        "value": "fd85482c-9e54-4832-96c8-321f574e8536",
+        "isDisabled": true,
+        "isPath": false
+      }
+    ],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"line_id\": \"02cb08dd-0e17-46fe-8113-ee78336199e6\",\n  \"machine_nm\": \"test 1\",\n  \"op_no\": \"OPTEST 1\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "b5bf2ab7-0635-43a3-bc9f-401ecb773ad4",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "c50a8036-ae41-4753-a609-022d1a106845",
+    "name": "Delete Machine",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/machines/delete/2e3368f1-fbe2-4849-8eb2-4be9835325d8",
+    "method": "DELETE",
+    "sortNum": 40000,
+    "created": "2023-06-24T17:02:50.067Z",
+    "modified": "2023-06-24T17:03:06.593Z",
+    "headers": [],
+    "params": [
+      {
+        "name": "line_id",
+        "value": "fd85482c-9e54-4832-96c8-321f574e8536",
+        "isDisabled": true,
+        "isPath": false
+      }
+    ],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "4f1c510f-4c97-4fc8-8db8-18283b262e67",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "7da9c938-ab08-4527-98db-4b828dbca07a",
+    "name": "Job Types",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/jobType",
+    "method": "GET",
+    "sortNum": 120000,
+    "created": "2023-06-24T17:09:25.289Z",
+    "modified": "2023-06-24T17:10:05.312Z",
+    "headers": [],
+    "params": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "cc85bc6a-1697-485b-9eb3-246aabd216cc",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "7da9c938-ab08-4527-98db-4b828dbca07a",
+    "name": "Add Job Types",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/jobType",
+    "method": "POST",
+    "sortNum": 130000,
+    "created": "2023-06-24T17:14:21.259Z",
+    "modified": "2023-06-24T17:15:12.509Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"job_type_nm\": \"test\",\n  \"colors\": \"warning\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "af69a69d-a1d4-4c34-bded-14a28528a9a5",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "7da9c938-ab08-4527-98db-4b828dbca07a",
+    "name": "Edit Job Types",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/jobType/edit/3c93831f-02b4-4f28-a0c7-07b7f2295ed1",
+    "method": "PUT",
+    "sortNum": 140000,
+    "created": "2023-06-24T17:16:23.099Z",
+    "modified": "2023-06-24T17:16:47.652Z",
+    "headers": [],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n  \"job_type_nm\": \"test 1\",\n  \"colors\": \"primary\"\n}",
+      "form": []
+    },
+    "auth": {
+      "type": "bearer",
+      "bearer": "{{token}}"
+    },
+    "tests": []
+  },
+  {
+    "_id": "78da5ab8-e728-4713-98c3-bf1f4beb84ef",
+    "colId": "6a3031d4-bd12-41c7-9e95-956fc0d97488",
+    "containerId": "7da9c938-ab08-4527-98db-4b828dbca07a",
+    "name": "Delete Job Types",
+    "url": "{{protocol}}{{hostname}}{{apiVersion}}/master/jobType/delete/3c93831f-02b4-4f28-a0c7-07b7f2295ed1",
+    "method": "DELETE",
+    "sortNum": 150000,
+    "created": "2023-06-24T17:17:06.022Z",
+    "modified": "2023-06-24T17:17:22.994Z",
+    "headers": [],
+    "params": [],
     "auth": {
       "type": "bearer",
       "bearer": "{{token}}"

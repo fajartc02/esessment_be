@@ -8,6 +8,7 @@ const uuidToId = require('../../helpers/uuidToId')
 const attrsUserInsertData = require('../../helpers/addAttrsUserInsertData')
 const attrsUserUpdateData = require('../../helpers/addAttrsUserUpdateData')
 const condDataNotDeleted = `WHERE tmp.deleted_dt IS NULL`
+const orderBy = `ORDER BY tmp.pos_nm ASC`
 
 const fs = require('fs')
 
@@ -17,8 +18,8 @@ module.exports = {
         try {
             let { id, line_id } = req.query
             let containerQuery = ''
-            if (id) containerQuery += ` AND tmp.uuid = '${id}'`
-            if (line_id) containerQuery += ` AND tml.uuid = '${line_id}'`
+            if (id && id != -1 && id != 'null') containerQuery += ` AND tmp.uuid = '${id}'`
+            if (line_id && line_id != -1 && line_id != 'null') containerQuery += ` AND tml.uuid = '${line_id}'`
             let q = `
                 SELECT 
                     tmp.uuid as id,
@@ -33,7 +34,7 @@ module.exports = {
                 JOIN ${table.tb_m_lines} tml ON tmp.line_id = tml.line_id
                 ${condDataNotDeleted}
                 ${containerQuery}
-                ORDER BY tmp.pos_id ASC
+                ${orderBy}
             `
             const pos = await queryCustom(q)
             response.success(res, 'Success to get pos', pos.rows)
@@ -44,6 +45,8 @@ module.exports = {
     },
     postPos: async(req, res) => {
         try {
+            let tsk = req.files.tsk
+            let tskk = req.files.tskk
             console.log('TSK', req.files.tsk);
             console.log('TSKK', req.files.tskk);
             let idLast = await getLastIdData(table.tb_m_pos, 'pos_id') + 1
@@ -53,8 +56,12 @@ module.exports = {
             req.body.line_id = convertUUID
             let attrsUserInsert = await attrsUserInsertData(req, req.body)
             console.log(attrsUserInsert);
-            req.body.tsk = `./${req.files.tsk[0].path}`
-            req.body.tskk = `./${req.files.tskk[0].path}`
+            if (tsk) {
+                req.body.tsk = `./${req.files.tsk[0].path}`
+            }
+            if (tskk) {
+                req.body.tskk = `./${req.files.tskk[0].path}`
+            }
             delete req.body.dest
             const result = await queryPOST(table.tb_m_pos, attrsUserInsert)
             response.success(res, 'Success to add pos', result)

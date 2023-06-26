@@ -12,49 +12,53 @@ const moment = require('moment')
 
 
 module.exports = {
-    getFactorsOpts: async(req, res) => {
+    getPlants: async(req, res) => {
         try {
-            const factors = await queryGET(table.tb_m_factors, `WHERE ${condDataNotDeleted}`, ['uuid as id', 'factor_nm as text', 'created_by', 'created_dt'])
-            response.success(res, 'Success to get factors', factors)
+            const plants = await queryGET(table.tb_m_plants, `WHERE ${condDataNotDeleted}`, ['uuid as id', 'plant_nm', 'created_by', 'created_dt'])
+            response.success(res, 'Success to get plants', plants)
         } catch (error) {
             console.log(error);
-            response.failed(res, 'Error to get factors')
+            response.failed(res, 'Error to get plants')
         }
     },
-    postFactor: async(req, res) => {
+    postPlant: async(req, res) => {
         try {
-            let idLast = await getLastIdData(table.tb_m_factors, 'factor_id') + 1
-            req.body.factor_id = idLast
+            let idLast = await getLastIdData(table.tb_m_plants, 'plant_id') + 1
+            req.body.plant_id = idLast
             req.body.uuid = req.uuid()
-
+            let idCompany = await uuidToId(table.tb_m_companies, 'company_id', req.body.company_id)
+            req.body.company_id = idCompany
             let attrsUserInsert = await attrsUserInsertData(req, req.body)
-            const result = await queryPOST(table.tb_m_factors, attrsUserInsert)
-            response.success(res, 'Success to add factor', result)
+            const result = await queryPOST(table.tb_m_plants, attrsUserInsert)
+            response.success(res, 'Success to add plant', result)
         } catch (error) {
             console.log(error);
             response.failed(res, error)
         }
     },
-    editFactor: async(req, res) => {
+    editPlant: async(req, res) => {
         try {
-            let id = await uuidToId(table.tb_m_factors, 'factor_id', req.params.id)
+            let id = await uuidToId(table.tb_m_plants, 'plant_id', req.params.id)
+            let idCompany = await uuidToId(table.tb_m_companies, 'company_id', req.body.company_id)
+            req.body.company_id = idCompany
+
             const attrsUserUpdate = await attrsUserUpdateData(req, req.body)
-            const result = await queryPUT(table.tb_m_factors, attrsUserUpdate, `WHERE factor_id = '${id}'`)
-            response.success(res, 'Success to edit factor', result)
+            const result = await queryPUT(table.tb_m_plants, attrsUserUpdate, `WHERE plant_id = '${id}'`)
+            response.success(res, 'Success to edit plant', result)
         } catch (error) {
             console.log(error);
             response.failed(res, error)
         }
     },
-    deleteFactor: async(req, res) => {
+    deletePlant: async(req, res) => {
         try {
             let obj = {
                 deleted_dt: moment().format().split('+')[0].split('T').join(' '),
                 deleted_by: req.user.fullname
             }
             let attrsUserUpdate = await attrsUserUpdateData(req, obj)
-            const result = await queryPUT(table.tb_m_factors, attrsUserUpdate, `WHERE uuid = '${req.params.id}'`)
-            response.success(res, 'Success to soft delete factor', result)
+            const result = await queryPUT(table.tb_m_plants, attrsUserUpdate, `WHERE uuid = '${req.params.id}'`)
+            response.success(res, 'Success to soft delete plant', result)
         } catch (error) {
             console.log(error);
             response.failed(res, error)
