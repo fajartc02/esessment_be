@@ -45,9 +45,11 @@ module.exports = {
     },
     getObservationScheduleList: async(req, res) => {
         try {
-            let { id } = req.query
+            let { id, line, month, year } = req.query
             let containerQuery = ''
             if (id) containerQuery += ` AND tro.uuid = '${id}'`
+            if (month && year) containerQuery = `AND (EXTRACT(month from  tro.plan_check_dt), EXTRACT('year' from tro.plan_check_dt))=(${+month},${+year})`
+            if (line != "0" && line && line != -1) containerQuery += ` AND tml.line_id = ${await uuidToId(table.tb_m_lines, 'line_id', line)}`
             let observationList = await queryCustom(`
                 SELECT 
                     tro.uuid as id,
@@ -75,6 +77,7 @@ module.exports = {
                 WHERE tro.${condDataNotDeleted}
                 ${containerQuery}
             `)
+            console.log(containerQuery);
             let mapObsCheckers = await observationList.rows.map(async obs => {
                 let obsUuidtoId = await uuidToId(table.tb_r_observations, 'observation_id', obs.id)
                 let checkers = await queryGET(table.tb_r_obs_checker, `WHERE observation_id = '${obsUuidtoId}'`, ['uuid as id', 'checker_nm'])
@@ -317,5 +320,5 @@ module.exports = {
             console.log(error);
             response.failed(res, 'Error to delete schedule observation list')
         }
-    }
+    },
 }

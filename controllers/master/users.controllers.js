@@ -4,6 +4,8 @@ const { queryPOST, queryPUT, queryGET } = require('../../helpers/query')
 const response = require('../../helpers/response')
 const getLastIdData = require('../../helpers/getLastIdData')
 const uuidToId = require('../../helpers/uuidToId')
+const idToUuid = require('../../helpers/idToUuid')
+const security = require('../../helpers/security')
 const attrsUserInsertData = require('../../helpers/addAttrsUserInsertData')
 const attrsUserUpdateData = require('../../helpers/addAttrsUserUpdateData')
 const condDataNotDeleted = `deleted_dt IS NULL`
@@ -13,8 +15,12 @@ const moment = require('moment')
 module.exports = {
     getUsersOpts: async(req, res) => {
         try {
-            let { line_id, group_id } = req.query
+            let { id, line_id, group_id, isForm } = req.query
             let containerQuery = ``
+            if (id && id != -1 && id != 'null') {
+                let idUser = await uuidToId(table.tb_m_users, 'user_id', id)
+                containerQuery += ` AND user_id = ${idUser}`
+            }
             if (line_id && line_id != -1 && line_id != 'null') {
                 let idLine = await uuidToId(table.tb_m_lines, 'line_id', line_id)
                 containerQuery += ` AND line_id = ${idLine}`
@@ -23,8 +29,18 @@ module.exports = {
                 let idGroup = await uuidToId(table.tb_m_groups, 'group_id', group_id)
                 containerQuery += ` AND group_id = ${idGroup}`
             }
-            const users = await queryGET(table.tb_m_users, `WHERE ${condDataNotDeleted}${containerQuery}`, ['uuid as id', 'noreg', 'fullname as text', 'created_by', 'created_dt'])
+            let cols = ['uuid as id', 'noreg', 'fullname as text', 'created_by', 'created_dt']
+            if (isForm) {
+                cols = ['uuid as id', 'line_id', 'group_id', 'noreg', 'fullname', 'password', 'phone_number']
+                const users = await queryGET(table.tb_m_users, `WHERE ${condDataNotDeleted}${containerQuery}`, cols)
+                users[0].line_id = await idToUuid(table.tb_m_lines, 'line_id', users[0].line_id)
+                users[0].group_id = await idToUuid(table.tb_m_groups, 'group_id', users[0].group_id)
+                response.success(res, 'Success to get users', users)
+                return;
+            }
+            const users = await queryGET(table.tb_m_users, `WHERE ${condDataNotDeleted}${containerQuery}`, cols)
             response.success(res, 'Success to get users', users)
+
         } catch (error) {
             console.log(error);
             response.failed(res, 'Error to get users')
@@ -35,6 +51,8 @@ module.exports = {
             let idLast = await getLastIdData(table.tb_m_users, 'user_id') + 1
             req.body.user_id = idLast
             req.body.uuid = req.uuid()
+            let unreadPassword = await security.encryptPassword(req.body.password)
+            req.body.password = unreadPassword
 
             let idLine = await uuidToId(table.tb_m_lines, 'line_id', req.body.line_id)
             let idGroup = await uuidToId(table.tb_m_groups, 'group_id', req.body.group_id)
@@ -51,11 +69,14 @@ module.exports = {
     },
     editUser: async(req, res) => {
         try {
+            console.log(req.body);
             let id = await uuidToId(table.tb_m_users, 'user_id', req.params.id)
             let idLine = await uuidToId(table.tb_m_lines, 'line_id', req.body.line_id)
             let idGroup = await uuidToId(table.tb_m_groups, 'group_id', req.body.group_id)
             req.body.line_id = idLine
             req.body.group_id = idGroup
+            let unreadPassword = await security.encryptPassword(req.body.password)
+            req.body.password = unreadPassword
 
             const attrsUserUpdate = await attrsUserUpdateData(req, req.body)
             const result = await queryPUT(table.tb_m_users, attrsUserUpdate, `WHERE user_id = '${id}'`)

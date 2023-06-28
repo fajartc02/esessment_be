@@ -14,11 +14,14 @@ const moment = require('moment')
 module.exports = {
     getMachines: async(req, res) => {
         try {
-            const { line_id } = req.query
+            const { line_id, id } = req.query
             let containerQuery = ``
             if (line_id) {
                 let convertLineUUID = await uuidToId(table.tb_m_lines, 'line_id', line_id)
                 containerQuery += ` AND tml.line_id = '${convertLineUUID}'`
+            }
+            if (id) {
+                containerQuery += ` AND tmm.uuid = '${id}'`
             }
             let q = `SELECT 
                 tmm.uuid as id,

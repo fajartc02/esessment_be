@@ -4,6 +4,7 @@ const { queryGET, queryPOST, queryPUT } = require('../../helpers/query')
 const response = require('../../helpers/response')
 const getLastIdData = require('../../helpers/getLastIdData')
 const uuidToId = require('../../helpers/uuidToId')
+const idToUuid = require('../../helpers/idToUuid')
 const attrsUserInsertData = require('../../helpers/addAttrsUserInsertData')
 const attrsUserUpdateData = require('../../helpers/addAttrsUserUpdateData')
 const condDataNotDeleted = `deleted_dt IS NULL`
@@ -14,7 +15,21 @@ const moment = require('moment')
 module.exports = {
     getLinesOpts: async(req, res) => {
         try {
-            const lines = await queryGET(table.tb_m_lines, `WHERE ${condDataNotDeleted}`, ['uuid as id', 'line_nm', 'line_snm', 'created_by', 'created_dt'])
+            let { id, isForm } = req.query
+            let containerQuery = ''
+            let cols = ['uuid as id', 'line_nm', 'line_snm', 'line_desc', 'shop_id', 'created_by', 'created_dt']
+            if (id && id != -1 && id != 'null') {
+                let line_id = await uuidToId(table.tb_m_lines, 'line_id', id)
+                containerQuery += ` AND line_id = ${line_id}`
+            }
+            if (isForm && isForm != -1 && isForm != 'null') {
+                cols = ['uuid as id', 'line_nm', 'line_snm', 'line_desc', 'shop_id']
+                const lines = await queryGET(table.tb_m_lines, `WHERE ${condDataNotDeleted}${containerQuery}`, cols)
+                lines[0].shop_id = await idToUuid(table.tb_m_shop, 'shop_id', lines[0].shop_id)
+                response.success(res, 'Success to get Lines', lines)
+                return
+            }
+            const lines = await queryGET(table.tb_m_lines, `WHERE ${condDataNotDeleted}${containerQuery}`, cols)
             response.success(res, 'Success to get Lines', lines)
         } catch (error) {
             console.log(error);

@@ -9,7 +9,7 @@ const uuidToId = require('../../helpers/uuidToId')
 const attrsUserInsertData = require('../../helpers/addAttrsUserInsertData')
 const attrsUserUpdateData = require('../../helpers/addAttrsUserUpdateData')
 const condDataNotDeleted = `WHERE tmj.deleted_dt IS NULL`
-const orderBy = `ORDER BY tmj.created_dt ASC`
+const orderBy = `ORDER BY tmj.created_dt DESC`
 
 
 module.exports = {
@@ -71,6 +71,7 @@ module.exports = {
             req.body.pos_id = await uuidToId(table.tb_m_pos, 'pos_id', req.body.pos_id)
                 // console.log(req.file);
             if (req.file) {
+                log
                 req.body.attachment = `./${req.file.path}`
                 delete req.body.attachment
             }
@@ -93,19 +94,23 @@ module.exports = {
                 req.body.machine_id = null
                 delete req.body.machine_id
             }
+            console.log(req.file);
             req.body.job_type_id = await uuidToId(table.tb_m_job_types, 'job_type_id', req.body.job_type_id)
             req.body.pos_id = await uuidToId(table.tb_m_pos, 'pos_id', req.body.pos_id)
             if (req.file) {
                 const jobs = await queryGET(table.tb_m_jobs, `WHERE uuid = '${req.params.id}'`, ['attachment'])
-                const prevDest = jobs[0].attachment
-                fs.unlink(prevDest, function(err) {
-                    console.log(err);
-                })
+                let isFileExist = jobs[0].attachment
+                if (isFileExist) {
+                    fs.unlink(isFileExist, function(err) {
+                        console.log(err);
+                    })
+                }
+                console.log(req.file);
                 req.body.attachment = `./${req.file.path}`
             }
             delete req.body.dest
             const attrsUserUpdate = await attrsUserUpdateData(req, req.body)
-
+            console.log(req.body);
             const result = await queryPUT(table.tb_m_jobs, attrsUserUpdate, `WHERE uuid = '${req.params.id}'`)
             response.success(res, 'Success to edit job', result)
         } catch (error) {
