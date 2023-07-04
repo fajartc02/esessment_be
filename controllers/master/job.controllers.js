@@ -58,6 +58,7 @@ module.exports = {
             /* 
                 pos_id,job_type_id,machine_id, job_nm, attachment, job_no, 
             */
+            console.log(req.body);
             let idLast = await getLastIdData(table.tb_m_jobs, 'job_id') + 1
             req.body.job_id = idLast
             req.body.uuid = req.uuid()
@@ -71,9 +72,7 @@ module.exports = {
             req.body.pos_id = await uuidToId(table.tb_m_pos, 'pos_id', req.body.pos_id)
                 // console.log(req.file);
             if (req.file) {
-                log
                 req.body.attachment = `./${req.file.path}`
-                delete req.body.attachment
             }
             delete req.body.dest
 
