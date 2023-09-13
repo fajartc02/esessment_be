@@ -36,7 +36,7 @@ module.exports = {
                     return checker
                 })
                 // INSERT TO tb_r_obs_checker
-            
+
             await queryBulkPOST(table.tb_r_obs_checker, mapCheckers)
             response.success(res, 'Success to add schedule observation', observation.rows)
         } catch (error) {
@@ -46,6 +46,7 @@ module.exports = {
     },
     getObservationScheduleList: async(req, res) => {
         try {
+            console.log('MASUUUUK');
             let { id, line, month, year } = req.query
             let containerQuery = ''
             if (id) containerQuery += ` AND tro.uuid = '${id}'`
@@ -83,9 +84,10 @@ module.exports = {
                 let obsUuidtoId = await uuidToId(table.tb_r_observations, 'observation_id', obs.id)
                 let checkers = await queryGET(table.tb_r_obs_checker, `WHERE observation_id = '${obsUuidtoId}'`, ['uuid as id', 'checker_nm'])
                 obs.checkers = checkers
-                // console.log();
-                
-                obs.plan_check_dt = moment(obs.plan_check_dt).format('DD-MM-YYYY')
+                    // console.log();
+                console.log(obs);
+                obs.plan_check_dt = moment(obs.plan_check_dt).format('YYYY-MM-DD')
+                obs.actual_check_dt = obs.actual_check_dt ? moment(obs.actual_check_dt).format('YYYY-MM-DD') : null
                 return obs
             })
             const waitObser = await Promise.all(mapObsCheckers)
@@ -171,7 +173,7 @@ module.exports = {
     },
     getDetailObservation: async(req, res) => {
         try {
-            const obser = await queryCustom(`
+            let obser = await queryCustom(`
                 SELECT 
                     tro.uuid as observation_id,
                     tmp.uuid as pos_id,
@@ -209,14 +211,21 @@ module.exports = {
                 WHERE 
                     ${'tro.' + condDataNotDeleted}
                     AND tro.uuid = '${req.params.id}'`)
+            await obser.rows.map(itm => {
+                itm.plan_check_dt = moment(itm.plan_check_dt).format('YYYY-MM-DD')
+                itm.actual_check_dt = moment(itm.actual_check_dt).format('YYYY-MM-DD')
+                return itm
+            })
             const obsId = await uuidToId(table.tb_r_observations, 'observation_id', req.params.id)
             let resChecks = await queryGET(table.tb_r_obs_results, `WHERE observation_id = ${obsId}`, ['category_id', 'judgment_id', 'factor_id', 'findings'])
             let mapChecks = await resChecks.map(async check => {
                 check.category_id = await idToUuid(table.tb_m_categories, 'category_id', check.category_id)
                 if (check.factor_id) check.factor_id = await idToUuid(table.tb_m_factors, 'factor_id', check.factor_id)
                 check.judgment_id = await idToUuid(table.tb_m_judgments, 'judgment_id', check.judgment_id)
+                console.log(check);
                 return check
             })
+
             const waitResChecks = await Promise.all(mapChecks)
             console.log(waitResChecks);
             obser.rows.push(waitResChecks)
@@ -307,7 +316,7 @@ module.exports = {
             await queryPUT(table.tb_r_observations, attrsUserUpd, `WHERE observation_id = '${obsId}'`)
             console.log(resInstCheck);
             response.success(res, 'Success to add CHECK observation')
-        } catch (error) {   
+        } catch (error) {
             console.log(error);
             response.failed(res, 'Error to add CHECK observation')
         }
