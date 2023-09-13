@@ -17,7 +17,9 @@ const register = async(req, res) => {
         req.body.line_id = await uuidToId(tb_m_lines, 'line_id', req.body.line_id)
         req.body.group_id = await uuidToId(tb_m_groups, 'group_id', req.body.group_id)
         req.body.is_activated = false
-        console.log(req.body);
+        delete req.body.id
+        delete req.body.text  
+        console.log(req.body);  
         await queryPOST(tb_m_users, req.body)
             .then((result) => {
                 response.success(res, 'Success to create User', result)

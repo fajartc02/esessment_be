@@ -23,8 +23,8 @@ module.exports = {
 
             const lastIdChecker = await getLastIdData(table.tb_r_obs_checker, 'obs_checker_id') + 1
             const checkers = req.body.checkers
-            delete req.body.checkers
                 // INSERT TO tb_r_observation
+            delete req.body.checkers
             const addAttrsUserInst = await attrsUserInsertData(req, req.body)
             const observation = await queryPOST(table.tb_r_observations, addAttrsUserInst)
 
@@ -36,6 +36,7 @@ module.exports = {
                     return checker
                 })
                 // INSERT TO tb_r_obs_checker
+            
             await queryBulkPOST(table.tb_r_obs_checker, mapCheckers)
             response.success(res, 'Success to add schedule observation', observation.rows)
         } catch (error) {
@@ -82,9 +83,13 @@ module.exports = {
                 let obsUuidtoId = await uuidToId(table.tb_r_observations, 'observation_id', obs.id)
                 let checkers = await queryGET(table.tb_r_obs_checker, `WHERE observation_id = '${obsUuidtoId}'`, ['uuid as id', 'checker_nm'])
                 obs.checkers = checkers
+                // console.log();
+                
+                obs.plan_check_dt = moment(obs.plan_check_dt).format('DD-MM-YYYY')
                 return obs
             })
             const waitObser = await Promise.all(mapObsCheckers)
+            console.log(waitObser);
             response.success(res, 'Success to get schedule observation list', waitObser)
         } catch (error) {
             console.log(error);
@@ -96,7 +101,7 @@ module.exports = {
             const { month, year, line } = req.query
             let whereCond = ``
             if (month && year) whereCond = `AND (EXTRACT(month from  tro.plan_check_dt), EXTRACT('year' from tro.plan_check_dt))=(${+month},${+year})`
-            if (line != "0" && line && line != -1) whereCond += ` AND tmm.line_id = ${await uuidToId(table.tb_m_lines, 'line_id', line)}`
+            if (line != "0" && line && line != -1) whereCond += ` AND tmp.line_id = ${await uuidToId(table.tb_m_lines, 'line_id', line)}`
             let observations = await queryCustom(`
                 SELECT 
                     tro.uuid as observation_id,
@@ -116,22 +121,24 @@ module.exports = {
                     EXTRACT('day' from  tro.plan_check_dt) as idxDate,
                     tro.deleted_dt
                 FROM ${table.tb_r_observations} tro
-                JOIN ${table.tb_m_pos} tmp
+                LEFT JOIN ${table.tb_m_pos} tmp
                     ON tro.pos_id = tmp.pos_id
-                JOIN ${table.tb_m_groups} tmg
+                LEFT JOIN ${table.tb_m_groups} tmg
                     ON tro.group_id = tmg.group_id
-                JOIN ${table.tb_m_jobs} tmj
+                LEFT JOIN ${table.tb_m_jobs} tmj
                     ON tro.job_id = tmj.job_id
-                JOIN ${table.tb_m_machines} tmm
+                LEFT JOIN ${table.tb_m_machines} tmm
                     ON tmj.machine_id = tmm.machine_id
-                JOIN ${table.tb_m_job_types} tmjt
+                LEFT JOIN ${table.tb_m_job_types} tmjt
                     ON tmj.job_type_id = tmjt.job_type_id
-                JOIN ${table.tb_m_lines} tml
-                    ON tml.line_id = tmm.line_id
+                LEFT JOIN ${table.tb_m_lines} tml
+                    ON tml.line_id = tmp.line_id
                 WHERE 
                     ${'tro.' + condDataNotDeleted}
                     ${whereCond}
+                ORDER BY tml.line_nm,tmp.pos_nm ASC
             `)
+            console.log(whereCond);
             console.log(`${'tro.' + condDataNotDeleted}`);
             let mapObs = observations.rows.map(async obser => {
                 let obserId = await uuidToId(table.tb_r_observations, 'observation_id', obser.observation_id)
@@ -187,22 +194,21 @@ module.exports = {
                     tro.actual_check_dt,
                     EXTRACT('day' from  tro.plan_check_dt) as idxDate
                 FROM ${table.tb_r_observations} tro
-                JOIN ${table.tb_m_pos} tmp
+                LEFT JOIN ${table.tb_m_pos} tmp
                     ON tro.pos_id = tmp.pos_id  
                 LEFT JOIN ${table.tb_m_groups} tmg
                     ON tro.group_id = tmg.group_id
-                JOIN ${table.tb_m_jobs} tmj
+                LEFT JOIN ${table.tb_m_jobs} tmj
                     ON tro.job_id = tmj.job_id
-                JOIN ${table.tb_m_machines} tmm
+                LEFT JOIN ${table.tb_m_machines} tmm
                     ON tmj.machine_id = tmm.machine_id
-                JOIN ${table.tb_m_job_types} tmjt
+                LEFT JOIN ${table.tb_m_job_types} tmjt
                     ON tmj.job_type_id = tmjt.job_type_id
-                JOIN ${table.tb_m_lines} tml
-                    ON tml.line_id = tmm.line_id
+                LEFT JOIN ${table.tb_m_lines} tml
+                    ON tml.line_id = tmp.line_id
                 WHERE 
                     ${'tro.' + condDataNotDeleted}
                     AND tro.uuid = '${req.params.id}'`)
-
             const obsId = await uuidToId(table.tb_r_observations, 'observation_id', req.params.id)
             let resChecks = await queryGET(table.tb_r_obs_results, `WHERE observation_id = ${obsId}`, ['category_id', 'judgment_id', 'factor_id', 'findings'])
             let mapChecks = await resChecks.map(async check => {
@@ -294,14 +300,14 @@ module.exports = {
             })
             let waitMap = await Promise.all(mapResultChecks)
             const addAttrsUserInst = await attrsUserInsertData(req, waitMap)
-
+            req.body.group_id = await uuidToId(table.tb_m_groups, 'group_id', req.body.group_id)
             let resInstCheck = await queryBulkPOST(table.tb_r_obs_results, addAttrsUserInst)
             let updateActual = { actual_check_dt: req.body.actual_check_dt, group_id: req.body.group_id }
             let attrsUserUpd = await addAttrsUserUpdateData(req, updateActual)
             await queryPUT(table.tb_r_observations, attrsUserUpd, `WHERE observation_id = '${obsId}'`)
             console.log(resInstCheck);
             response.success(res, 'Success to add CHECK observation')
-        } catch (error) {
+        } catch (error) {   
             console.log(error);
             response.failed(res, 'Error to add CHECK observation')
         }
