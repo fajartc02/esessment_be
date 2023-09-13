@@ -101,7 +101,14 @@ module.exports = {
                 let isFileExist = jobs[0].attachment
                 if (isFileExist) {
                     fs.unlink(isFileExist, function(err) {
-                        console.log(err);
+                        // console.log(err);
+                        if (err) {
+                            // 1.a JIKA ERROR MAKA KIRIM MSG KE FE
+                            // return res.status(500).json({msg: 'error'})
+                        }
+                        // 1.b JIKA TIDAK ERROR, MAKA UPDATE TB_ERROR_LOG_2 / URAIAN SET attachment (colmn tertentu sesuai image table)
+                        // DENGAN NULL VALUE
+                        // 2. send response ke FE res.status(200).json({msg: 'success'})
                     })
                 }
                 console.log(req.file);
