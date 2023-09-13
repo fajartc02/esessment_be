@@ -35,10 +35,12 @@ module.exports = {
                 const users = await queryGET(table.tb_m_users, `WHERE ${condDataNotDeleted}${containerQuery}`, cols)
                 users[0].line_id = await idToUuid(table.tb_m_lines, 'line_id', users[0].line_id)
                 users[0].group_id = await idToUuid(table.tb_m_groups, 'group_id', users[0].group_id)
+                console.log(users);
                 response.success(res, 'Success to get users', users)
                 return;
             }
             const users = await queryGET(table.tb_m_users, `WHERE ${condDataNotDeleted}${containerQuery}`, cols)
+            
             response.success(res, 'Success to get users', users)
 
         } catch (error) {
@@ -58,6 +60,10 @@ module.exports = {
             let idGroup = await uuidToId(table.tb_m_groups, 'group_id', req.body.group_id)
             req.body.group_id = idGroup
             req.body.line_id = idLine
+
+            delete req.body.id
+            delete req.body.text  
+            req.body.is_activated = true
 
             let attrsUserInsert = await attrsUserInsertData(req, req.body)
             const result = await queryPOST(table.tb_m_users, attrsUserInsert)
