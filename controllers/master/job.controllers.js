@@ -15,13 +15,18 @@ const orderBy = `ORDER BY tmj.created_dt DESC`
 module.exports = {
     getJob: async(req, res) => {
         try {
-            let { id, line_id, pos_id } = req.query
+            let { id, line_id, pos_id, limit, currentPage, totalPage } = req.query
             let containerQuery = ''
+            let qLimit = ``
+            let qOffset = limit != -1 && currentPage > 1 ? `OFFSET ${limit * (currentPage - 1)}` : ``
+            console.log(limit);
+            if (limit != -1) qLimit = `LIMIT ${limit}`
             if (id) containerQuery += ` AND tmj.uuid = '${id}'`
             if (pos_id && pos_id != -1 && pos_id != 'null') containerQuery += ` AND tmp.uuid = '${pos_id}'`
             if (line_id && line_id != -1 && line_id != 'null') containerQuery += ` AND tml.uuid = '${line_id}'`
             let q = `
-                SELECT 
+                SELECT
+                    row_number() over(order by tmj.created_dt DESC) as no, 
                     tmj.uuid as id,
                     tmj.uuid,
                     tmj.job_no,
@@ -44,9 +49,21 @@ module.exports = {
                 LEFT JOIN ${table.tb_m_lines} tml ON tmp.line_id = tml.line_id
                 ${condDataNotDeleted}
                 ${containerQuery}
-                ${orderBy}
+                ${orderBy} ${qLimit} ${qOffset}
             `
             const job = await queryCustom(q)
+            let qCountTotal = `SELECT 
+            count(tmj.job_id)
+        FROM ${table.tb_m_jobs} tmj
+        LEFT JOIN ${table.tb_m_job_types} tmjt ON tmj.job_type_id = tmjt.job_type_id
+        LEFT JOIN ${table.tb_m_pos} tmp ON tmp.pos_id = tmj.pos_id
+        LEFT JOIN ${table.tb_m_machines} tmm ON tmj.machine_id = tmm.machine_id 
+        LEFT JOIN ${table.tb_m_lines} tml ON tmp.line_id = tml.line_id
+        ${condDataNotDeleted}
+        ${containerQuery}`
+            const total_job = await queryCustom(qCountTotal)
+            job.rows[0].total_page = Math.ceil(total_job.rows[0].count / +limit)
+            job.rows[0].limit = +limit
             response.success(res, 'Success to get job', job.rows)
         } catch (error) {
             console.log(error);
