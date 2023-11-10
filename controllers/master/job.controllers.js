@@ -15,15 +15,16 @@ const orderBy = `ORDER BY tmj.created_dt DESC`
 module.exports = {
     getJob: async(req, res) => {
         try {
-            let { id, line_id, pos_id, limit, currentPage, totalPage } = req.query
+            let { id, line_id, pos_id, limit, currentPage, totalPage, job_no } = req.query
             let containerQuery = ''
             let qLimit = ``
             let qOffset = limit != -1 && currentPage > 1 ? `OFFSET ${limit * (currentPage - 1)}` : ``
-            console.log(limit);
             if (limit != -1) qLimit = `LIMIT ${limit}`
             if (id) containerQuery += ` AND tmj.uuid = '${id}'`
             if (pos_id && pos_id != -1 && pos_id != 'null') containerQuery += ` AND tmp.uuid = '${pos_id}'`
             if (line_id && line_id != -1 && line_id != 'null') containerQuery += ` AND tml.uuid = '${line_id}'`
+            if (job_no) containerQuery += ` AND LOWER(tmj.job_no) LIKE '%${job_no}%'`
+            console.log(containerQuery);
             let q = `
                 SELECT
                     row_number() over(order by tmj.created_dt DESC) as no, 
@@ -61,9 +62,14 @@ module.exports = {
         LEFT JOIN ${table.tb_m_lines} tml ON tmp.line_id = tml.line_id
         ${condDataNotDeleted}
         ${containerQuery}`
-            const total_job = await queryCustom(qCountTotal)
-            job.rows[0].total_page = Math.ceil(total_job.rows[0].count / +limit)
-            job.rows[0].limit = +limit
+            console.log(job);
+            if (job.rows.length > 0) {
+                const total_job = await queryCustom(qCountTotal)
+                console.log(+total_job.rows[0].count);
+                job.rows[0].total_page = +total_job.rows[0].count > 0 ? Math.ceil(total_job.rows[0].count / +limit) : 0
+                job.rows[0].limit = +limit
+            }
+
             response.success(res, 'Success to get job', job.rows)
         } catch (error) {
             console.log(error);
