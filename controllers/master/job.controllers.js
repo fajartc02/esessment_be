@@ -18,8 +18,8 @@ module.exports = {
             let { id, line_id, pos_id, limit, currentPage, totalPage, job_no } = req.query
             let containerQuery = ''
             let qLimit = ``
-            let qOffset = limit != -1 && currentPage > 1 ? `OFFSET ${limit * (currentPage - 1)}` : ``
-            if (limit != -1) qLimit = `LIMIT ${limit}`
+            let qOffset = (limit != -1 && limit) && currentPage > 1 ? `OFFSET ${limit * (currentPage - 1)}` : ``
+            if (limit != -1 && limit) qLimit = `LIMIT ${limit}`
             if (id) containerQuery += ` AND tmj.uuid = '${id}'`
             if (pos_id && pos_id != -1 && pos_id != 'null') containerQuery += ` AND tmp.uuid = '${pos_id}'`
             if (line_id && line_id != -1 && line_id != 'null') containerQuery += ` AND tml.uuid = '${line_id}'`
