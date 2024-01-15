@@ -16,10 +16,11 @@ const fs = require('fs')
 module.exports = {
     getPos: async(req, res) => {
         try {
-            let { id, line_id } = req.query
+            let { id, line_id, pos_id } = req.query
             let containerQuery = ''
             if (id && id != -1 && id != 'null') containerQuery += ` AND tmp.uuid = '${id}'`
             if (line_id && line_id != -1 && line_id != 'null') containerQuery += ` AND tml.uuid = '${line_id}'`
+            if (pos_id && pos_id != -1 && pos_id != 'null') containerQuery += ` AND tmp.uuid = '${pos_id}'`
             let q = `
                 SELECT 
                     tmp.uuid as id,
