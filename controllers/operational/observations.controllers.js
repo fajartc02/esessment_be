@@ -296,25 +296,110 @@ module.exports = {
         // observation_id
         // category_id,judgement_id, factor_id(opt), findings ARRAY
         try {
+            console.log(req.body);
+            // UPDATE tb_r_observations ALREADY CHECK
             const obsId = await uuidToId(table.tb_r_observations, 'observation_id', req.body.observation_id)
+            const groupId = await uuidToId(table.tb_m_groups, 'group_id', req.body.group_id)
+            let updateActual = { actual_check_dt: req.body.actual_check_dt, group_id: groupId }
+            let attrsUserUpd = await addAttrsUserUpdateData(req, updateActual)
+            await queryPUT(table.tb_r_observations, attrsUserUpd, `WHERE observation_id = '${obsId}'`)
+
+            // INSERT tb_r_obs_results FROM req.body.results_check
+            let resultCheckData = req.body.results_check
             const lastIdResCheck = await getLastIdData(table.tb_r_obs_results, 'obs_result_id') + 1
-            let mapResultChecks = await req.body.results_check.map(async(item, i) => {
+            let mapResultChecks = await resultCheckData.map(async(item, i) => {
                 item.observation_id = obsId
                 item.obs_result_id = lastIdResCheck + i
                 item.uuid = req.uuid()
                 item.category_id = await uuidToId(table.tb_m_categories, 'category_id', item.category_id)
                 item.judgment_id = await uuidToId(table.tb_m_judgments, 'judgment_id', item.judgment_id)
-                if (item.factor_id) item.factor_id = await uuidToId(table.tb_m_factors, 'factor_id', item.factor_id)
                 return item
             })
-            let waitMap = await Promise.all(mapResultChecks)
-            const addAttrsUserInst = await attrsUserInsertData(req, waitMap)
+            let waitMapResCheck = await Promise.all(mapResultChecks)
+            const addAttrsUserInst = await attrsUserInsertData(req, waitMapResCheck)
             req.body.group_id = await uuidToId(table.tb_m_groups, 'group_id', req.body.group_id)
             let resInstCheck = await queryBulkPOST(table.tb_r_obs_results, addAttrsUserInst)
-            let updateActual = { actual_check_dt: req.body.actual_check_dt, group_id: req.body.group_id }
-            let attrsUserUpd = await addAttrsUserUpdateData(req, updateActual)
-            await queryPUT(table.tb_r_observations, attrsUserUpd, `WHERE observation_id = '${obsId}'`)
-            console.log(resInstCheck);
+                // console.log(resInstCheck.rows);
+                // {
+                //     obs_result_id: 531,
+                //     observation_id: 234,
+                //     uuid: '7c83798b-fd73-4487-a339-287608ad7142',
+                //     category_id: 1,
+                //     judgment_id: 1,
+                //     created_by: 'Fajar Tri Cahyono',
+                //     created_dt: 2024-02-02T18:17:27.000Z,
+                //     changed_by: 'Fajar Tri Cahyono',
+                //     changed_dt: 2024-02-02T18:17:27.000Z,
+                //     deleted_by: null,
+                //     deleted_dt: null
+                //   },
+
+            // INSERT tb_r_result_findings, GET obs_result_id AFTER INSERT tb_r_obs_results
+            let findingsMapInstData = await resInstCheck.rows.map(async resCheckData => {
+                // CHECK ANY JUDG ABNORMAL
+                let judgData = await queryGET(table.tb_m_judgments, `WHERE judgment_id = ${resCheckData.judgment_id}`, ['is_abnormal'])
+                let isJudgAbnor = judgData[0].is_abnormal
+                    // console.log(isJudgAbnor);
+                if (isJudgAbnor) {
+                    // console.log(req.body.findings);
+                    // console.log(resCheckData.category_id);
+                    let selectFindingData = await req.body.findings.find(async(finding) => await uuidToId(table.tb_m_categories, 'category_id', finding.category_id) == resCheckData.category_id)
+                    let obs_result_id = resCheckData.obs_result_id
+                    selectFindingData.category_id = await uuidToId(table.tb_m_categories, 'category_id', selectFindingData.category_id) ?? null
+                    selectFindingData.cm_pic_id = await uuidToId(table.tb_m_users, 'user_id', selectFindingData.cm_pic_id) ?? null
+                    selectFindingData.factor_id = await uuidToId(table.tb_m_factors, 'factor_id', selectFindingData.factor_id) ?? null
+                    selectFindingData.cm_result_factor_id = await uuidToId(table.tb_m_factors, 'factor_id', selectFindingData.cm_result_factor_id) ?? null
+                    selectFindingData.uuid = req.uuid()
+                    let findingObj = {
+                        ...selectFindingData,
+                        obs_result_id,
+                    }
+                    let attrsUserFindingData = await attrsUserInsertData(req, findingObj)
+                    return {
+                        ...attrsUserFindingData
+                    }
+                }
+                return null
+            })
+
+            let waitFindingsMap = await Promise.all(findingsMapInstData);
+            console.log(waitFindingsMap);
+            for (let i = 0; i < waitFindingsMap.length; i++) {
+                const findingData = waitFindingsMap[i];
+                if (findingData) {
+                    await queryPOST(table.tb_r_result_findings, findingData);
+                }
+            }
+            // console.log(findingsData);
+            /* 
+                * update tb_r_observations already check
+                * insert tb_r_obs_results
+                * fetch id after insert tb_r_obs_results to set at obs_result_id
+                * insert tb_r_result_findings
+                    "obs_result_id" int4 NOT NULL,
+                    "uuid" varchar(40) NOT NULL,
+                    "finding_desc" text NOT NULL,
+                    "ft_id" int4,
+                    "henkaten_id" int4,
+                    "mv_id" int4,
+                    "cm_desc" text,
+                    "cm_priority" text,
+                    "factor_id" int4 NOT NULL,
+                    "category_id" int4 NOT NULL,
+                    "cm_pic_id" int,
+                    "cm_str_plan_date" date,
+                    "cm_end_plan_date" date,
+                    "cm_start_act_date" date,
+                    "cm_end_act_date" date,
+                    "cm_result_factor_id" int4,
+                    "cm_training_date" date,
+                    "cm_judg" bool,
+                    "cm_sign_lh_red" text,
+                    "cm_sign_lh_white" text,
+                    "cm_sign_sh" text,
+                    "cm_comments" text,
+            */
+
             response.success(res, 'Success to add CHECK observation')
         } catch (error) {
             console.log(error);
