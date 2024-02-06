@@ -236,11 +236,13 @@ module.exports = {
             })
 
             const waitResChecks = await Promise.all(mapChecks)
-            const mapResCheckAvg = await waitResChecks.map( (item, i) => {
+            let isStw = true
+            const mapResCheckAvg = await waitResChecks.map((item, i) => {
                 let avg = null
                 // ((max (dari 5 input) - min (dari 5 input) / 2) / AVG) x 100%
                 let perc = null
-                if(i === 0) {
+                console.log(i);
+                if(isStw && item.stw_ct1) {
                     let containerCT = []
                     containerCT.push(+item.stw_ct1)
                     containerCT.push(+item.stw_ct2)
@@ -249,9 +251,11 @@ module.exports = {
                     containerCT.push(+item.stw_ct5)
                     avg = item.stw_ct1 ? (item.stw_ct1 + item.stw_ct2 + item.stw_ct3 + item.stw_ct4 + item.stw_ct5) / 5 : null;
                     perc = +((((Math.max(...containerCT) - Math.min(...containerCT)) / 2) / avg) * 100).toFixed(2)
+                    isStw = false
                 }
                 item.avg = avg ?? null
                 item.perc = perc ?? null
+                console.log(item);
                 return item
             })
             obser.rows.push(mapResCheckAvg)
