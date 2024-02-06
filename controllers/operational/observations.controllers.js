@@ -200,6 +200,8 @@ module.exports = {
                     member_nm,
                     tro.plan_check_dt,
                     tro.actual_check_dt,
+                    tro.comment_sh,
+                    tro.comment_ammgr,
                     EXTRACT('day' from  tro.plan_check_dt) as idxDate
                 FROM ${table.tb_r_observations} tro
                 LEFT JOIN ${table.tb_m_pos} tmp
@@ -224,23 +226,39 @@ module.exports = {
             })
             const obsId = await uuidToId(table.tb_r_observations, 'observation_id', req.params.id)
             // factor_id, findings isn't USED AGAIN BECAUSE ALREADY ENHANCEMENT
-            let resChecks = await queryGET(table.tb_r_obs_results, `WHERE observation_id = ${obsId}`, ['category_id', 'judgment_id', 'factor_id', 'findings'])
+            let resChecks = await queryGET(table.tb_r_obs_results, `WHERE observation_id = ${obsId}`, ['category_id', 'judgment_id', 'factor_id', 'findings', 'stw_ct1', 'stw_ct2', 'stw_ct3', 'stw_ct4', 'stw_ct5'])
             let mapChecks = await resChecks.map(async check => {
                 check.category_id = await idToUuid(table.tb_m_categories, 'category_id', check.category_id)
                 // REMOVE FROM result_check move to findings
                 // if (check.factor_id) check.factor_id = await idToUuid(table.tb_m_factors, 'factor_id', check.factor_id)
                 check.judgment_id = await idToUuid(table.tb_m_judgments, 'judgment_id', check.judgment_id)
-                console.log(check);
                 return check
             })
 
             const waitResChecks = await Promise.all(mapChecks)
-            console.log(waitResChecks);
-            obser.rows.push(waitResChecks)
-            response.success(res, 'Success to get schedule observation', obser.rows)
+            const mapResCheckAvg = await waitResChecks.map( (item, i) => {
+                let avg = null
+                // ((max (dari 5 input) - min (dari 5 input) / 2) / AVG) x 100%
+                let perc = null
+                if(i === 0) {
+                    let containerCT = []
+                    containerCT.push(+item.stw_ct1)
+                    containerCT.push(+item.stw_ct2)
+                    containerCT.push(+item.stw_ct3)
+                    containerCT.push(+item.stw_ct4)
+                    containerCT.push(+item.stw_ct5)
+                    avg = item.stw_ct1 ? (item.stw_ct1 + item.stw_ct2 + item.stw_ct3 + item.stw_ct4 + item.stw_ct5) / 5 : null;
+                    perc = +((((Math.max(...containerCT) - Math.min(...containerCT)) / 2) / avg) * 100).toFixed(2)
+                }
+                item.avg = avg ?? null
+                item.perc = perc ?? null
+                return item
+            })
+            obser.rows.push(mapResCheckAvg)
+            response.success(res, 'Success to get detail schedule observation', obser.rows)
         } catch (error) {
             console.log(error);
-            response.failed(res, 'Error to get schedule observation')
+            response.failed(res, 'Error to get detail schedule observation')
         }
     },
     getSummaryObservations: async(req, res) => {
@@ -319,6 +337,7 @@ module.exports = {
 
             // 2. INSERT tb_r_obs_results FROM req.body.results_check
             let resultCheckData = req.body.results_check
+            // console.log(resultCheckData);
             const lastIdResCheck = await getLastIdData(table.tb_r_obs_results, 'obs_result_id') + 1
             let mapResultChecks = await resultCheckData.map(async(item, i) => {
                 item.observation_id = obsId
@@ -330,6 +349,7 @@ module.exports = {
             })
             let waitMapResCheck = await Promise.all(mapResultChecks)
             const addAttrsUserInst = await attrsUserInsertData(req, waitMapResCheck)
+            console.log(addAttrsUserInst);
             req.body.group_id = await uuidToId(table.tb_m_groups, 'group_id', req.body.group_id)
             let resInstCheck = await queryBulkPOST(table.tb_r_obs_results, addAttrsUserInst)
 
