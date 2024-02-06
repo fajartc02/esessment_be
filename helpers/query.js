@@ -11,7 +11,7 @@ module.exports = {
                 whereCond = ''
             }
             let q = `SELECT ${selectedCols} FROM ${table} ${whereCond}`
-                // console.log(q);
+            console.log(q);
             await database.query(q)
                 .then((result) => {
                     resolve(result.rows)

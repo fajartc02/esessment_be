@@ -22,6 +22,8 @@ const checkFileType = function(file, cb) { //Allowed file extensions
 //Setting storage engine
 const storageEngine = multer.diskStorage({  
     destination: function(req, file, cb) {
+        // console.log('req.body');
+        // console.log(req.body);
         console.log(file);
         cb(null, `./uploads/${req.body.dest}/`)
     },

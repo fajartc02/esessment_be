@@ -46,7 +46,6 @@ module.exports = {
     },
     getObservationScheduleList: async(req, res) => {
         try {
-            console.log('MASUUUUK');
             let { id, line, month, year } = req.query
             let containerQuery = ''
             if (id) containerQuery += ` AND tro.uuid = '${id}'`
@@ -100,17 +99,20 @@ module.exports = {
     },
     getScheduleObservations: async(req, res) => {
         try {
-            const { month, year, line } = req.query
+            const { month, year, line, group_id } = req.query
             let whereCond = ``
             if (month && year) whereCond = `AND (EXTRACT(month from  tro.plan_check_dt), EXTRACT('year' from tro.plan_check_dt))=(${+month},${+year})`
-            if (line != "0" && line && line != -1) whereCond += ` AND tmp.line_id = ${await uuidToId(table.tb_m_lines, 'line_id', line)}`
+            if (line != "0" && line && line != -1 && line != null) whereCond += ` AND tmp.line_id = ${await uuidToId(table.tb_m_lines, 'line_id', line)}`
+            if (group_id && group_id != null) whereCond += ` AND tmg.uuid = '${group_id}'`
             let observations = await queryCustom(`
                 SELECT 
                     tro.uuid as observation_id,
                     tmp.uuid as pos_id,
+                    tml.uuid as line_id,
                     tml.line_snm,
                     tmp.pos_nm,
                     tmm.machine_nm,
+                    tmg.uuid AS group_id,
                     tmg.group_nm,
                     tmj.uuid as job_id,
                     tmj.job_no,
@@ -121,6 +123,8 @@ module.exports = {
                     tro.plan_check_dt,
                     tro.actual_check_dt,
                     EXTRACT('day' from  tro.plan_check_dt) as idxDate,
+                    tro.comment_sh,
+                    tro.comment_ammgr,
                     tro.deleted_dt
                 FROM ${table.tb_r_observations} tro
                 LEFT JOIN ${table.tb_m_pos} tmp
@@ -148,6 +152,8 @@ module.exports = {
                 obser.checkers = await checkersData.map(mp => {
                     return mp.checker_nm
                 })
+                obser.checkers.length > 1 ? obser.is2TL = true : obser.is2TL = false
+
                 return obser
             })
             let waitDataObs = await Promise.all(mapObs)
@@ -217,10 +223,12 @@ module.exports = {
                 return itm
             })
             const obsId = await uuidToId(table.tb_r_observations, 'observation_id', req.params.id)
+            // factor_id, findings isn't USED AGAIN BECAUSE ALREADY ENHANCEMENT
             let resChecks = await queryGET(table.tb_r_obs_results, `WHERE observation_id = ${obsId}`, ['category_id', 'judgment_id', 'factor_id', 'findings'])
             let mapChecks = await resChecks.map(async check => {
                 check.category_id = await idToUuid(table.tb_m_categories, 'category_id', check.category_id)
-                if (check.factor_id) check.factor_id = await idToUuid(table.tb_m_factors, 'factor_id', check.factor_id)
+                // REMOVE FROM result_check move to findings
+                // if (check.factor_id) check.factor_id = await idToUuid(table.tb_m_factors, 'factor_id', check.factor_id)
                 check.judgment_id = await idToUuid(table.tb_m_judgments, 'judgment_id', check.judgment_id)
                 console.log(check);
                 return check
@@ -296,15 +304,20 @@ module.exports = {
         // observation_id
         // category_id,judgement_id, factor_id(opt), findings ARRAY
         try {
-            console.log(req.body);
-            // UPDATE tb_r_observations ALREADY CHECK
+            // console.log(req.body);
+            // 1. UPDATE tb_r_observations ALREADY CHECK
             const obsId = await uuidToId(table.tb_r_observations, 'observation_id', req.body.observation_id)
             const groupId = await uuidToId(table.tb_m_groups, 'group_id', req.body.group_id)
-            let updateActual = { actual_check_dt: req.body.actual_check_dt, group_id: groupId }
+            let updateActual = { 
+                actual_check_dt: req.body.actual_check_dt, 
+                group_id: groupId, 
+                comment_sh: req.body.comment_sh,
+                comment_ammgr: req.body.comment_ammgr
+            }
             let attrsUserUpd = await addAttrsUserUpdateData(req, updateActual)
             await queryPUT(table.tb_r_observations, attrsUserUpd, `WHERE observation_id = '${obsId}'`)
 
-            // INSERT tb_r_obs_results FROM req.body.results_check
+            // 2. INSERT tb_r_obs_results FROM req.body.results_check
             let resultCheckData = req.body.results_check
             const lastIdResCheck = await getLastIdData(table.tb_r_obs_results, 'obs_result_id') + 1
             let mapResultChecks = await resultCheckData.map(async(item, i) => {
@@ -319,30 +332,12 @@ module.exports = {
             const addAttrsUserInst = await attrsUserInsertData(req, waitMapResCheck)
             req.body.group_id = await uuidToId(table.tb_m_groups, 'group_id', req.body.group_id)
             let resInstCheck = await queryBulkPOST(table.tb_r_obs_results, addAttrsUserInst)
-                // console.log(resInstCheck.rows);
-                // {
-                //     obs_result_id: 531,
-                //     observation_id: 234,
-                //     uuid: '7c83798b-fd73-4487-a339-287608ad7142',
-                //     category_id: 1,
-                //     judgment_id: 1,
-                //     created_by: 'Fajar Tri Cahyono',
-                //     created_dt: 2024-02-02T18:17:27.000Z,
-                //     changed_by: 'Fajar Tri Cahyono',
-                //     changed_dt: 2024-02-02T18:17:27.000Z,
-                //     deleted_by: null,
-                //     deleted_dt: null
-                //   },
 
-            // INSERT tb_r_result_findings, GET obs_result_id AFTER INSERT tb_r_obs_results
+            // 3. INSERT tb_r_result_findings, GET obs_result_id AFTER INSERT tb_r_obs_results
             let findingsMapInstData = await resInstCheck.rows.map(async resCheckData => {
-                // CHECK ANY JUDG ABNORMAL
                 let judgData = await queryGET(table.tb_m_judgments, `WHERE judgment_id = ${resCheckData.judgment_id}`, ['is_abnormal'])
                 let isJudgAbnor = judgData[0].is_abnormal
-                    // console.log(isJudgAbnor);
                 if (isJudgAbnor) {
-                    // console.log(req.body.findings);
-                    // console.log(resCheckData.category_id);
                     let selectFindingData = await req.body.findings.find(async(finding) => await uuidToId(table.tb_m_categories, 'category_id', finding.category_id) == resCheckData.category_id)
                     let obs_result_id = resCheckData.obs_result_id
                     selectFindingData.category_id = await uuidToId(table.tb_m_categories, 'category_id', selectFindingData.category_id) ?? null
@@ -361,16 +356,14 @@ module.exports = {
                 }
                 return null
             })
-
             let waitFindingsMap = await Promise.all(findingsMapInstData);
-            console.log(waitFindingsMap);
             for (let i = 0; i < waitFindingsMap.length; i++) {
                 const findingData = waitFindingsMap[i];
                 if (findingData) {
                     await queryPOST(table.tb_r_result_findings, findingData);
                 }
             }
-            // console.log(findingsData);
+            
             /* 
                 * update tb_r_observations already check
                 * insert tb_r_obs_results
@@ -399,7 +392,6 @@ module.exports = {
                     "cm_sign_sh" text,
                     "cm_comments" text,
             */
-
             response.success(res, 'Success to add CHECK observation')
         } catch (error) {
             console.log(error);
