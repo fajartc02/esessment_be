@@ -81,7 +81,7 @@ module.exports = {
             /* 
                 pos_id,job_type_id,machine_id, job_nm, attachment, job_no, 
             */
-            console.log(req.body);
+            // console.log(req.body);
             let idLast = await getLastIdData(table.tb_m_jobs, 'job_id') + 1
             req.body.job_id = idLast
             req.body.uuid = req.uuid()

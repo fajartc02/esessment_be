@@ -46,7 +46,6 @@ module.exports = {
     },
     getObservationScheduleList: async(req, res) => {
         try {
-            console.log('MASUUUUK');
             let { id, line, month, year } = req.query
             let containerQuery = ''
             if (id) containerQuery += ` AND tro.uuid = '${id}'`
@@ -100,17 +99,20 @@ module.exports = {
     },
     getScheduleObservations: async(req, res) => {
         try {
-            const { month, year, line } = req.query
+            const { month, year, line, group_id } = req.query
             let whereCond = ``
             if (month && year) whereCond = `AND (EXTRACT(month from  tro.plan_check_dt), EXTRACT('year' from tro.plan_check_dt))=(${+month},${+year})`
-            if (line != "0" && line && line != -1) whereCond += ` AND tmp.line_id = ${await uuidToId(table.tb_m_lines, 'line_id', line)}`
+            if (line != "0" && line && line != -1 && line != null) whereCond += ` AND tmp.line_id = ${await uuidToId(table.tb_m_lines, 'line_id', line)}`
+            if (group_id && group_id != null) whereCond += ` AND tmg.uuid = '${group_id}'`
             let observations = await queryCustom(`
                 SELECT 
                     tro.uuid as observation_id,
                     tmp.uuid as pos_id,
+                    tml.uuid as line_id,
                     tml.line_snm,
                     tmp.pos_nm,
                     tmm.machine_nm,
+                    tmg.uuid AS group_id,
                     tmg.group_nm,
                     tmj.uuid as job_id,
                     tmj.job_no,
@@ -121,6 +123,8 @@ module.exports = {
                     tro.plan_check_dt,
                     tro.actual_check_dt,
                     EXTRACT('day' from  tro.plan_check_dt) as idxDate,
+                    tro.comment_sh,
+                    tro.comment_ammgr,
                     tro.deleted_dt
                 FROM ${table.tb_r_observations} tro
                 LEFT JOIN ${table.tb_m_pos} tmp
@@ -148,6 +152,8 @@ module.exports = {
                 obser.checkers = await checkersData.map(mp => {
                     return mp.checker_nm
                 })
+                obser.checkers.length > 1 ? obser.is2TL = true : obser.is2TL = false
+
                 return obser
             })
             let waitDataObs = await Promise.all(mapObs)
@@ -217,10 +223,12 @@ module.exports = {
                 return itm
             })
             const obsId = await uuidToId(table.tb_r_observations, 'observation_id', req.params.id)
+            // factor_id, findings isn't USED AGAIN BECAUSE ALREADY ENHANCEMENT
             let resChecks = await queryGET(table.tb_r_obs_results, `WHERE observation_id = ${obsId}`, ['category_id', 'judgment_id', 'factor_id', 'findings'])
             let mapChecks = await resChecks.map(async check => {
                 check.category_id = await idToUuid(table.tb_m_categories, 'category_id', check.category_id)
-                if (check.factor_id) check.factor_id = await idToUuid(table.tb_m_factors, 'factor_id', check.factor_id)
+                // REMOVE FROM result_check move to findings
+                // if (check.factor_id) check.factor_id = await idToUuid(table.tb_m_factors, 'factor_id', check.factor_id)
                 check.judgment_id = await idToUuid(table.tb_m_judgments, 'judgment_id', check.judgment_id)
                 console.log(check);
                 return check
@@ -296,25 +304,94 @@ module.exports = {
         // observation_id
         // category_id,judgement_id, factor_id(opt), findings ARRAY
         try {
+            // console.log(req.body);
+            // 1. UPDATE tb_r_observations ALREADY CHECK
             const obsId = await uuidToId(table.tb_r_observations, 'observation_id', req.body.observation_id)
+            const groupId = await uuidToId(table.tb_m_groups, 'group_id', req.body.group_id)
+            let updateActual = { 
+                actual_check_dt: req.body.actual_check_dt, 
+                group_id: groupId, 
+                comment_sh: req.body.comment_sh,
+                comment_ammgr: req.body.comment_ammgr
+            }
+            let attrsUserUpd = await addAttrsUserUpdateData(req, updateActual)
+            await queryPUT(table.tb_r_observations, attrsUserUpd, `WHERE observation_id = '${obsId}'`)
+
+            // 2. INSERT tb_r_obs_results FROM req.body.results_check
+            let resultCheckData = req.body.results_check
             const lastIdResCheck = await getLastIdData(table.tb_r_obs_results, 'obs_result_id') + 1
-            let mapResultChecks = await req.body.results_check.map(async(item, i) => {
+            let mapResultChecks = await resultCheckData.map(async(item, i) => {
                 item.observation_id = obsId
                 item.obs_result_id = lastIdResCheck + i
                 item.uuid = req.uuid()
                 item.category_id = await uuidToId(table.tb_m_categories, 'category_id', item.category_id)
                 item.judgment_id = await uuidToId(table.tb_m_judgments, 'judgment_id', item.judgment_id)
-                if (item.factor_id) item.factor_id = await uuidToId(table.tb_m_factors, 'factor_id', item.factor_id)
                 return item
             })
-            let waitMap = await Promise.all(mapResultChecks)
-            const addAttrsUserInst = await attrsUserInsertData(req, waitMap)
+            let waitMapResCheck = await Promise.all(mapResultChecks)
+            const addAttrsUserInst = await attrsUserInsertData(req, waitMapResCheck)
             req.body.group_id = await uuidToId(table.tb_m_groups, 'group_id', req.body.group_id)
             let resInstCheck = await queryBulkPOST(table.tb_r_obs_results, addAttrsUserInst)
-            let updateActual = { actual_check_dt: req.body.actual_check_dt, group_id: req.body.group_id }
-            let attrsUserUpd = await addAttrsUserUpdateData(req, updateActual)
-            await queryPUT(table.tb_r_observations, attrsUserUpd, `WHERE observation_id = '${obsId}'`)
-            console.log(resInstCheck);
+
+            // 3. INSERT tb_r_result_findings, GET obs_result_id AFTER INSERT tb_r_obs_results
+            let findingsMapInstData = await resInstCheck.rows.map(async resCheckData => {
+                let judgData = await queryGET(table.tb_m_judgments, `WHERE judgment_id = ${resCheckData.judgment_id}`, ['is_abnormal'])
+                let isJudgAbnor = judgData[0].is_abnormal
+                if (isJudgAbnor) {
+                    let selectFindingData = await req.body.findings.find(async(finding) => await uuidToId(table.tb_m_categories, 'category_id', finding.category_id) == resCheckData.category_id)
+                    let obs_result_id = resCheckData.obs_result_id
+                    selectFindingData.category_id = await uuidToId(table.tb_m_categories, 'category_id', selectFindingData.category_id) ?? null
+                    selectFindingData.cm_pic_id = await uuidToId(table.tb_m_users, 'user_id', selectFindingData.cm_pic_id) ?? null
+                    selectFindingData.factor_id = await uuidToId(table.tb_m_factors, 'factor_id', selectFindingData.factor_id) ?? null
+                    selectFindingData.cm_result_factor_id = await uuidToId(table.tb_m_factors, 'factor_id', selectFindingData.cm_result_factor_id) ?? null
+                    selectFindingData.uuid = req.uuid()
+                    let findingObj = {
+                        ...selectFindingData,
+                        obs_result_id,
+                    }
+                    let attrsUserFindingData = await attrsUserInsertData(req, findingObj)
+                    return {
+                        ...attrsUserFindingData
+                    }
+                }
+                return null
+            })
+            let waitFindingsMap = await Promise.all(findingsMapInstData);
+            for (let i = 0; i < waitFindingsMap.length; i++) {
+                const findingData = waitFindingsMap[i];
+                if (findingData) {
+                    await queryPOST(table.tb_r_result_findings, findingData);
+                }
+            }
+            
+            /* 
+                * update tb_r_observations already check
+                * insert tb_r_obs_results
+                * fetch id after insert tb_r_obs_results to set at obs_result_id
+                * insert tb_r_result_findings
+                    "obs_result_id" int4 NOT NULL,
+                    "uuid" varchar(40) NOT NULL,
+                    "finding_desc" text NOT NULL,
+                    "ft_id" int4,
+                    "henkaten_id" int4,
+                    "mv_id" int4,
+                    "cm_desc" text,
+                    "cm_priority" text,
+                    "factor_id" int4 NOT NULL,
+                    "category_id" int4 NOT NULL,
+                    "cm_pic_id" int,
+                    "cm_str_plan_date" date,
+                    "cm_end_plan_date" date,
+                    "cm_start_act_date" date,
+                    "cm_end_act_date" date,
+                    "cm_result_factor_id" int4,
+                    "cm_training_date" date,
+                    "cm_judg" bool,
+                    "cm_sign_lh_red" text,
+                    "cm_sign_lh_white" text,
+                    "cm_sign_sh" text,
+                    "cm_comments" text,
+            */
             response.success(res, 'Success to add CHECK observation')
         } catch (error) {
             console.log(error);

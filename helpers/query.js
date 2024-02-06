@@ -11,7 +11,7 @@ module.exports = {
                 whereCond = ''
             }
             let q = `SELECT ${selectedCols} FROM ${table} ${whereCond}`
-                // console.log(q);
+            console.log(q);
             await database.query(q)
                 .then((result) => {
                     resolve(result.rows)
@@ -27,7 +27,7 @@ module.exports = {
             let containerValues = []
             for (const key in data) {
                 containerColumn.push(key)
-                containerValues.push(`'${data[key]}'`)
+                containerValues.push(data[key] && data[key] != 'null' ? `'${data[key]}'` : 'NULL')
             }
             let q = `INSERT INTO ${table}(${containerColumn.join(',')}) VALUES (${containerValues.join(',')}) RETURNING *`
                 // console.log(q);

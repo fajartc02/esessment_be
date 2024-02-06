@@ -18,7 +18,8 @@ const table = {
     tb_r_obs_members: 'tb_r_obs_members',
     tb_r_obs_checker: 'tb_r_obs_checker',
     tb_r_obs_results: 'tb_r_obs_results',
-    tb_r_result_findings: 'tb_r_result_findings'
+    tb_r_result_findings: 'tb_r_result_findings',
+    v_finding_list: 'v_finding_list'
 }
 
 
