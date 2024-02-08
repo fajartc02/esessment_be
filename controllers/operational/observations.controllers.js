@@ -226,12 +226,12 @@ module.exports = {
             })
             const obsId = await uuidToId(table.tb_r_observations, 'observation_id', req.params.id)
             // factor_id, findings isn't USED AGAIN BECAUSE ALREADY ENHANCEMENT
-            let resChecks = await queryGET(table.tb_r_obs_results, `WHERE observation_id = ${obsId}`, ['uuid as result_finding_id', 'category_id', 'judgment_id', 'factor_id', 'findings', 'stw_ct1', 'stw_ct2', 'stw_ct3', 'stw_ct4', 'stw_ct5'])
+            let resChecks = await queryGET(table.tb_r_obs_results, `WHERE observation_id = ${obsId}`, ['obs_result_id', 'category_id', 'judgment_id', 'factor_id', 'findings', 'stw_ct1', 'stw_ct2', 'stw_ct3', 'stw_ct4', 'stw_ct5'])
             let mapChecks = await resChecks.map(async check => {
                 check.category_id = await idToUuid(table.tb_m_categories, 'category_id', check.category_id)
-                // REMOVE FROM result_check move to findings
-                // if (check.factor_id) check.factor_id = await idToUuid(table.tb_m_factors, 'factor_id', check.factor_id)
-                check.judgment_id = await idToUuid(table.tb_m_judgments, 'judgment_id', check.judgment_id)
+                 // GET findings if any
+                check.findings = await queryGET(table.tb_r_result_findings, `WHERE obs_result_id = '${check.obs_result_id}'`)
+                check.judgment_id = await idToUuid(table.tb_m_judgments, 'judgment_id', check.judgment_id) ?? null
                 return check
             })
 
@@ -384,7 +384,17 @@ module.exports = {
             for (let i = 0; i < waitFindingsMap.length; i++) {
                 const findingData = waitFindingsMap[i];
                 if (findingData) {
-                    await queryPOST(table.tb_r_result_findings, findingData);
+                    let instDataObsFinding = await queryPOST(table.tb_r_result_findings, findingData);
+                    let obsFindingId = instDataObsFinding.rows[0].result_finding_id
+                    console.log(instDataObsFinding);
+                    // 4. INSERT to tb_r_findings
+                    let lastFindingId = await getLastIdData(table.tb_r_findings, 'finding_id') + 1
+                    let dataFinding = {
+                        uuid: req.uuid(),
+                        finding_id: lastFindingId,
+                        finding_obs_id: obsFindingId
+                    }
+                    await queryPOST(table.tb_r_findings, dataFinding)
                 }
             }
             

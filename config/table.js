@@ -23,6 +23,7 @@ const table = {
     tb_r_member_voice: 'tb_r_member_voice',
     tb_r_focus_theme: 'tb_r_focus_theme',
     tb_r_henkaten: 'tb_r_henkaten',
+    tb_r_findings: 'tb_r_findings'
 }
 
 
