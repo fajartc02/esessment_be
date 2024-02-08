@@ -1,10 +1,10 @@
 const table = require('../../config/table')
 const { queryPOST, queryCustom, queryGET, queryPUT } = require('../../helpers/query')
+const response = require('../../helpers/response')
 
 const attrsUserInsertData = require('../../helpers/addAttrsUserInsertData')
 const addAttrsUserUpdateData = require('../../helpers/addAttrsUserUpdateData')
 
-const response = require('../../helpers/response')
 const queryCondExacOpAnd = require('../../helpers/conditionsQuery')
 
 

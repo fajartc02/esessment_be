@@ -21,7 +21,6 @@ module.exports = {
         })
     },
     queryPOST: async(table, data) => {
-        console.log(data);
         return new Promise(async(resolve, reject) => {
             let containerColumn = []
             let containerValues = []
@@ -30,7 +29,7 @@ module.exports = {
                 containerValues.push(data[key] && data[key] != 'null' ? `'${data[key]}'` : 'NULL')
             }
             let q = `INSERT INTO ${table}(${containerColumn.join(',')}) VALUES (${containerValues.join(',')}) RETURNING *`
-                // console.log(q);
+            console.log(q);
             await database.query(q)
                 .then((result) => {
                     resolve(result)
