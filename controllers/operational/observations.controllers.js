@@ -342,7 +342,7 @@ module.exports = {
 
             // 2. INSERT tb_r_obs_results FROM req.body.results_check
             let resultCheckData = req.body.results_check
-            // console.log(resultCheckData);
+            
             const lastIdResCheck = await getLastIdData(table.tb_r_obs_results, 'obs_result_id') + 1
             let mapResultChecks = await resultCheckData.map(async(item, i) => {
                 item.observation_id = obsId
@@ -354,11 +354,12 @@ module.exports = {
             })
             let waitMapResCheck = await Promise.all(mapResultChecks)
             const addAttrsUserInst = await attrsUserInsertData(req, waitMapResCheck)
-            console.log(addAttrsUserInst);
+            
             req.body.group_id = await uuidToId(table.tb_m_groups, 'group_id', req.body.group_id)
             let resInstCheck = await queryBulkPOST(table.tb_r_obs_results, addAttrsUserInst)
 
             // 3. INSERT tb_r_result_findings, GET obs_result_id AFTER INSERT tb_r_obs_results
+            // REV: tb_r_result_findings (result_finding_id, uuid, obs_result_id)
             let findingsMapInstData = await resInstCheck.rows.map(async resCheckData => {
                 let judgData = await queryGET(table.tb_m_judgments, `WHERE judgment_id = ${resCheckData.judgment_id}`, ['is_abnormal'])
                 let isJudgAbnor = judgData[0].is_abnormal
@@ -366,6 +367,7 @@ module.exports = {
                     let selectFindingData = await req.body.findings.find(async(finding) => await uuidToId(table.tb_m_categories, 'category_id', finding.category_id) == resCheckData.category_id)
                     let obs_result_id = resCheckData.obs_result_id
                     selectFindingData.category_id = await uuidToId(table.tb_m_categories, 'category_id', selectFindingData.category_id) ?? null
+                    selectFindingData.line_id = await uuidToId(table.tb_m_lines, 'line_id', selectFindingData.line_id) ?? null
                     selectFindingData.cm_pic_id = await uuidToId(table.tb_m_users, 'user_id', selectFindingData.cm_pic_id) ?? null
                     selectFindingData.factor_id = await uuidToId(table.tb_m_factors, 'factor_id', selectFindingData.factor_id) ?? null
                     selectFindingData.cm_result_factor_id = await uuidToId(table.tb_m_factors, 'factor_id', selectFindingData.cm_result_factor_id) ?? null
@@ -382,18 +384,27 @@ module.exports = {
                 return null
             })
             let waitFindingsMap = await Promise.all(findingsMapInstData);
+            console.log(waitFindingsMap);
+            
             for (let i = 0; i < waitFindingsMap.length; i++) {
                 const findingData = waitFindingsMap[i];
                 if (findingData) {
-                    let instDataObsFinding = await queryPOST(table.tb_r_result_findings, findingData);
+                    let objResultFinding = {
+                        result_finding_id: await getLastIdData(table.tb_r_result_findings, 'result_finding_id') + 1,
+                        uuid: req.uuid(),
+                        obs_result_id: findingData.obs_result_id
+                    }
+                    let instDataObsFinding = await queryPOST(table.tb_r_result_findings, objResultFinding);
                     let obsFindingId = instDataObsFinding.rows[0].result_finding_id
-                    console.log(instDataObsFinding);
+                    
+                    delete findingData.obs_result_id;
                     // 4. INSERT to tb_r_findings
                     let lastFindingId = await getLastIdData(table.tb_r_findings, 'finding_id') + 1
                     let dataFinding = {
                         uuid: req.uuid(),
                         finding_id: lastFindingId,
-                        finding_obs_id: obsFindingId
+                        finding_obs_id: obsFindingId,
+                        ...findingData
                     }
                     await queryPOST(table.tb_r_findings, dataFinding)
                 }
