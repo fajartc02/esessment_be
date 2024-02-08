@@ -19,7 +19,10 @@ const table = {
     tb_r_obs_checker: 'tb_r_obs_checker',
     tb_r_obs_results: 'tb_r_obs_results',
     tb_r_result_findings: 'tb_r_result_findings',
-    v_finding_list: 'v_finding_list'
+    v_finding_list: 'v_finding_list',
+    tb_r_member_voice: 'tb_r_member_voice',
+    tb_r_focus_theme: 'tb_r_focus_theme',
+    tb_r_henkaten: 'tb_r_henkaten',
 }
 
 
