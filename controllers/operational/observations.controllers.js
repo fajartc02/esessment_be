@@ -226,7 +226,7 @@ module.exports = {
             })
             const obsId = await uuidToId(table.tb_r_observations, 'observation_id', req.params.id)
             // factor_id, findings isn't USED AGAIN BECAUSE ALREADY ENHANCEMENT
-            let resChecks = await queryGET(table.tb_r_obs_results, `WHERE observation_id = ${obsId}`, ['category_id', 'judgment_id', 'factor_id', 'findings', 'stw_ct1', 'stw_ct2', 'stw_ct3', 'stw_ct4', 'stw_ct5'])
+            let resChecks = await queryGET(table.tb_r_obs_results, `WHERE observation_id = ${obsId}`, ['uuid as result_finding_id', 'category_id', 'judgment_id', 'factor_id', 'findings', 'stw_ct1', 'stw_ct2', 'stw_ct3', 'stw_ct4', 'stw_ct5'])
             let mapChecks = await resChecks.map(async check => {
                 check.category_id = await idToUuid(table.tb_m_categories, 'category_id', check.category_id)
                 // REMOVE FROM result_check move to findings
