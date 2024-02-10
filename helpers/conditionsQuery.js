@@ -10,7 +10,6 @@ function queryCondExacOpAnd(objs, dateBetweenCol = null) {
     for (const key in objs) {
         const element = objs[key];
         containerQueryCond.push(`${key} = '${element}'`);
-        console.log();
     }
     return containerQueryCond.join(' AND ')
 }

@@ -63,7 +63,7 @@ module.exports = {
             }
             let attrsUserInsertFinding = await attrsUserInsertData(req, dataFinding)
             await queryPOST(table.tb_r_findings, attrsUserInsertFinding)
-            response.success(res, 'Success to add Member Voice')
+            response.success(res, 'Success to POST Member Voice')
         } catch (error) {
             console.log(error);
             response.failed(res, 'Error to POST member voice')
@@ -73,7 +73,7 @@ module.exports = {
         try {
             let { start_date, end_date, line_id, limit, currentPage } = req.query
             let containerQuery = ''
-            if (line_id && line_id != -1 && line_id != 'null') containerQuery += ` AND tml.uuid = '${await uuidToId(table.tb_m_lines, 'line_id', line_id)}'`
+            if (line_id && line_id != -1 && line_id != 'null') containerQuery += ` AND tml.line_id = '${await uuidToId(table.tb_m_lines, 'line_id', line_id)}'`
             if (start_date && end_date) containerQuery += `AND mv_date_finding BETWEEN '${start_date}' AND '${end_date}'`;
             let qLimit = ``
             let qOffset = (limit != -1 && limit) && currentPage > 1 ? `OFFSET ${limit * (currentPage - 1)}` : ``
@@ -91,10 +91,15 @@ module.exports = {
 
             const queryMV = await queryCustom(q)
             const memberVoiceData = queryMV.rows
-            console.log(memberVoiceData);
+            const mvFindingsData = memberVoiceData.map(async mv => {
+                mv.findings = await queryGET(table.v_finding_list, `WHERE finding_mv_id = '${mv.uuid}'`)
+                return mv
+            })
+            const waitMvFindings = await Promise.all(mvFindingsData)
+            response.success(res, 'Success to GET member voice', waitMvFindings)
         } catch (error) {
             console.log(error);
-            response.failed(res, 'Error to POST member voice')
+            response.failed(res, 'Error to GET member voice')
         }
     }
 }
