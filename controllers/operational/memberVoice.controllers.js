@@ -85,7 +85,8 @@ module.exports = {
                 tmu.noreg || '-' || tmu.fullname as mv_pic_nm,
                 date_part('week'::text, trmv.mv_plan_date) AS w_mv_plan_date,
                 date_part('week'::text, trmv.mv_actual_date) AS w_mv_actual_date,
-                tml.line_nm 
+                tml.line_nm,
+                tml.uuid as line_id 
             from tb_r_member_voice trmv 
             join tb_m_lines tml 
                 on tml.line_id  = trmv.line_id
