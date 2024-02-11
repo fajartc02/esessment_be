@@ -82,10 +82,15 @@ module.exports = {
             let q = `
             select 
                 trmv.*,
+                tmu.noreg || '-' || tmu.fullname as mv_pic_nm,
+                date_part('week'::text, trmv.mv_plan_date) AS w_mv_plan_date,
+                date_part('week'::text, trmv.mv_actual_date) AS w_mv_actual_date,
                 tml.line_nm 
             from tb_r_member_voice trmv 
             join tb_m_lines tml 
                 on tml.line_id  = trmv.line_id
+            join tb_m_users tmu
+                on tmu.user_id = trmv.mv_pic_id
             ${condDataNotDeleted}
             ${containerQuery} ${qLimit} ${qOffset}`
 
