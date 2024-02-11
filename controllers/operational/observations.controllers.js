@@ -183,6 +183,7 @@ module.exports = {
                 SELECT 
                     tro.uuid as observation_id,
                     tmp.uuid as pos_id,
+                    tml.uuid as line_id,
                     tml.line_nm,
                     tml.line_snm,
                     tmp.pos_nm,
