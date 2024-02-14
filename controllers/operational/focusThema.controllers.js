@@ -52,7 +52,8 @@ module.exports = {
             let q = `
             select 
                 trft.*,
-                tml.line_nm 
+                tml.line_nm,
+                tml.uuid as ft_line_id 
             from tb_r_focus_theme trft 
             join tb_m_lines tml 
                 on tml.line_id  = trft.ft_line_id

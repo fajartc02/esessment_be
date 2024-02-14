@@ -56,7 +56,8 @@ module.exports = {
             let q = `
             select 
                 henkaten.*,
-                tml.line_nm 
+                tml.line_nm,
+                tml.uuid as henkaten_line_id
             from tb_r_henkaten henkaten 
             join tb_m_lines tml 
                 on tml.line_id  = henkaten.henkaten_line_id
