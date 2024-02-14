@@ -82,6 +82,9 @@ module.exports = {
             let q = `
             select 
                 trmv.*,
+                trmv.uuid as mv_id,
+                tmfac.uuid as mv_factor_id,
+                tmu.uuid as mv_pic_id,
                 tmu.noreg || '-' || tmu.fullname as mv_pic_nm,
                 date_part('week'::text, trmv.mv_plan_date) AS w_mv_plan_date,
                 date_part('week'::text, trmv.mv_actual_date) AS w_mv_actual_date,
@@ -92,6 +95,8 @@ module.exports = {
                 on tml.line_id  = trmv.line_id
             join tb_m_users tmu
                 on tmu.user_id = trmv.mv_pic_id
+            join tb_m_factors tmfac
+                on tmfac.factor_id = trmv.mv_factor_id
             ${condDataNotDeleted}
             ${containerQuery} ${qLimit} ${qOffset}`
 
@@ -102,6 +107,22 @@ module.exports = {
                 return mv
             })
             const waitMvFindings = await Promise.all(mvFindingsData)
+            
+            let qCountTotal = `SELECT 
+            count(trmv.mv_id) as total_page
+            from tb_r_member_voice trmv 
+            join tb_m_lines tml 
+                on tml.line_id  = trmv.line_id
+            join tb_m_users tmu
+                on tmu.user_id = trmv.mv_pic_id
+        ${condDataNotDeleted}
+        ${containerQuery}`
+            let total_page = await queryCustom(qCountTotal)
+            let totalPage = await total_page.rows[0].total_page
+            if (waitMvFindings.length > 0) {
+                waitMvFindings[0].total_page = +totalPage > 0 ? Math.ceil(totalPage / +limit) : 1
+                waitMvFindings[0].limit = +limit
+            }
             response.success(res, 'Success to GET member voice', waitMvFindings)
         } catch (error) {
             console.log(error);

@@ -65,7 +65,6 @@ module.exports = {
             console.log(job);
             if (job.rows.length > 0) {
                 const total_job = await queryCustom(qCountTotal)
-                console.log(+total_job.rows[0].count);
                 job.rows[0].total_page = +total_job.rows[0].count > 0 ? Math.ceil(total_job.rows[0].count / +limit) : 0
                 job.rows[0].limit = +limit
             }

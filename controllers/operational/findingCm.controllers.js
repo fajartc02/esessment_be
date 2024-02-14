@@ -6,13 +6,29 @@ const attrsUserInsertData = require('../../helpers/addAttrsUserInsertData')
 const addAttrsUserUpdateData = require('../../helpers/addAttrsUserUpdateData')
 
 const queryCondExacOpAnd = require('../../helpers/conditionsQuery')
+const condDataNotDeleted = `WHERE deleted_dt IS NULL AND `
 
 
 module.exports = {
     getFindingCm: async(req, res) => {
         try {
+            let { start_date, end_date, line_id, limit, currentPage } = req.query
+            let qLimit = ``
+            let qOffset = (limit != -1 && limit) && currentPage > 1 ? `OFFSET ${limit * (currentPage - 1)}` : ``
+            if (limit != -1 && limit) qLimit = `LIMIT ${limit}`
             let conditions = queryCondExacOpAnd(req.query, 'finding_date');
-            let findingCmData = await queryGET(table.v_finding_list, `WHERE ${conditions}`)
+            let findingCmData = await queryGET(table.v_finding_list, `WHERE ${conditions} ${qLimit} ${qOffset}`)
+            let qCountTotal = `SELECT 
+            count(finding_id) as total_page
+        FROM ${table.v_finding_list}
+        ${condDataNotDeleted}
+        ${conditions}`
+            let total_page = await queryCustom(qCountTotal)
+            let totalPage = await total_page.rows[0].total_page
+            if (findingCmData.length > 0) {
+                findingCmData[0].total_page = +totalPage > 0 ? Math.ceil(totalPage / +limit) : 1
+                findingCmData[0].limit = +limit
+            }
 
             response.success(res, 'Success to get findingCm list', findingCmData)
         } catch (error) {

@@ -52,6 +52,7 @@ module.exports = {
             let q = `
             select 
                 trft.*,
+                trft.uuid as ft_id,
                 tml.line_nm,
                 tml.uuid as ft_line_id 
             from tb_r_focus_theme trft 
@@ -67,6 +68,19 @@ module.exports = {
                 return ft
             })
             const waitFtFindings = await Promise.all(ftFindingsData)
+            let qCountTotal = `SELECT 
+            count(trft.ft_id) as total_page
+            from tb_r_focus_theme trft 
+            join tb_m_lines tml 
+                on tml.line_id  = trft.ft_line_id
+        ${condDataNotDeleted}
+        ${containerQuery}`
+            let total_page = await queryCustom(qCountTotal)
+            let totalPage = await total_page.rows[0].total_page
+            if (FocusThemaData.length > 0) {
+                FocusThemaData[0].total_page = +totalPage > 0 ? Math.ceil(totalPage / +limit) : 1
+                FocusThemaData[0].limit = +limit
+            }
             response.success(res, 'Success to GET Focus Thema', waitFtFindings)
         } catch (error) {
             console.log(error);

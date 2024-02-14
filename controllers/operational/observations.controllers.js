@@ -152,7 +152,7 @@ module.exports = {
                 obser.checkers = await checkersData.map(mp => {
                     return mp.checker_nm
                 })
-                obser.checkers.length > 1 ? obser.is2TL = true : obser.is2TL = false
+                obser.checkers.length > 1 ? obser.is_wajik = true : obser.is_wajik = false
 
                 return obser
             })
@@ -232,7 +232,9 @@ module.exports = {
                 check.category_id = await idToUuid(table.tb_m_categories, 'category_id', check.category_id)
                 let categoryData = await queryGET(table.tb_m_categories, `WHERE uuid = '${check.category_id}'`, ['category_nm'])
                 check.category_nm = categoryData[0].category_nm
-                check.findings = await queryGET(table.tb_r_result_findings, `WHERE obs_result_id = '${check.obs_result_id}'`)
+                let resFindingIdData = await queryGET(table.tb_r_result_findings, `WHERE obs_result_id = ${check.obs_result_id}`, ['uuid'])
+                let resFindingId = resFindingIdData[0]?.uuid ?? null
+                check.findings = resFindingId ? await queryGET(table.v_finding_list, `WHERE finding_obs_id = '${resFindingId}'`) : []
                 check.judgment_id = await idToUuid(table.tb_m_judgments, 'judgment_id', check.judgment_id) ?? null
                 return check
             })
@@ -243,7 +245,6 @@ module.exports = {
                 let avg = null
                 // ((max (dari 5 input) - min (dari 5 input) / 2) / AVG) x 100%
                 let perc = null
-                console.log(i);
                 if(isStw && item.stw_ct1) {
                     let containerCT = []
                     containerCT.push(+item.stw_ct1)
@@ -257,7 +258,6 @@ module.exports = {
                 }
                 item.avg = avg ?? null
                 item.perc = perc ?? null
-                console.log(item);
                 return item
             })
             obser.rows.push(mapResCheckAvg)

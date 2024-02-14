@@ -56,11 +56,16 @@ module.exports = {
             let q = `
             select 
                 henkaten.*,
+                henkaten.uuid as henkaten_id,
+                tmu.uuid as henkaten_pic,
+                tmu.noreg || '-' || tmu.fullname as henkaten_pic_nm,
                 tml.line_nm,
                 tml.uuid as henkaten_line_id
             from tb_r_henkaten henkaten 
             join tb_m_lines tml 
                 on tml.line_id  = henkaten.henkaten_line_id
+            join tb_m_users tmu
+                on tmu.user_id = henkaten.henkaten_pic
             ${condDataNotDeleted}
             ${containerQuery} ${qLimit} ${qOffset}`
 
@@ -71,6 +76,21 @@ module.exports = {
                 return henkaten
             })
             const waithenkatenFindings = await Promise.all(henkatenFindingsData)
+            let qCountTotal = `SELECT 
+            count(henkaten.henkaten_id) as total_page
+            from tb_r_henkaten henkaten 
+            join tb_m_lines tml 
+                on tml.line_id  = henkaten.henkaten_line_id
+            join tb_m_users tmu
+                on tmu.user_id = henkaten.henkaten_pic
+        ${condDataNotDeleted}
+        ${containerQuery}`
+            let total_page = await queryCustom(qCountTotal)
+            let totalPage = await total_page.rows[0].total_page
+            if (HenkatenData.length > 0) {
+                HenkatenData[0].total_page = +totalPage > 0 ? Math.ceil(totalPage / +limit) : 1
+                HenkatenData[0].limit = +limit
+            }
             response.success(res, 'Success to GET Henkaten', waithenkatenFindings)
         } catch (error) {
             console.log(error);
