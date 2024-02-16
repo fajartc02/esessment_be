@@ -1,5 +1,6 @@
 const table = require('../../config/table')
 const attrsUserInsertData = require('../../helpers/addAttrsUserInsertData')
+const attrsUserUpdateData = require('../../helpers/addAttrsUserUpdateData')
 const getLastIdData = require('../../helpers/getLastIdData')
 const { queryPOST, queryCustom, queryGET, queryPUT } = require('../../helpers/query')
 const response = require('../../helpers/response')
@@ -127,6 +128,57 @@ module.exports = {
         } catch (error) {
             console.log(error);
             response.failed(res, 'Error to GET member voice')
+        }
+    },
+    editMemberVoice: async(req, res) => {
+        try {
+            console.log(req.params);
+            // UPDATE mv data
+            // line_id
+            // mv_factor_id
+            // mv_pic_id
+            // UPDATE findings Data WHERE finding_mv_id = mv_id
+            let findingsData = {
+                ...req.body.findings,
+                line_id: await uuidToId(table.tb_m_lines, 'line_id', req.body.findings.line_id),
+                category_id: await uuidToId(table.tb_m_categories, 'category_id', req.body.findings.category_id),
+                factor_id: await uuidToId(table.tb_m_factors, 'factor_id', req.body.findings.factor_id),
+                cm_pic_id: await uuidToId(table.tb_m_users, 'user_id', req.body.findings.cm_pic_id),
+                cm_result_factor_id: await uuidToId(table.tb_m_factors, 'factor_id', req.body.findings.cm_result_factor_id),
+            }
+            delete req.body.findings
+            let mvData = {
+                ...req.body,
+                line_id: await uuidToId(table.tb_m_lines, 'line_id', req.body.line_id),
+                mv_factor_id: await uuidToId(table.tb_m_factors, 'factor_id', req.body.mv_factor_id),
+                mv_pic_id: await uuidToId(table.tb_m_users, 'user_id', req.body.mv_pic_id)
+            }
+            let attrsUpdateUserFinding = await attrsUserUpdateData(req, findingsData)
+            let attrsUpdateUserMv = await attrsUserUpdateData(req, mvData)
+            let mv_id = await uuidToId(table.tb_r_member_voice, 'mv_id', req.params.id)
+            // WHERE finding_mv_id convert uuidToId
+            await queryPUT(table.tb_r_findings, attrsUpdateUserFinding, `WHERE finding_mv_id = '${mv_id}'`)
+            await queryPUT(table.tb_r_member_voice, attrsUpdateUserMv, `WHERE mv_id = '${mv_id}'`)
+            response.success(res, 'Success to EDIT Member Voice')
+        } catch (error) {
+            console.log(error);
+            response.failed(res, 'Error to EDIT member voice')
+        }
+    },
+    deleteMemberVoice: async(req, res) => {
+        console.log(req.params);
+        try {
+            let mv_id = await uuidToId(table.tb_r_member_voice, 'mv_id', req.params.id)
+            let obj = {
+                deleted_dt: "CURRENT_TIMESTAMP",
+                deleted_by: req.user.fullname
+            }
+            await queryPUT(table.tb_r_findings, obj, `WHERE finding_mv_id = '${mv_id}'`)
+            await queryPUT(table.tb_r_member_voice, obj, `WHERE mv_id = '${mv_id}'`)
+            response.success(res, 'Success to DELETE Member Voice')
+        } catch (error) {
+            console.log(error);
+            response.failed(res, 'Error to DELETE member voice')
         }
     }
 }

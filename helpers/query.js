@@ -79,7 +79,11 @@ module.exports = {
         return new Promise(async(resolve, reject) => {
             let containerSetValues = []
             for (const key in data) {
-                containerSetValues.push(`${key} = '${data[key]}'`)
+                if (data[key] == 'CURRENT_TIMESTAMP') {
+                    containerSetValues.push(`${key} = CURRENT_TIMESTAMP`)
+                } else {
+                    containerSetValues.push(`${key} = '${data[key]}'`)
+                }
             }
 
             let q = `UPDATE ${table} SET ${containerSetValues.join(',')} ${whereCond} RETURNING *`
@@ -95,6 +99,21 @@ module.exports = {
     queryDELETE: async(table, whereCond = '') => {
         return new Promise(async(resolve, reject) => {
             let q = `DELETE FROM ${table} ${whereCond}`
+            await database.query(q)
+                .then((result) => {
+                    resolve(result)
+                }).catch((err) => {
+                    reject(err)
+                });
+        })
+    },
+    querySoftDELETE: async(table, data, whereCond = '') => {
+        return new Promise(async(resolve, reject) => {
+            let containerSetValues = []
+            for (const key in data) {
+                containerSetValues.push(`${key} = '${data[key]}'`)
+            }
+            let q = `UPDATE ${table} SET ${containerSetValues.join(',')} FROM ${whereCond}`
             await database.query(q)
                 .then((result) => {
                     resolve(result)
