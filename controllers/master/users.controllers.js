@@ -40,7 +40,7 @@ module.exports = {
                 return;
             }
             const users = await queryGET(table.tb_m_users, `WHERE ${condDataNotDeleted}${containerQuery}`, cols)
-            
+
             response.success(res, 'Success to get users', users)
 
         } catch (error) {
@@ -62,7 +62,7 @@ module.exports = {
             req.body.line_id = idLine
 
             delete req.body.id
-            delete req.body.text  
+            delete req.body.text
             req.body.is_activated = true
 
             let attrsUserInsert = await attrsUserInsertData(req, req.body)
@@ -81,8 +81,8 @@ module.exports = {
             let idGroup = await uuidToId(table.tb_m_groups, 'group_id', req.body.group_id)
             req.body.line_id = idLine
             req.body.group_id = idGroup
-            let unreadPassword = await security.encryptPassword(req.body.password)
-            req.body.password = unreadPassword
+                // let unreadPassword = await security.encryptPassword(req.body.password)
+                // req.body.password = unreadPassword
 
             const attrsUserUpdate = await attrsUserUpdateData(req, req.body)
             const result = await queryPUT(table.tb_m_users, attrsUserUpdate, `WHERE user_id = '${id}'`)
