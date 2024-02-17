@@ -42,7 +42,7 @@ module.exports = {
 
             mvObj.mv_id = await getLastIdData(table.tb_r_member_voice, 'mv_id') + 1
             mvObj.uuid = await req.uuid();
-            mvObj.mv_pic_id = await uuidToId(table.tb_m_users, 'user_id', mv_pic_id);
+            mvObj.mv_pic_id = await uuidToId(table.tb_m_users, 'user_id', mv_pic_id.pic_id);
             mvObj.line_id = await uuidToId(table.tb_m_lines, 'line_id', line_id);
             mvObj.mv_factor_id = await uuidToId(table.tb_m_factors, 'factor_id', mv_factor_id);
             let attrsUserCreated = await attrsUserInsertData(req, mvObj)
