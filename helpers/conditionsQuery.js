@@ -9,7 +9,14 @@ function queryCondExacOpAnd(objs, dateBetweenCol = null) {
     delete objs.end_date;
     for (const key in objs) {
         const element = objs[key];
-        if (key !== 'limit' && key !== 'currentPage') containerQueryCond.push(`${key} = '${element}'`);
+
+        if (
+            key !== 'limit' && key !== 'currentPage' &&
+            objs[key] != -1 &&
+            objs[key] != 'null' &&
+            objs[key] != '' &&
+            objs[key] != null
+        ) containerQueryCond.push(`${key} = '${element}'`);
     }
     return containerQueryCond.join(' AND ')
 }
