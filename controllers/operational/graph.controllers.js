@@ -9,8 +9,8 @@ module.exports = {
                     let { start_date, end_date, line_id, group_id } = req.query
                     let isLine = false;
                     let isGroup = false;
-                    line_id && line_id != '' & line_id != null & line_id != 'null' && line_id != -1 && line_id != '-1' ? isLine = true : isLine = false;
-                    group_id && group_id != '' & group_id != null & group_id != 'null' && group_id != -1 && group_id != '-1' ? isGroup = true : isGroup = false;
+                    line_id && line_id != '' & line_id != null & line_id != 'null' && line_id != -1 && line_id != '-1/' ? isLine = true : isLine = false;
+                    group_id && group_id != '' & group_id != null & group_id != 'null' && group_id != -1 && group_id != '-1/' ? isGroup = true : isGroup = false;
                     const q = `SELECT uuid as line_id, line_nm, line_snm FROM tb_m_lines ${isLine ? `WHERE uuid = '${line_id}'` : ''}`
 
             const rawLines = await queryCustom(q)
