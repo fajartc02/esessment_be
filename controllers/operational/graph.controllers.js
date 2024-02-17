@@ -1,6 +1,8 @@
 const table = require('../../config/table')
+const queryCondExacOpAnd = require('../../helpers/conditionsQuery')
 const { queryCustom, queryGET } = require('../../helpers/query')
 const response = require('../../helpers/response')
+const condDataNotDeleted = `deleted_dt IS NULL`
 
 
 module.exports = {
@@ -11,7 +13,7 @@ module.exports = {
                     let isGroup = false;
                     line_id && line_id != '' & line_id != null & line_id != 'null' && line_id != -1 && line_id != '-1/' ? isLine = true : isLine = false;
                     group_id && group_id != '' & group_id != null & group_id != 'null' && group_id != -1 && group_id != '-1/' ? isGroup = true : isGroup = false;
-                    const q = `SELECT uuid as line_id, line_nm, line_snm FROM tb_m_lines ${isLine ? `WHERE uuid = '${line_id}'` : ''}`
+                    const q = `SELECT uuid as line_id, line_nm, line_snm FROM tb_m_lines WHERE ${condDataNotDeleted} ${isLine ? ` AND uuid = '${line_id}'` : ''} `
 
             const rawLines = await queryCustom(q)
             let linesData = rawLines.rows
@@ -28,23 +30,22 @@ module.exports = {
             isLine ? linesData = mapLineMonth : null
             
             let mapLinesCountFindings = await linesData.map(async line => {
-                let findingMVProblem = await queryGET(table.v_finding_list, `WHERE line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'MV' AND status_finding = 'problem' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
-                let findingMVClosed = await queryGET(table.v_finding_list, `WHERE line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'MV' AND status_finding = 'closed' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
-                let findingMVRemain = await queryGET(table.v_finding_list, `WHERE line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'MV' AND status_finding = 'remain' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
+                let findingMVProblem = await queryGET(table.v_finding_list, `WHERE ${condDataNotDeleted} line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'MV' AND status_finding = 'problem' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
+                let findingMVClosed = await queryGET(table.v_finding_list, `WHERE ${condDataNotDeleted} line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'MV' AND status_finding = 'closed' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
+                let findingMVRemain = await queryGET(table.v_finding_list, `WHERE ${condDataNotDeleted} line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'MV' AND status_finding = 'remain' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
 
-                let findingObsProblem = await queryGET(table.v_finding_list, `WHERE line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'Obs' AND status_finding = 'problem' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
-                let findingObsClosed = await queryGET(table.v_finding_list, `WHERE line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'Obs' AND status_finding = 'closed' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
-                let findingObsRemain = await queryGET(table.v_finding_list, `WHERE line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'Obs' AND status_finding = 'remain' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
+                let findingObsProblem = await queryGET(table.v_finding_list, `WHERE ${condDataNotDeleted} line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'Obs' AND status_finding = 'problem' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
+                let findingObsClosed = await queryGET(table.v_finding_list, `WHERE ${condDataNotDeleted} line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'Obs' AND status_finding = 'closed' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
+                let findingObsRemain = await queryGET(table.v_finding_list, `WHERE ${condDataNotDeleted} line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'Obs' AND status_finding = 'remain' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
 
-                let findingHProblem = await queryGET(table.v_finding_list, `WHERE line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'H' AND status_finding = 'problem' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
-                let findingHClosed = await queryGET(table.v_finding_list, `WHERE line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'H' AND status_finding = 'closed' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
-                let findingHRemain = await queryGET(table.v_finding_list, `WHERE line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'H' AND status_finding = 'remain' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
+                let findingHProblem = await queryGET(table.v_finding_list, `WHERE ${condDataNotDeleted} line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'H' AND status_finding = 'problem' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
+                let findingHClosed = await queryGET(table.v_finding_list, `WHERE ${condDataNotDeleted} line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'H' AND status_finding = 'closed' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
+                let findingHRemain = await queryGET(table.v_finding_list, `WHERE ${condDataNotDeleted} line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'H' AND status_finding = 'remain' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
 
-                let findingFTProblem = await queryGET(table.v_finding_list, `WHERE line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'FT' AND status_finding = 'problem' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
-                let findingFTClosed = await queryGET(table.v_finding_list, `WHERE line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'FT' AND status_finding = 'closed' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
-                let findingFTRemain = await queryGET(table.v_finding_list, `WHERE line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'FT' AND status_finding = 'remain' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
-                console.log(findingObsClosed);
-                console.log(findingMVClosed);
+                let findingFTProblem = await queryGET(table.v_finding_list, `WHERE ${condDataNotDeleted} line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'FT' AND status_finding = 'problem' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
+                let findingFTClosed = await queryGET(table.v_finding_list, `WHERE ${condDataNotDeleted} line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'FT' AND status_finding = 'closed' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
+                let findingFTRemain = await queryGET(table.v_finding_list, `WHERE ${condDataNotDeleted} line_id = '${isLine ? line_id : line.line_id}' AND source_category = 'FT' AND status_finding = 'remain' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ''} ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ''} ${isLine ? "GROUP BY source_category, EXTRACT('MONTH' FROM finding_date)" : ''}`, [`count(finding_id)::int${isLine ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_category" : ''}`])
+
                 if (!isLine) {
                     line.chartData = [{
                         name: 'Member Voice',
@@ -92,6 +93,30 @@ module.exports = {
         } catch (error) {
             console.log(error);
             response.failed(res, 'Error to get graph finding STW')
+        }
+    },
+    graphOverallSTW: async (req, res) => {
+        try {
+            // Problem yang belum slesai terhadap close
+            let conditions = queryCondExacOpAnd(req.query, 'finding_date')
+            let q = `SELECT 
+                count(finding_id)::int as total,
+                status_finding
+            FROM v_finding_list
+            WHERE ${condDataNotDeleted}
+            AND ${conditions}
+            GROUP BY status_finding`
+            let data = await queryCustom(q);
+            console.log(data.rows);
+            let sum = data.rows.reduce((n, {total}) => n + total, 0);
+            let dataMapPerc = await data.rows.map(item => {
+                item.perc = (item.total / sum) * 100
+                return item
+            })
+            
+            response.success(res, 'Success to Summary graph STW', dataMapPerc)
+        } catch (error) {
+            response.failed(res, 'Error to Summary graph STW')
         }
     }
 }

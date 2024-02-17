@@ -1,9 +1,10 @@
 const router = require('express')()
 
 
-const { graphFindingSTW } = require('../../../controllers/operational/graph.controllers')
+const { graphFindingSTW, graphOverallSTW } = require('../../../controllers/operational/graph.controllers')
 const auth = require('../../../helpers/auth')
 
+router.get('/overall', auth.verifyToken, graphOverallSTW)
 router.get('/', auth.verifyToken, graphFindingSTW)
 
 
