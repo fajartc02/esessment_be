@@ -115,8 +115,29 @@ module.exports = {
                 item.perc = +((item.total / sum) * 100).toFixed(1)
                 return item
             })
+            let dataGraph = [{
+                name: 'problem',
+                data: [0],
+                perc: 0
+            },{
+                name: 'closed',
+                data: [0],
+                perc: 0
+            },{
+                name: 'remain',
+                data: [0],
+                perc: 0
+            }]
+            for (let i = 0; i < dataMapPerc.length; i++) {
+                let element = dataMapPerc[i];
+                let findData = dataGraph.find(elem => {return elem.name == element.status_finding})
+                findData.data[0] = element.total
+                findData.perc = element.perc
+            }
+            console.log('findData');
+            console.log(dataGraph);
 
-            response.success(res, 'Success to Summary graph STW', dataMapPerc)
+            response.success(res, 'Success to Summary graph STW', dataGraph)
         } catch (error) {
             response.failed(res, 'Error to Summary graph STW')
         }
