@@ -47,7 +47,7 @@ module.exports = {
         try {
             let { start_date, end_date, line_id, limit, currentPage } = req.query
             let containerQuery = ''
-            if (line_id && line_id != -1 && line_id != 'null') containerQuery += ` AND tml.line_id = '${await uuidToId(table.tb_m_lines, 'line_id', line_id)}'`
+            if (line_id && line_id != -1 && line_id != 'null' && line_id != '-1/') containerQuery += ` AND tml.line_id = '${await uuidToId(table.tb_m_lines, 'line_id', line_id)}'`
             if (start_date && end_date) containerQuery += `AND henkaten.created_dt BETWEEN '${start_date}' AND '${end_date}'`;
             let qLimit = ``
             let qOffset = (limit != -1 && limit) && currentPage > 1 ? `OFFSET ${limit * (currentPage - 1)}` : ``

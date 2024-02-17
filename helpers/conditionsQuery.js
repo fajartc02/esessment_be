@@ -15,6 +15,7 @@ function queryCondExacOpAnd(objs, dateBetweenCol = null) {
             objs[key] != -1 &&
             objs[key] != 'null' &&
             objs[key] != '' &&
+            objs[key] != '-1/' &&
             objs[key] != null
         ) containerQueryCond.push(`${key} = '${element}'`);
     }
