@@ -46,12 +46,12 @@ module.exports = {
             mvObj.line_id = await uuidToId(table.tb_m_lines, 'line_id', line_id);
             mvObj.mv_factor_id = await uuidToId(table.tb_m_factors, 'factor_id', mv_factor_id);
             let attrsUserCreated = await attrsUserInsertData(req, mvObj)
-
+            console.log(req.body.findings);
             let mvData = await queryPOST(table.tb_r_member_voice, attrsUserCreated)
                 // INSERT TO TB_R_FINDINGS
             let lastFindingId = await getLastIdData(table.tb_r_findings, 'finding_id') + 1
-            req.body.findings.category_id = await uuidToId(table.tb_m_categories, 'category_id', req.body.findings.category_id) ?? null
-            req.body.findings.cm_pic_id = await uuidToId(table.tb_m_users, 'user_id', req.body.findings.cm_pic_id) ?? null
+            req.body.findings.category_id = req.body.findings.category_id != '' ? await uuidToId(table.tb_m_categories, 'category_id', req.body.findings.category_id) ?? null : null
+            req.body.findings.cm_pic_id = await uuidToId(table.tb_m_users, 'user_id', req.body.findings.cm_pic_id.pic_id) ?? null
             req.body.findings.factor_id = await uuidToId(table.tb_m_factors, 'factor_id', req.body.findings.factor_id) ?? null
             req.body.findings.line_id = await uuidToId(table.tb_m_lines, 'line_id', req.body.findings.line_id) ?? null
             req.body.findings.cm_result_factor_id = await uuidToId(table.tb_m_factors, 'factor_id', req.body.findings.cm_result_factor_id) ?? null
@@ -62,6 +62,7 @@ module.exports = {
                 finding_mv_id: mvData.rows[0].mv_id,
                 ...req.body.findings
             }
+            console.log(dataFinding);
             let attrsUserInsertFinding = await attrsUserInsertData(req, dataFinding)
             await queryPOST(table.tb_r_findings, attrsUserInsertFinding)
             response.success(res, 'Success to POST Member Voice')

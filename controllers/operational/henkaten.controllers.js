@@ -16,16 +16,16 @@ module.exports = {
             let lasthenkatenId = await getLastIdData(table.tb_r_henkaten, 'henkaten_id') + 1
             henkatenObj.henkaten_id = await lasthenkatenId
             henkatenObj.uuid = req.uuid()
-            henkatenObj.henkaten_pic = await uuidToId(table.tb_m_users, 'user_id', henkatenObj.henkaten_pic) ?? null
-            henkatenObj.henkaten_line_id = await uuidToId(table.tb_m_lines, 'line_id', henkatenObj.henkaten_line_id) ?? null
+            henkatenObj.henkaten_pic = await uuidToId(table.tb_m_users, 'user_id', henkatenObj.henkaten_pic.pic_id) ?? null
+            henkatenObj.henkaten_line_id = await uuidToId(table.tb_m_lines, 'line_id', henkatenObj.henkaten_line_id.line_id) ?? null
             let attrsUserCreated = await attrsUserInsertData(req, henkatenObj)
             console.log(attrsUserCreated);
             let henkatenData = await queryPOST(table.tb_r_henkaten, attrsUserCreated)
 
 
             let lastFindingId = await getLastIdData(table.tb_r_findings, 'finding_id') + 1
-            findingData.category_id = await uuidToId(table.tb_m_categories, 'category_id', findingData.category_id) ?? null
-            findingData.cm_pic_id = await uuidToId(table.tb_m_users, 'user_id', findingData.cm_pic_id) ?? null
+            findingData.category_id = findingData.category_id != '' ? await uuidToId(table.tb_m_categories, 'category_id', findingData.category_id) ?? null : null
+            findingData.cm_pic_id = await uuidToId(table.tb_m_users, 'user_id', findingData.cm_pic_id.pic_id) ?? null
             findingData.factor_id = await uuidToId(table.tb_m_factors, 'factor_id', findingData.factor_id) ?? null
             findingData.line_id = await uuidToId(table.tb_m_lines, 'line_id', findingData.line_id) ?? null
             findingData.cm_result_factor_id = await uuidToId(table.tb_m_factors, 'factor_id', findingData.cm_result_factor_id) ?? null
