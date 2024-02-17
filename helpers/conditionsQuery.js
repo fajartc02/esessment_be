@@ -5,6 +5,8 @@ function queryCondExacOpAnd(objs, dateBetweenCol = null) {
     }
     let containerQueryCond = [];
     containerQueryCond.push(dateFilter)
+    console.log('containerQueryCond');
+    console.log(containerQueryCond);
     delete objs.start_date;
     delete objs.end_date;
     for (const key in objs) {
@@ -16,7 +18,8 @@ function queryCondExacOpAnd(objs, dateBetweenCol = null) {
             objs[key] != 'null' &&
             objs[key] != '' &&
             objs[key] != '-1/' &&
-            objs[key] != null
+            objs[key] != null &&
+            objs[key]
         ) containerQueryCond.push(`${key} = '${`${element}`.replace('/', '')}'`);
     }
     return containerQueryCond.join(' AND ')
