@@ -131,8 +131,8 @@ module.exports = {
             for (let i = 0; i < dataMapPerc.length; i++) {
                 let element = dataMapPerc[i];
                 let findData = dataGraph.find(elem => {return elem.name == element.status_finding})
-                findData.data[0] = element.total
-                findData.perc = element.perc
+                findData.data[0] = element.perc
+                findData.perc = element.total
             }
             console.log('findData');
             console.log(dataGraph);
