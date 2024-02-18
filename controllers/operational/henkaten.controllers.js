@@ -1,5 +1,6 @@
 const table = require('../../config/table')
 const attrsUserInsertData = require('../../helpers/addAttrsUserInsertData')
+const queryCondExacOpAnd = require('../../helpers/conditionsQuery')
 const getLastIdData = require('../../helpers/getLastIdData')
 const { queryPOST, queryCustom, queryGET, queryPUT } = require('../../helpers/query')
 const response = require('../../helpers/response')
@@ -46,13 +47,12 @@ module.exports = {
     getHenkaten: async(req, res) => {
         try {
             let { start_date, end_date, line_id, limit, currentPage } = req.query
-            let containerQuery = ''
-            if (line_id && line_id != -1 && line_id != 'null' && line_id != '-1/') containerQuery += ` AND tml.line_id = '${await uuidToId(table.tb_m_lines, 'line_id', line_id)}'`
-            if (start_date && end_date) containerQuery += `AND henkaten.created_dt BETWEEN '${start_date}' AND '${end_date}'`;
+            req.query.line_id = line_id ? `${await uuidToId(table.tb_m_lines, 'line_id', line_id)}` : null
+            let conditions = ' AND ' + queryCondExacOpAnd(req.query, 'henkaten.created_dt')
             let qLimit = ``
             let qOffset = (limit != -1 && limit) && currentPage > 1 ? `OFFSET ${limit * (currentPage - 1)}` : ``
             if (limit != -1 && limit) qLimit = `LIMIT ${limit}`
-
+            console.log(conditions);
             let q = `
             select 
                 henkaten.*,
@@ -67,7 +67,7 @@ module.exports = {
             join tb_m_users tmu
                 on tmu.user_id = henkaten.henkaten_pic
             ${condDataNotDeleted}
-            ${containerQuery} ${qLimit} ${qOffset}`
+            ${conditions} ${qLimit} ${qOffset}`
 
             const queryhenkaten = await queryCustom(q)
             const HenkatenData = queryhenkaten.rows
@@ -84,7 +84,7 @@ module.exports = {
             join tb_m_users tmu
                 on tmu.user_id = henkaten.henkaten_pic
         ${condDataNotDeleted}
-        ${containerQuery}`
+        ${conditions}`
             let total_page = await queryCustom(qCountTotal)
             let totalPage = await total_page.rows[0].total_page
             if (HenkatenData.length > 0) {

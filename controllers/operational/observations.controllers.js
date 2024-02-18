@@ -144,8 +144,6 @@ module.exports = {
                     ${whereCond}
                 ORDER BY tml.line_nm,tmp.pos_nm ASC
             `)
-            console.log(whereCond);
-            console.log(`${'tro.' + condDataNotDeleted}`);
             let mapObs = observations.rows.map(async obser => {
                 let obserId = await uuidToId(table.tb_r_observations, 'observation_id', obser.observation_id)
                 let checkersData = await queryGET(table.tb_r_obs_checker, `WHERE observation_id = ${obserId}`, ['uuid as obs_checker_id', 'checker_nm'])

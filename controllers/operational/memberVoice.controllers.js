@@ -74,9 +74,11 @@ module.exports = {
     getMemberVoice: async(req, res) => {
         try {
             let { start_date, end_date, line_id, limit, currentPage } = req.query
-            let containerQuery = ''
-            if (line_id && line_id != -1 && line_id != 'null' && line_id != '-1/') containerQuery += ` AND tml.line_id = '${await uuidToId(table.tb_m_lines, 'line_id', line_id)}'`
-            if (start_date && end_date) containerQuery += `AND mv_date_finding BETWEEN '${start_date}' AND '${end_date}'`;
+            // let containerQuery = ''
+            // if (line_id && line_id != -1 && line_id != 'null' && line_id != '-1/') containerQuery += ` AND tml.line_id = '${await uuidToId(table.tb_m_lines, 'line_id', line_id)}'`
+            // if (start_date && end_date) containerQuery += `AND mv_date_finding BETWEEN '${start_date}' AND '${end_date}'`;
+            req.query.line_id = line_id ? `${await uuidToId(table.tb_m_lines, 'line_id', line_id)}` : null
+            let conditions = ' AND ' + queryCondExacOpAnd(req.query, 'trft.created_dt')
             let qLimit = ``
             let qOffset = (limit != -1 && limit) && currentPage > 1 ? `OFFSET ${limit * (currentPage - 1)}` : ``
             if (limit != -1 && limit) qLimit = `LIMIT ${limit}`
@@ -100,7 +102,7 @@ module.exports = {
             join tb_m_factors tmfac
                 on tmfac.factor_id = trmv.mv_factor_id
             ${condDataNotDeleted}
-            ${containerQuery} ${qLimit} ${qOffset}`
+            ${conditions} ${qLimit} ${qOffset}`
 
             const queryMV = await queryCustom(q)
             const memberVoiceData = queryMV.rows
@@ -118,7 +120,7 @@ module.exports = {
             join tb_m_users tmu
                 on tmu.user_id = trmv.mv_pic_id
         ${condDataNotDeleted}
-        ${containerQuery}`
+        ${conditions}`
             let total_page = await queryCustom(qCountTotal)
             let totalPage = await total_page.rows[0].total_page
             if (waitMvFindings.length > 0) {
