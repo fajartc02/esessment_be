@@ -149,11 +149,21 @@ module.exports = {
             let mapObs = observations.rows.map(async obser => {
                 let obserId = await uuidToId(table.tb_r_observations, 'observation_id', obser.observation_id)
                 let checkersData = await queryGET(table.tb_r_obs_checker, `WHERE observation_id = ${obserId}`, ['uuid as obs_checker_id', 'checker_nm'])
+                let qCheckFinding = `
+                    SELECT
+                        trrf.result_finding_id
+                    FROM ${table.tb_r_obs_results} tror
+                    JOIN ${table.tb_r_result_findings} trrf
+                        ON tror.obs_result_id = trrf.obs_result_id
+                    WHERE observation_id = ${obserId}
+                `
+                let findingData = await queryCustom(qCheckFinding);
+                let is_finding = findingData.rows.length > 0
+                obser.is_finding = is_finding
                 obser.checkers = await checkersData.map(mp => {
                     return mp.checker_nm
                 })
                 obser.checkers.length > 1 ? obser.is_wajik = true : obser.is_wajik = false
-
                 return obser
             })
             let waitDataObs = await Promise.all(mapObs)
@@ -226,7 +236,7 @@ module.exports = {
                 return itm
             })
             const obsId = await uuidToId(table.tb_r_observations, 'observation_id', req.params.id)
-            // factor_id, findings isn't USED AGAIN BECAUSE ALREADY ENHANCEMENT
+                // factor_id, findings isn't USED AGAIN BECAUSE ALREADY ENHANCEMENT
             let resChecks = await queryGET(table.tb_r_obs_results, `WHERE observation_id = ${obsId}`, ['obs_result_id', 'category_id', 'judgment_id', 'stw_ct1', 'stw_ct2', 'stw_ct3', 'stw_ct4', 'stw_ct5'])
             let mapChecks = await resChecks.map(async check => {
                 check.category_id = await idToUuid(table.tb_m_categories, 'category_id', check.category_id)
@@ -243,9 +253,9 @@ module.exports = {
             let isStw = true
             const mapResCheckAvg = await waitResChecks.map((item, i) => {
                 let avg = null
-                // ((max (dari 5 input) - min (dari 5 input) / 2) / AVG) x 100%
+                    // ((max (dari 5 input) - min (dari 5 input) / 2) / AVG) x 100%
                 let perc = null
-                if(isStw && item.stw_ct1) {
+                if (isStw && item.stw_ct1) {
                     let containerCT = []
                     containerCT.push(+item.stw_ct1)
                     containerCT.push(+item.stw_ct2)
@@ -332,9 +342,9 @@ module.exports = {
             // 1. UPDATE tb_r_observations ALREADY CHECK
             const obsId = await uuidToId(table.tb_r_observations, 'observation_id', req.body.observation_id)
             const groupId = await uuidToId(table.tb_m_groups, 'group_id', req.body.group_id)
-            let updateActual = { 
-                actual_check_dt: req.body.actual_check_dt, 
-                group_id: groupId, 
+            let updateActual = {
+                actual_check_dt: req.body.actual_check_dt,
+                group_id: groupId,
                 comment_sh: req.body.comment_sh,
                 comment_ammgr: req.body.comment_ammgr
             }
@@ -343,7 +353,7 @@ module.exports = {
 
             // 2. INSERT tb_r_obs_results FROM req.body.results_check
             let resultCheckData = req.body.results_check
-            
+
             const lastIdResCheck = await getLastIdData(table.tb_r_obs_results, 'obs_result_id') + 1
             let mapResultChecks = await resultCheckData.map(async(item, i) => {
                 item.observation_id = obsId
@@ -355,7 +365,7 @@ module.exports = {
             })
             let waitMapResCheck = await Promise.all(mapResultChecks)
             const addAttrsUserInst = await attrsUserInsertData(req, waitMapResCheck)
-            
+
             req.body.group_id = await uuidToId(table.tb_m_groups, 'group_id', req.body.group_id)
             let resInstCheck = await queryBulkPOST(table.tb_r_obs_results, addAttrsUserInst)
 
@@ -386,7 +396,7 @@ module.exports = {
             })
             let waitFindingsMap = await Promise.all(findingsMapInstData);
             console.log(waitFindingsMap);
-            
+
             for (let i = 0; i < waitFindingsMap.length; i++) {
                 const findingData = waitFindingsMap[i];
                 if (findingData) {
@@ -397,7 +407,7 @@ module.exports = {
                     }
                     let instDataObsFinding = await queryPOST(table.tb_r_result_findings, objResultFinding);
                     let obsFindingId = instDataObsFinding.rows[0].result_finding_id
-                    
+
                     delete findingData.obs_result_id;
                     // 4. INSERT to tb_r_findings
                     let lastFindingId = await getLastIdData(table.tb_r_findings, 'finding_id') + 1
@@ -410,7 +420,7 @@ module.exports = {
                     await queryPOST(table.tb_r_findings, dataFinding)
                 }
             }
-            
+
             /* 
                 * update tb_r_observations already check
                 * insert tb_r_obs_results
