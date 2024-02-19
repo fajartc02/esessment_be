@@ -336,6 +336,16 @@ module.exports = {
         // observation_id
         // category_id,judgement_id, factor_id(opt), findings ARRAY
         try {
+            let finding_img = null
+            if (req.file) {
+                finding_img = `./${req.file.path}`
+            } 
+            delete req.body.dest
+            delete req.body.attachment
+            req.body.results_check = JSON.parse(req.body.results_check)
+            req.body.findings = JSON.parse(req.body.findings)
+            console.log(req.body);
+            
             // console.log(req.body);
             // 1. UPDATE tb_r_observations ALREADY CHECK
             const obsId = await uuidToId(table.tb_r_observations, 'observation_id', req.body.observation_id)
@@ -393,7 +403,7 @@ module.exports = {
                 return null
             })
             let waitFindingsMap = await Promise.all(findingsMapInstData);
-            console.log(waitFindingsMap);
+            // console.log(waitFindingsMap);
 
             for (let i = 0; i < waitFindingsMap.length; i++) {
                 const findingData = waitFindingsMap[i];
@@ -413,40 +423,12 @@ module.exports = {
                         uuid: req.uuid(),
                         finding_id: lastFindingId,
                         finding_obs_id: obsFindingId,
+                        finding_img: finding_img,
                         ...findingData
                     }
                     await queryPOST(table.tb_r_findings, dataFinding)
                 }
             }
-
-            /* 
-                * update tb_r_observations already check
-                * insert tb_r_obs_results
-                * fetch id after insert tb_r_obs_results to set at obs_result_id
-                * insert tb_r_result_findings
-                    "obs_result_id" int4 NOT NULL,
-                    "uuid" varchar(40) NOT NULL,
-                    "finding_desc" text NOT NULL,
-                    "ft_id" int4,
-                    "henkaten_id" int4,
-                    "mv_id" int4,
-                    "cm_desc" text,
-                    "cm_priority" text,
-                    "factor_id" int4 NOT NULL,
-                    "category_id" int4 NOT NULL,
-                    "cm_pic_id" int,
-                    "cm_str_plan_date" date,
-                    "cm_end_plan_date" date,
-                    "cm_start_act_date" date,
-                    "cm_end_act_date" date,
-                    "cm_result_factor_id" int4,
-                    "cm_training_date" date,
-                    "cm_judg" bool,
-                    "cm_sign_lh_red" text,
-                    "cm_sign_lh_white" text,
-                    "cm_sign_sh" text,
-                    "cm_comments" text,
-            */
             response.success(res, 'Success to add CHECK observation')
         } catch (error) {
             console.log(error);
