@@ -9,7 +9,7 @@ async function userCheck(noreg) {
     return await queryGET(table, `WHERE noreg = '${noreg}'`, ['noreg', 'fullname', 'line_id'])
         .then(async(result) => {
             // console.log(result);
-            // let line_id = -1
+            let line_id = -1
             if (result[0].line_id) line_id = await idToUuid('tb_m_lines', 'line_id', result[0].line_id)
             result[0].line_id = line_id
             return result[0]
