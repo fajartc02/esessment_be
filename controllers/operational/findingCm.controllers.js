@@ -7,6 +7,7 @@ const addAttrsUserUpdateData = require('../../helpers/addAttrsUserUpdateData')
 
 const queryCondExacOpAnd = require('../../helpers/conditionsQuery')
 const condDataNotDeleted = `WHERE deleted_dt IS NULL AND `
+const fs = require('fs')
 
 
 module.exports = {
@@ -50,6 +51,23 @@ module.exports = {
         } catch (error) {
             console.log(error);
             response.failed(res, 'Error to upload kaizen report')
+        }
+    },
+    uploadImageFinding: async(req, res) => {
+        try {
+            let resFile = `./${req.file.path}`
+            if (req.body.before_path != null && req.body.before_path != 'null' && req.body.before_path) {
+
+                fs.unlink(req.body.before_path, (err) => {
+                    if (err) throw err;
+                    console.log(`${req.body.before_path} was deleted`);
+                });
+                response.success(res, 'success to edit file', resFile)
+            } else {
+                response.success(res, 'success to upload file', resFile)
+            }
+        } catch (error) {
+            response.failed(res, 'Error to Upload finding Image')
         }
     }
 }

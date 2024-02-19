@@ -337,12 +337,6 @@ module.exports = {
         // observation_id
         // category_id,judgement_id, factor_id(opt), findings ARRAY
         try {
-            let finding_img = null
-            if (req.file) {
-                finding_img = `./${req.file.path}`
-            } 
-            delete req.body.dest
-            delete req.body.attachment
             req.body.results_check = JSON.parse(req.body.results_check)
             req.body.findings = JSON.parse(req.body.findings)
             console.log(req.body);
@@ -424,7 +418,6 @@ module.exports = {
                         uuid: req.uuid(),
                         finding_id: lastFindingId,
                         finding_obs_id: obsFindingId,
-                        finding_img: finding_img,
                         ...findingData
                     }
                     await queryPOST(table.tb_r_findings, dataFinding)
