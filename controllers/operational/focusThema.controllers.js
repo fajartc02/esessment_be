@@ -43,7 +43,7 @@ module.exports = {
     getFocusThema: async(req, res) => {
         try {
             let { start_date, end_date, line_id, limit, currentPage } = req.query
-            req.query.line_id = line_id ? `${await uuidToId(table.tb_m_lines, 'line_id', line_id)}` : null
+            req.query.line_id = line_id != -1 && line_id ? `${await uuidToId(table.tb_m_lines, 'line_id', line_id)}` : null
             let conditions = ' AND ' + queryCondExacOpAnd(req.query, 'trft.created_dt')
             let qLimit = ``
             let qOffset = (limit != -1 && limit) && currentPage > 1 ? `OFFSET ${limit * (currentPage - 1)}` : ``

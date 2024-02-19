@@ -1,6 +1,7 @@
 const table = require('../../config/table')
 const attrsUserInsertData = require('../../helpers/addAttrsUserInsertData')
 const attrsUserUpdateData = require('../../helpers/addAttrsUserUpdateData')
+const queryCondExacOpAnd = require('../../helpers/conditionsQuery')
 const getLastIdData = require('../../helpers/getLastIdData')
 const { queryPOST, queryCustom, queryGET, queryPUT } = require('../../helpers/query')
 const response = require('../../helpers/response')
@@ -74,11 +75,9 @@ module.exports = {
     getMemberVoice: async(req, res) => {
         try {
             let { start_date, end_date, line_id, limit, currentPage } = req.query
-            // let containerQuery = ''
-            // if (line_id && line_id != -1 && line_id != 'null' && line_id != '-1/') containerQuery += ` AND tml.line_id = '${await uuidToId(table.tb_m_lines, 'line_id', line_id)}'`
-            // if (start_date && end_date) containerQuery += `AND mv_date_finding BETWEEN '${start_date}' AND '${end_date}'`;
-            req.query.line_id = line_id ? `${await uuidToId(table.tb_m_lines, 'line_id', line_id)}` : null
-            let conditions = ' AND ' + queryCondExacOpAnd(req.query, 'trft.created_dt')
+            req.query['tml.line_id'] = line_id != -1 && line_id ? `${await uuidToId(table.tb_m_lines, 'line_id', line_id)}` : null
+            delete req.query.line_id
+            let conditions = ' AND ' + queryCondExacOpAnd(req.query, 'trmv.created_dt')
             let qLimit = ``
             let qOffset = (limit != -1 && limit) && currentPage > 1 ? `OFFSET ${limit * (currentPage - 1)}` : ``
             if (limit != -1 && limit) qLimit = `LIMIT ${limit}`
