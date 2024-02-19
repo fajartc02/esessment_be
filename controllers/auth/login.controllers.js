@@ -16,8 +16,9 @@ module.exports = {
                         await security.decryptPassword(req.body.password, hashPassword).then(async decryptPass => {
                             // console.log(decryptPass);
                             if (decryptPass) {
-                                result[0].line_id = await idToUuid(table.tb_m_lines, 'line_id', result[0].line_id)
+                                // result[0].line_id = await idToUuid(table.tb_m_lines, 'line_id', result[0].line_id)
                                 result[0].group_id = await idToUuid(table.tb_m_groups, 'group_id', result[0].group_id)
+                                // console.log(result[0]);
                                 let token = await auth.generateToken({ name: result[0].name, noreg: result[0].noreg })
                                 response.success(res, 'Success to Login', { data: result[0], token })
                             }

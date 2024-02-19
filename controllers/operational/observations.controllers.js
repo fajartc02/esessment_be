@@ -101,6 +101,7 @@ module.exports = {
         try {
             const { month, year, line, group_id } = req.query
             let whereCond = ``
+            console.log(req.query);
             if (month && year) whereCond = `AND (EXTRACT(month from  tro.plan_check_dt), EXTRACT('year' from tro.plan_check_dt))=(${+month},${+year})`
             if (line != "0" && line && line != -1 && line != null) whereCond += ` AND tmp.line_id = ${await uuidToId(table.tb_m_lines, 'line_id', line)}`
             if (group_id && group_id != null) whereCond += ` AND tmg.uuid = '${group_id}'`
