@@ -20,7 +20,8 @@ router.delete('/schedule/list/delete/:id', auth.verifyToken, deleteScheduleObser
 router.get('/schedule/:id', auth.verifyToken, getDetailObservation)
 router.post('/schedule', auth.verifyToken, addScheduleObservation)
 
-router.post('/check', auth.verifyToken, addCheckObservation)
+// Upload.single didn't used, just only for handle multipart/form-data
+router.post('/check', auth.verifyToken, upload.single('attachment'), addCheckObservation)
 
 
 module.exports = router

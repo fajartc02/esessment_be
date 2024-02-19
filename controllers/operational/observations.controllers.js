@@ -337,9 +337,9 @@ module.exports = {
         // observation_id
         // category_id,judgement_id, factor_id(opt), findings ARRAY
         try {
+            console.log(req.body);
             req.body.results_check = JSON.parse(req.body.results_check)
             req.body.findings = JSON.parse(req.body.findings)
-            console.log(req.body);
             
             // console.log(req.body);
             // 1. UPDATE tb_r_observations ALREADY CHECK
