@@ -6,8 +6,9 @@ const attrsUserInsertData = require('../../helpers/addAttrsUserInsertData')
 const addAttrsUserUpdateData = require('../../helpers/addAttrsUserUpdateData')
 
 const queryCondExacOpAnd = require('../../helpers/conditionsQuery')
+const removeFileIfExist = require('../../helpers/removeFileIfExist')
+const uuidToId = require('../../helpers/uuidToId')
 const condDataNotDeleted = `WHERE deleted_dt IS NULL AND `
-const fs = require('fs')
 
 
 module.exports = {
@@ -42,11 +43,18 @@ module.exports = {
             if (req.file) {
                 req.body.file_pinksheet = `./${req.file.path}`
             }
-            let resFindingId = req.body.result_finding_id
+
+            let finding_id = `${await uuidToId(table.tb_r_findings, 'finding_id', req.body.finding_id)}`
+            if (req.body.before_path != null && req.body.before_path != 'null' && req.body.before_path) {
+                removeFileIfExist(req.body.before_path)
+            }
+
             delete req.body.dest
-            delete req.body.result_finding_id
-            console.log(req.body);
-            await queryPUT(table.tb_r_result_findings, req.body, `WHERE uuid = '${resFindingId}'`);
+            delete req.body.finding_id
+            delete req.body.before_path
+
+            // Update tb_r_finding SET file_pinksheet = req.file.path
+            await queryPUT(table.tb_r_findings, req.body, `WHERE finding_id = '${finding_id}'`);
             response.success(res, 'Success to upload pinksheet');
         } catch (error) {
             console.log(error);
@@ -57,11 +65,7 @@ module.exports = {
         try {
             let resFile = `./${req.file.path}`
             if (req.body.before_path != null && req.body.before_path != 'null' && req.body.before_path) {
-
-                fs.unlink(req.body.before_path, (err) => {
-                    if (err) throw err;
-                    console.log(`${req.body.before_path} was deleted`);
-                });
+                removeFileIfExist(req.body.before_path);
                 response.success(res, 'success to edit file', resFile)
             } else {
                 response.success(res, 'success to upload file', resFile)
