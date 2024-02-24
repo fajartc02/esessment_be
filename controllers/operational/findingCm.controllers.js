@@ -55,7 +55,7 @@ module.exports = {
 
             // Update tb_r_finding SET file_pinksheet = req.file.path
             await queryPUT(table.tb_r_findings, req.body, `WHERE finding_id = '${finding_id}'`);
-            response.success(res, 'Success to upload pinksheet');
+            response.success(res, 'Success to upload pinksheet', req.body.file_pinksheet);
         } catch (error) {
             console.log(error);
             response.failed(res, 'Error to upload kaizen report')
