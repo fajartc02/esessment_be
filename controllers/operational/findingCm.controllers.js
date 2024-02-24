@@ -8,6 +8,7 @@ const addAttrsUserUpdateData = require('../../helpers/addAttrsUserUpdateData')
 const queryCondExacOpAnd = require('../../helpers/conditionsQuery')
 const removeFileIfExist = require('../../helpers/removeFileIfExist')
 const uuidToId = require('../../helpers/uuidToId')
+const attrsUserUpdateData = require('../../helpers/addAttrsUserUpdateData')
 const condDataNotDeleted = `WHERE deleted_dt IS NULL AND `
 
 
@@ -72,6 +73,19 @@ module.exports = {
             }
         } catch (error) {
             response.failed(res, 'Error to Upload finding Image')
+        }
+    },
+    signFinding: async(req, res) => {
+        try {
+            let finding_id = await uuidToId(table.tb_r_findings, 'finding_id', req.body.finding_id)
+            
+            let attrsUpdateUserFinding = await attrsUserUpdateData(req, req.body)
+            // console.log(attrsUpdateUserFinding);
+            delete req.body.finding_id
+            await queryPUT(table.tb_r_findings, attrsUpdateUserFinding, `WHERE finding_id = '${finding_id}'`)
+            response.success(res, 'success to sign finding')
+        } catch (error) {
+            response.failed(res, 'Error to sign finding')
         }
     }
 }
