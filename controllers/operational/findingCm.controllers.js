@@ -78,12 +78,12 @@ module.exports = {
     signFinding: async(req, res) => {
         try {
             let finding_id = await uuidToId(table.tb_r_findings, 'finding_id', req.body.finding_id)
-            
+            let objRes = req.body
             let attrsUpdateUserFinding = await attrsUserUpdateData(req, req.body)
             // console.log(attrsUpdateUserFinding);
             delete req.body.finding_id
             await queryPUT(table.tb_r_findings, attrsUpdateUserFinding, `WHERE finding_id = '${finding_id}'`)
-            response.success(res, 'success to sign finding')
+            response.success(res, 'success to sign finding', objRes)
         } catch (error) {
             response.failed(res, 'Error to sign finding')
         }
