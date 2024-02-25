@@ -119,7 +119,7 @@ module.exports = {
             let findingsData = {
                 ...req.body.findings,
                 line_id: await uuidToId(table.tb_m_lines, 'line_id', req.body.findings.line_id),
-                category_id: await uuidToId(table.tb_m_categories, 'category_id', req.body.findings.category_id),
+                category_id: req.body.findings.category_id != '' && req.body.findings.category_id ? await uuidToId(table.tb_m_categories, 'category_id', req.body.findings.category_id) : null,
                 factor_id: await uuidToId(table.tb_m_factors, 'factor_id', req.body.findings.factor_id),
                 cm_pic_id: await uuidToId(table.tb_m_users, 'user_id', req.body.findings.cm_pic_id),
                 cm_result_factor_id: await uuidToId(table.tb_m_factors, 'factor_id', req.body.findings.cm_result_factor_id),
