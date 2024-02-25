@@ -26,7 +26,7 @@ module.exports = {
 
 
             let lastFindingId = await getLastIdData(table.tb_r_findings, 'finding_id') + 1
-            findingData.category_id = findingData.category_id != '' ? await uuidToId(table.tb_m_categories, 'category_id', findingData.category_id) ?? null : null
+            findingData.category_id = findingData.category_id != '' && findingData.category_id ? await uuidToId(table.tb_m_categories, 'category_id', findingData.category_id) ?? null : null
             findingData.cm_pic_id = await uuidToId(table.tb_m_users, 'user_id', findingData.cm_pic_id) ?? null
             findingData.factor_id = await uuidToId(table.tb_m_factors, 'factor_id', findingData.factor_id) ?? null
             findingData.line_id = await uuidToId(table.tb_m_lines, 'line_id', findingData.line_id) ?? null
