@@ -108,10 +108,10 @@ module.exports = {
             }
             await queryPUT(table.tb_r_findings, obj, `WHERE finding_henkaten_id = '${henkaten_id}'`)
             await queryPUT(table.tb_r_henkaten, obj, `WHERE henkaten_id = '${henkaten_id}'`)
-            response.success(res, 'Success to DELETE Focus Theme')
+            response.success(res, 'Success to DELETE Henkaten')
         } catch (error) {
             console.log(error);
-            response.failed(res, 'Error to DELETE Focus Theme')
+            response.failed(res, 'Error to DELETE Henkaten')
         }
     },
     editHenkaten: async (req, res) => {
@@ -137,10 +137,10 @@ module.exports = {
 
             await queryPUT(table.tb_r_findings, attrsUpdateUserFinding, `WHERE finding_henkaten_id = '${henkaten_id}'`)
             await queryPUT(table.tb_r_henkaten, attrsUpdateUserFt, `WHERE henkaten_id = '${henkaten_id}'`)
-            response.success(res, 'Success to EDIT Focuss Thema')
+            response.success(res, 'Success to EDIT Henkaten')
         } catch (error) {
             console.log(error);
-            response.failed(res, 'Error to EDIT Focuss Thema')
+            response.failed(res, 'Error to EDIT Henkaten')
         }
     }
 }

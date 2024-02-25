@@ -80,12 +80,50 @@ module.exports = {
             let finding_id = await uuidToId(table.tb_r_findings, 'finding_id', req.body.finding_id)
             let objRes = req.body
             let attrsUpdateUserFinding = await attrsUserUpdateData(req, req.body)
-            // console.log(attrsUpdateUserFinding);
+                // console.log(attrsUpdateUserFinding);
             delete req.body.finding_id
             await queryPUT(table.tb_r_findings, attrsUpdateUserFinding, `WHERE finding_id = '${finding_id}'`)
             response.success(res, 'success to sign finding', objRes)
         } catch (error) {
             response.failed(res, 'Error to sign finding')
+        }
+    },
+    editFindingCm: async(req, res) => {
+        try {
+
+            let finding_id = await uuidToId(table.tb_r_findings, 'finding_id', req.params.id)
+
+            let findingsData = {
+                ...req.body,
+                line_id: await uuidToId(table.tb_m_lines, 'line_id', req.body.line_id),
+                category_id: await uuidToId(table.tb_m_categories, 'category_id', req.body.category_id),
+                factor_id: await uuidToId(table.tb_m_factors, 'factor_id', req.body.factor_id),
+                cm_pic_id: await uuidToId(table.tb_m_users, 'user_id', req.body.cm_pic_id),
+                cm_result_factor_id: await uuidToId(table.tb_m_factors, 'factor_id', req.body.cm_result_factor_id),
+            }
+
+            let attrsUpdateUserFinding = await attrsUserUpdateData(req, findingsData)
+            await queryPUT(table.tb_r_findings, attrsUpdateUserFinding, `WHERE finding_id = '${finding_id}'`)
+
+            response.success(res, 'Success to EDIT Finding')
+        } catch (error) {
+            console.log(error);
+            response.failed(res, 'Error to edit finding')
+        }
+    },
+    deleteFinding: async(req, res) => {
+        try {
+            let finding_id = await uuidToId(table.tb_r_findings, 'finding_id', req.params.id)
+            let obj = {
+                deleted_dt: "CURRENT_TIMESTAMP",
+                deleted_by: req.user.fullname
+            }
+
+            await queryPUT(table.tb_r_findings, obj, `WHERE finding_id = '${finding_id}'`)
+            response.success(res, 'Success to DELETE finding')
+        } catch (error) {
+            console.log(error);
+            response.failed(res, 'Error to DELETE finding')
         }
     }
 }
