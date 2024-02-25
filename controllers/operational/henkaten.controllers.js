@@ -1,5 +1,6 @@
 const table = require('../../config/table')
 const attrsUserInsertData = require('../../helpers/addAttrsUserInsertData')
+const attrsUserUpdateData = require('../../helpers/addAttrsUserUpdateData')
 const queryCondExacOpAnd = require('../../helpers/conditionsQuery')
 const getLastIdData = require('../../helpers/getLastIdData')
 const { queryPOST, queryCustom, queryGET, queryPUT } = require('../../helpers/query')
@@ -26,7 +27,7 @@ module.exports = {
 
             let lastFindingId = await getLastIdData(table.tb_r_findings, 'finding_id') + 1
             findingData.category_id = findingData.category_id != '' ? await uuidToId(table.tb_m_categories, 'category_id', findingData.category_id) ?? null : null
-            findingData.cm_pic_id = await uuidToId(table.tb_m_users, 'user_id', findingData.cm_pic_id.pic_id) ?? null
+            findingData.cm_pic_id = await uuidToId(table.tb_m_users, 'user_id', findingData.cm_pic_id) ?? null
             findingData.factor_id = await uuidToId(table.tb_m_factors, 'factor_id', findingData.factor_id) ?? null
             findingData.line_id = await uuidToId(table.tb_m_lines, 'line_id', findingData.line_id) ?? null
             findingData.cm_result_factor_id = await uuidToId(table.tb_m_factors, 'factor_id', findingData.cm_result_factor_id) ?? null
@@ -96,6 +97,50 @@ module.exports = {
         } catch (error) {
             console.log(error);
             response.failed(res, 'Error to GET Henkaten')
+        }
+    },
+    deleteHenkaten: async (req, res) => {
+        try {
+            let henkaten_id = await uuidToId(table.tb_r_henkaten, 'henkaten_id', req.params.id)
+            let obj = {
+                deleted_dt: "CURRENT_TIMESTAMP",
+                deleted_by: req.user.fullname
+            }
+            await queryPUT(table.tb_r_findings, obj, `WHERE finding_henkaten_id = '${henkaten_id}'`)
+            await queryPUT(table.tb_r_henkaten, obj, `WHERE henkaten_id = '${henkaten_id}'`)
+            response.success(res, 'Success to DELETE Focus Theme')
+        } catch (error) {
+            console.log(error);
+            response.failed(res, 'Error to DELETE Focus Theme')
+        }
+    },
+    editHenkaten: async (req, res) => {
+        try {
+            let findingsData = {
+                ...req.body.findings,
+                line_id: await uuidToId(table.tb_m_lines, 'line_id', req.body.findings.line_id),
+                category_id: await uuidToId(table.tb_m_categories, 'category_id', req.body.findings.category_id),
+                factor_id: await uuidToId(table.tb_m_factors, 'factor_id', req.body.findings.factor_id),
+                cm_pic_id: await uuidToId(table.tb_m_users, 'user_id', req.body.findings.cm_pic_id),
+                cm_result_factor_id: await uuidToId(table.tb_m_factors, 'factor_id', req.body.findings.cm_result_factor_id),
+            }
+
+            delete req.body.findings
+
+            req.body.henkaten_line_id = await uuidToId(table.tb_m_lines, 'line_id', req.body.henkaten_line_id)
+            req.body.henkaten_pic = await uuidToId(table.tb_m_users, 'user_id', req.body.henkaten_pic)
+            
+            let attrsUpdateUserFt = await attrsUserUpdateData(req, req.body)
+            let attrsUpdateUserFinding = await attrsUserUpdateData(req, findingsData)
+
+            let henkaten_id = await uuidToId(table.tb_r_henkaten, 'henkaten_id', req.params.id)
+
+            await queryPUT(table.tb_r_findings, attrsUpdateUserFinding, `WHERE finding_henkaten_id = '${henkaten_id}'`)
+            await queryPUT(table.tb_r_henkaten, attrsUpdateUserFt, `WHERE henkaten_id = '${henkaten_id}'`)
+            response.success(res, 'Success to EDIT Focuss Thema')
+        } catch (error) {
+            console.log(error);
+            response.failed(res, 'Error to EDIT Focuss Thema')
         }
     }
 }
