@@ -27,7 +27,9 @@ router.use('/master', master)
 router.get('/file', (req, res) => {
     const path = req.query.path
     if (fs.existsSync(path)) {
-        res.contentType("application/pdf");
+        if(path.includes('pdf')) {
+            res.contentType("application/pdf");
+        }
         fs.createReadStream(path).pipe(res)
     } else {
         res.status(500)
