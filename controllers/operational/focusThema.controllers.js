@@ -17,12 +17,12 @@ module.exports = {
             let lastFtId = await getLastIdData(table.tb_r_focus_theme, 'ft_id') + 1
             ftObj.ft_id = await lastFtId
             ftObj.uuid = req.uuid()
-            ftObj.ft_line_id = await uuidToId(table.tb_m_lines, 'line_id', ftObj.ft_line_id.line_id) ?? null
+            ftObj.ft_line_id = await uuidToId(table.tb_m_lines, 'line_id', ftObj.ft_line_id) ?? null
             let attrsUserCreated = await attrsUserInsertData(req, ftObj)
             let ftData = await queryPOST(table.tb_r_focus_theme, attrsUserCreated)
             let lastFindingId = await getLastIdData(table.tb_r_findings, 'finding_id') + 1
             findingData.category_id = findingData.category_id != '' ? await uuidToId(table.tb_m_categories, 'category_id', findingData.category_id) ?? null : null
-            findingData.cm_pic_id = await uuidToId(table.tb_m_users, 'user_id', findingData.cm_pic_id.pic_id) ?? null
+            findingData.cm_pic_id = await uuidToId(table.tb_m_users, 'user_id', findingData.cm_pic_id) ?? null
             findingData.factor_id = await uuidToId(table.tb_m_factors, 'factor_id', findingData.factor_id) ?? null
             findingData.line_id = await uuidToId(table.tb_m_lines, 'line_id', findingData.line_id) ?? null
             findingData.cm_result_factor_id = await uuidToId(table.tb_m_factors, 'factor_id', findingData.cm_result_factor_id) ?? null
@@ -85,6 +85,21 @@ module.exports = {
         } catch (error) {
             console.log(error);
             response.failed(res, 'Error to GET Focus Thema')
+        }
+    },
+    deleteFocusThema: async (req, res) => {
+        try {
+            let mv_id = await uuidToId(table.tb_r_focus_theme, 'ft_id', req.params.id)
+            let obj = {
+                deleted_dt: "CURRENT_TIMESTAMP",
+                deleted_by: req.user.fullname
+            }
+            await queryPUT(table.tb_r_findings, obj, `WHERE finding_ft_id = '${ft_id}'`)
+            await queryPUT(table.tb_r_focus_theme, obj, `WHERE ft_id = '${ft_id}'`)
+            response.success(res, 'Success to DELETE Focus Theme')
+        } catch (error) {
+            console.log(error);
+            response.failed(res, 'Error to DELETE Focus Theme')
         }
     }
 }

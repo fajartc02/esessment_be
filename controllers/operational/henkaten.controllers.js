@@ -17,8 +17,8 @@ module.exports = {
             let lasthenkatenId = await getLastIdData(table.tb_r_henkaten, 'henkaten_id') + 1
             henkatenObj.henkaten_id = await lasthenkatenId
             henkatenObj.uuid = req.uuid()
-            henkatenObj.henkaten_pic = await uuidToId(table.tb_m_users, 'user_id', henkatenObj.henkaten_pic.pic_id) ?? null
-            henkatenObj.henkaten_line_id = await uuidToId(table.tb_m_lines, 'line_id', henkatenObj.henkaten_line_id.line_id) ?? null
+            henkatenObj.henkaten_pic = await uuidToId(table.tb_m_users, 'user_id', henkatenObj.henkaten_pic) ?? null
+            henkatenObj.henkaten_line_id = await uuidToId(table.tb_m_lines, 'line_id', henkatenObj.henkaten_line_id) ?? null
             let attrsUserCreated = await attrsUserInsertData(req, henkatenObj)
             console.log(attrsUserCreated);
             let henkatenData = await queryPOST(table.tb_r_henkaten, attrsUserCreated)
