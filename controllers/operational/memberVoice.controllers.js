@@ -134,12 +134,6 @@ module.exports = {
     },
     editMemberVoice: async(req, res) => {
         try {
-            console.log(req.params);
-            // UPDATE mv data
-            // line_id
-            // mv_factor_id
-            // mv_pic_id
-            // UPDATE findings Data WHERE finding_mv_id = mv_id
             let findingsData = {
                 ...req.body.findings,
                 line_id: await uuidToId(table.tb_m_lines, 'line_id', req.body.findings.line_id),
@@ -158,7 +152,7 @@ module.exports = {
             let attrsUpdateUserFinding = await attrsUserUpdateData(req, findingsData)
             let attrsUpdateUserMv = await attrsUserUpdateData(req, mvData)
             let mv_id = await uuidToId(table.tb_r_member_voice, 'mv_id', req.params.id)
-            // WHERE finding_mv_id convert uuidToId
+            
             await queryPUT(table.tb_r_findings, attrsUpdateUserFinding, `WHERE finding_mv_id = '${mv_id}'`)
             await queryPUT(table.tb_r_member_voice, attrsUpdateUserMv, `WHERE mv_id = '${mv_id}'`)
             response.success(res, 'Success to EDIT Member Voice')
