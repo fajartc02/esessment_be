@@ -92,7 +92,12 @@ module.exports = {
                 date_part('week'::text, trmv.mv_plan_date) AS w_mv_plan_date,
                 date_part('week'::text, trmv.mv_actual_date) AS w_mv_actual_date,
                 tml.line_nm,
-                tml.uuid as line_id 
+                tml.uuid as line_id,
+                CASE
+                    WHEN trmv.mv_plan_date < CURRENT_DATE AND trmv.mv_actual_date IS NULL THEN 'DELAY'::text
+                    WHEN trmv.mv_actual_date IS NULL THEN 'PROGRESS'::text
+                    WHEN trmv.mv_actual_date IS NOT NULL THEN 'DONE'::text
+                END AS status_check 
             from tb_r_member_voice trmv 
             join tb_m_lines tml 
                 on tml.line_id  = trmv.line_id
