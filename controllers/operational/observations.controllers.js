@@ -99,11 +99,11 @@ module.exports = {
     },
     getScheduleObservations: async(req, res) => {
         try {
-            const { month, year, line, group_id } = req.query
+            const { month, year, line_id, group_id } = req.query
             let whereCond = ``
             console.log(req.query);
             if (month && year) whereCond = `AND (EXTRACT(month from  tro.plan_check_dt), EXTRACT('year' from tro.plan_check_dt))=(${+month},${+year})`
-            if (line != "0" && line && line != -1 && line != null) whereCond += ` AND tmp.line_id = ${await uuidToId(table.tb_m_lines, 'line_id', line)}`
+            if (line_id != "0" && line_id && line_id != -1 && line_id != null) whereCond += ` AND tmp.line_id = ${await uuidToId(table.tb_m_lines, 'line_id', line_id)}`
             if (group_id && group_id != null) whereCond += ` AND tmg.uuid = '${group_id}'`
             let observations = await queryCustom(`
                 SELECT 
@@ -179,7 +179,7 @@ module.exports = {
                 posAvail.children.push(item)
             }
             let resAwait = await Promise.all(containerGroup)
-            console.log(resAwait);
+                // console.log(resAwait);
             response.success(res, 'Success to get schedule observation', resAwait)
         } catch (error) {
             console.log(error);
@@ -242,9 +242,9 @@ module.exports = {
                 let categoryData = await queryGET(table.tb_m_categories, `WHERE uuid = '${check.category_id}'`, ['category_nm'])
                 check.category_nm = categoryData[0].category_nm
                 let resFindingIdData = await queryGET(table.tb_r_result_findings, `WHERE obs_result_id = ${check.obs_result_id}`, ['uuid'])
-                let resFindingId = resFindingIdData[0]?.uuid ?? null
+                let resFindingId = resFindingIdData[0] ? .uuid ? ? null
                 check.findings = resFindingId ? await queryGET(table.v_finding_list, `WHERE finding_obs_id = '${resFindingId}'`) : []
-                check.judgment_id = await idToUuid(table.tb_m_judgments, 'judgment_id', check.judgment_id) ?? null
+                check.judgment_id = await idToUuid(table.tb_m_judgments, 'judgment_id', check.judgment_id) ? ? null
                 return check
             })
 
@@ -265,8 +265,8 @@ module.exports = {
                     perc = +((((Math.max(...containerCT) - Math.min(...containerCT)) / 2) / avg) * 100).toFixed(2)
                     isStw = false
                 }
-                item.avg = avg ?? null
-                item.perc = perc ?? null
+                item.avg = avg ? ? null
+                item.perc = perc ? ? null
                 return item
             })
             obser.rows.push(mapResCheckAvg)
@@ -340,7 +340,7 @@ module.exports = {
             console.log(req.body);
             req.body.results_check = JSON.parse(req.body.results_check)
             req.body.findings = JSON.parse(req.body.findings)
-            
+
             // console.log(req.body);
             // 1. UPDATE tb_r_observations ALREADY CHECK
             const obsId = await uuidToId(table.tb_r_observations, 'observation_id', req.body.observation_id)
@@ -380,11 +380,11 @@ module.exports = {
                 if (isJudgAbnor) {
                     let selectFindingData = await req.body.findings.find(async(finding) => await uuidToId(table.tb_m_categories, 'category_id', finding.category_id) == resCheckData.category_id)
                     let obs_result_id = resCheckData.obs_result_id
-                    selectFindingData.category_id = await uuidToId(table.tb_m_categories, 'category_id', selectFindingData.category_id) ?? null
-                    selectFindingData.line_id = await uuidToId(table.tb_m_lines, 'line_id', selectFindingData.line_id) ?? null
-                    selectFindingData.cm_pic_id = await uuidToId(table.tb_m_users, 'user_id', selectFindingData.cm_pic_id.pic_id) ?? null
-                    selectFindingData.factor_id = await uuidToId(table.tb_m_factors, 'factor_id', selectFindingData.factor_id) ?? null
-                    selectFindingData.cm_result_factor_id = await uuidToId(table.tb_m_factors, 'factor_id', selectFindingData.cm_result_factor_id) ?? null
+                    selectFindingData.category_id = await uuidToId(table.tb_m_categories, 'category_id', selectFindingData.category_id) ? ? null
+                    selectFindingData.line_id = await uuidToId(table.tb_m_lines, 'line_id', selectFindingData.line_id) ? ? null
+                    selectFindingData.cm_pic_id = await uuidToId(table.tb_m_users, 'user_id', selectFindingData.cm_pic_id.pic_id) ? ? null
+                    selectFindingData.factor_id = await uuidToId(table.tb_m_factors, 'factor_id', selectFindingData.factor_id) ? ? null
+                    selectFindingData.cm_result_factor_id = await uuidToId(table.tb_m_factors, 'factor_id', selectFindingData.cm_result_factor_id) ? ? null
                     selectFindingData.uuid = req.uuid()
                     let findingObj = {
                         ...selectFindingData,
