@@ -1,0 +1,67 @@
+{
+    "message": "string",
+    "data": [{
+        "schedule_id": "string",
+        "line_id": "string",
+        "zone_id": "string",
+        "kanban_id": "string",
+        "pic_id": "string",
+        "freq_id": "string",
+        "area": "string",
+        "is_daily_weekly": "boolean",
+        "is_weekly_monthly": "boolean",
+        "row_span_freq": "number",
+        "row_span_zone": "number",
+        "sign_gl_check": {
+            "col_span": "number",
+            "sign_gl": "text"
+        },
+        "sign_sh_check": {
+            "col_span": "number",
+            "sign_sh": "text"
+        },
+        "children": [{
+                "schedule_id": "string",
+                "date_num": "number",
+                "is_holiday": "false",
+                "status": "PLANNING",
+                "sign_tl": "text"
+            },
+            {
+                "schedule_id": "null",
+                "date_num": "number",
+                "is_holiday": "true",
+                "status": "null",
+                "sign_tl": "text"
+            },
+            {
+                "schedule_id": "string",
+                "date_num": "number",
+                "is_holiday": "false",
+                "status": "ACTUAL",
+                "sign_tl": "text"
+            },
+            {
+                "schedule_id": "string",
+                "date_num": "number",
+                "is_holiday": "false",
+                "status": "DONE",
+                "sign_tl": "text"
+            },
+            {
+                "schedule_id": "string",
+                "date_num": "number",
+                "is_holiday": "false",
+                "status": "FINDING",
+                "sign_tl": "string"
+            },
+            {
+                "schedule_id": "string",
+                "date_num": "number",
+                "is_holiday": "false",
+                "status": "FINDING",
+                "sign_tl": "string"
+            }
+        ]
+    }]
+}
