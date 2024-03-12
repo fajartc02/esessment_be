@@ -8,8 +8,8 @@
         "pic_id": "string",
         "freq_id": "string",
         "area": "string",
-        "is_daily_weekly": "boolean",
-        "is_weekly_monthly": "boolean",
+        "is_daily_to_weekly": "boolean",
+        "is_weekly_to_monthly": "boolean",
         "row_span_freq": "number",
         "row_span_zone": "number",
         "sign_gl_check": {
