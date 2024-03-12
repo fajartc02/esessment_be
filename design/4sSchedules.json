@@ -1,67 +1,1908 @@
 {
-    "message": "string",
-    "data": [{
-        "schedule_id": "string",
-        "line_id": "string",
-        "zone_id": "string",
-        "kanban_id": "string",
-        "pic_id": "string",
-        "freq_id": "string",
-        "area": "string",
-        "is_daily_to_weekly": "boolean",
-        "is_weekly_to_monthly": "boolean",
-        "row_span_freq": "number",
-        "row_span_zone": "number",
-        "sign_gl_check": {
-            "col_span": "number",
-            "sign_gl": "text"
-        },
-        "sign_sh_check": {
-            "col_span": "number",
-            "sign_sh": "text"
-        },
-        "children": [{
-                "schedule_id": "string",
-                "date_num": "number",
-                "is_holiday": "false",
-                "status": "PLANNING",
-                "sign_tl": "text"
+    "status": 200,
+    "message": "Success to get 4s schedule",
+    "data": {
+        "schedule": [{
+                "schedule_id": "43b9390c-7ebe-4c22-ad3b-882247b0a6fe",
+                "pic_id": "bba58c10-0db2-41f1-8e43-9466374918dc",
+                "kanban_id": "f6c4cfa7-c361-4981-8d11-ec8d830595f7",
+                "zone_id": "20824a0e-97b8-4d77-8c6f-44da72eb7b65",
+                "freq_id": "fecb9a67-caf9-4559-ae8d-58b5f020a2fa",
+                "is_daily_to_weekly": false,
+                "is_weekly_to_monthly": false,
+                "zone_nm": "Zone 1",
+                "kanban_nm": "C-01-05",
+                "area_nm": "Baritori & Visual Checks",
+                "pic_nm": "Fajar Tri Cahyono",
+                "freq_nm": "Daily",
+                "row_span_pic": 2,
+                "row_span_freq": 6,
+                "row_span_zone": 4,
+                "children": [{
+                        "schedule_id": "43b9390c-7ebe-4c22-ad3b-882247b0a6fe",
+                        "date_num": 1,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "769ebe78-a9d5-44b2-8809-3fc2381bd75f",
+                        "date_num": 2,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "a42539e8-4729-4094-b7c1-cc758e2aca87",
+                        "date_num": 3,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "955ec033-ef3e-437c-ab21-94b9df1a8c8d",
+                        "date_num": 4,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "c7e64113-cb0b-4bd3-b186-4ae3f41f5fc7",
+                        "date_num": 5,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "0831bce0-5f27-4676-8326-740da83bef37",
+                        "date_num": 6,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "593eddf4-f4a8-4d42-b782-bac0438f17f0",
+                        "date_num": 7,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "6aaafd76-2926-4cc9-9e47-4e60fec6f922",
+                        "date_num": 8,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "df72af4f-fcbb-4f8d-84c8-c5f8e50982cd",
+                        "date_num": 9,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "d219b1f8-feda-47dc-90e6-8a6f1cf5a414",
+                        "date_num": 10,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "9806e3c6-ccf3-4946-989f-2e50be612c51",
+                        "date_num": 11,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "1f5bf31a-6e92-4926-ae6a-48b3c7fc4b3a",
+                        "date_num": 12,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "95960225-a4ba-4442-b1d7-6fb9c170dc08",
+                        "date_num": 13,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "7bf09435-07b5-4763-959d-be5cac9ffcb1",
+                        "date_num": 14,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "265a8ab1-247a-41a1-9305-07fdbf1329c2",
+                        "date_num": 15,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "453dfe74-ed1a-480f-985a-115b5ebb79c0",
+                        "date_num": 16,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "601ff8dd-8ed6-4937-9c29-36bd703419f9",
+                        "date_num": 17,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "e99e0377-2385-412e-8a0c-65f42d5d87e0",
+                        "date_num": 18,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "e2f86f6a-e9de-4e61-96b1-1826d3b7ede1",
+                        "date_num": 19,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "c682df00-bbf7-48fa-ac23-91d2d2c3429c",
+                        "date_num": 20,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "79827605-fc91-437a-a624-9e8702317219",
+                        "date_num": 21,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "2b01fd7e-0fd5-4981-b9d6-53bdf5ff64b2",
+                        "date_num": 22,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "324214e1-20ce-46aa-8f3d-9151cabfecec",
+                        "date_num": 23,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "8bedd02f-d7fb-4f7b-a7b8-680c1bfb46dd",
+                        "date_num": 24,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "79e47b44-c947-47ae-8438-194c3d173bbb",
+                        "date_num": 25,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "46ca384a-518c-46fa-9272-aa3d32b45fe4",
+                        "date_num": 26,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "9aa6d491-4686-4ae1-bfaa-fcd1f8eaf7e3",
+                        "date_num": 27,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "fe0c6466-d258-4158-a786-a950db8be5ab",
+                        "date_num": 28,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "9952d941-6eb5-4832-8012-2c7060892bac",
+                        "date_num": 29,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "f5c58be8-3f9b-4f90-ad0e-69f3ec0e7a9e",
+                        "date_num": 30,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "c9851512-671c-4b7a-894a-e30201f65f71",
+                        "date_num": 31,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    }
+                ]
             },
             {
-                "schedule_id": "null",
-                "date_num": "number",
-                "is_holiday": "true",
-                "status": "null",
-                "sign_tl": "text"
+                "schedule_id": "0908bc23-c4e6-4f74-95c6-e0ab79eb6eda",
+                "pic_id": "bbb1a7b9-479a-4e1d-a361-a9551be7e10e",
+                "kanban_id": "f6c4cfa7-c361-4981-8d11-ec8d830595f7",
+                "zone_id": "20824a0e-97b8-4d77-8c6f-44da72eb7b65",
+                "freq_id": "fecb9a67-caf9-4559-ae8d-58b5f020a2fa",
+                "is_daily_to_weekly": false,
+                "is_weekly_to_monthly": false,
+                "zone_nm": "Zone 1",
+                "kanban_nm": "C-01-05",
+                "area_nm": "Baritori & Visual Checks",
+                "pic_nm": "Dita Nurlita",
+                "freq_nm": "Daily",
+                "row_span_pic": 1,
+                "row_span_freq": 6,
+                "row_span_zone": 4,
+                "children": [{
+                        "schedule_id": "0908bc23-c4e6-4f74-95c6-e0ab79eb6eda",
+                        "date_num": 1,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "5eebf0ba-acfa-4578-a1a2-4e01b3f53357",
+                        "date_num": 2,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "8744130c-3cff-4be5-8c2f-572523f4e818",
+                        "date_num": 3,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "e02b0eba-fd5d-4854-87b8-31bb1aaa5786",
+                        "date_num": 4,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "e65c3a9b-cbc5-4369-878e-13f3d26a8736",
+                        "date_num": 5,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "8a63d7ab-e8ef-4842-aec9-1bc245d2dac2",
+                        "date_num": 6,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "fc600e63-32bc-4ec5-bd16-988da4a29c91",
+                        "date_num": 7,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "49abc0e6-90ab-4617-8c8e-a29995fdd451",
+                        "date_num": 8,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "3196cec4-6137-48c1-9b51-a00c5ea2204a",
+                        "date_num": 9,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "1b7f0fea-3ca1-4e68-b967-640bd3326202",
+                        "date_num": 10,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "7fc26143-81a3-45c8-9b7b-64102182ad86",
+                        "date_num": 11,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "83db6a0b-2a5b-4225-b37c-91fa4086630f",
+                        "date_num": 12,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "a3b8b1ae-a47c-4dd2-902a-d9d9a6f755c5",
+                        "date_num": 13,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "51a89ff8-590b-4e39-bfbf-62941a8ac819",
+                        "date_num": 14,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "734286f6-d8c6-4d1d-88f9-55b0c08727d1",
+                        "date_num": 15,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "4d206467-54be-40e3-b33b-b1acb25ceb52",
+                        "date_num": 16,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "7b829b2d-42fa-4d60-ad84-4cfea4d096fa",
+                        "date_num": 17,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "b4689131-b64b-480b-97d6-2f973d64d85f",
+                        "date_num": 18,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "77ed59d6-dbe6-4bf3-aed0-c69e5ea9aa79",
+                        "date_num": 19,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "853c5ebc-fe9e-430f-80c8-4441a6ec2274",
+                        "date_num": 20,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "75311b4c-6978-4b22-b3d3-bc832eb05208",
+                        "date_num": 21,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "59381c40-30eb-45fa-8d59-057f5e7ce3d5",
+                        "date_num": 22,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "53f95db8-8f8e-420c-b1d1-10aa98c83b17",
+                        "date_num": 23,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "60495368-b844-433d-9289-bfef9e65b4ab",
+                        "date_num": 24,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "bdce4d29-fcde-4406-a5c9-a6c9ccd43513",
+                        "date_num": 25,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "5d037098-9f46-4b25-b5b3-a69dc5c3bb60",
+                        "date_num": 26,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "f64225bc-2387-429b-ad1c-f572a09b008b",
+                        "date_num": 27,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "11a21f1e-8d44-4d91-b1f7-8fffa7ab3ad6",
+                        "date_num": 28,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "bfa640de-6f04-469d-aeb1-d60234b64020",
+                        "date_num": 29,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "16d2f6bd-4e4e-4ef5-903f-c42eab939529",
+                        "date_num": 30,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "db221f8b-b135-4aa0-a634-e3e677548526",
+                        "date_num": 31,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    }
+                ]
             },
             {
-                "schedule_id": "string",
-                "date_num": "number",
-                "is_holiday": "false",
-                "status": "ACTUAL",
-                "sign_tl": "text"
+                "schedule_id": "ebc25134-85e1-4a20-9dec-4c06de0aa5ca",
+                "pic_id": "def9d58d-01ea-4d1f-9ba8-8a1c22707318",
+                "kanban_id": "f6c4cfa7-c361-4981-8d11-ec8d830595f7",
+                "zone_id": "20824a0e-97b8-4d77-8c6f-44da72eb7b65",
+                "freq_id": "fecb9a67-caf9-4559-ae8d-58b5f020a2fa",
+                "is_daily_to_weekly": false,
+                "is_weekly_to_monthly": false,
+                "zone_nm": "Zone 1",
+                "kanban_nm": "C-01-05",
+                "area_nm": "Baritori & Visual Checks",
+                "pic_nm": "TESS",
+                "freq_nm": "Daily",
+                "row_span_pic": 1,
+                "row_span_freq": 6,
+                "row_span_zone": 4,
+                "children": [{
+                        "schedule_id": "ebc25134-85e1-4a20-9dec-4c06de0aa5ca",
+                        "date_num": 1,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "4b6b4e39-fb92-4ba6-979d-73f6e57e39f0",
+                        "date_num": 2,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "7f808539-6464-423b-a328-a29e65e110f7",
+                        "date_num": 3,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "e0f49067-932d-4a0c-8d48-a4fc943bea5c",
+                        "date_num": 4,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "b5de2644-9254-4a98-820b-13401df2ca21",
+                        "date_num": 5,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "a7780b39-3993-422a-99df-8a93e1e98563",
+                        "date_num": 6,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "ef802287-a095-4285-b68b-04e3e2d3b1ab",
+                        "date_num": 7,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "6ee77d57-d07d-481f-9b12-d3aff8100a45",
+                        "date_num": 8,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "a2fab9e1-7704-46fb-8080-1f5003952c11",
+                        "date_num": 9,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "5c57b106-0fca-4418-a14c-67f4054bbc23",
+                        "date_num": 10,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "e8e5c53f-096c-410a-b9f8-0d97ec6a6716",
+                        "date_num": 11,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "87e1fd15-aad2-44de-b093-32283433c5fb",
+                        "date_num": 12,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "2b4b6b90-5819-463f-8139-c03b8f4719ca",
+                        "date_num": 13,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "3a7fe57d-4b22-4349-89b7-aeee69143be7",
+                        "date_num": 14,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "4220ff58-6e03-44e0-83fa-c4dd8f0295cf",
+                        "date_num": 15,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "5ff2ae89-9445-4841-8f53-e9cafbe6eb14",
+                        "date_num": 16,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "d9bc7b9a-9b88-43ca-8518-c9c0ab1a95e8",
+                        "date_num": 17,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "c84511fb-e272-4f38-a077-98475c365530",
+                        "date_num": 18,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "e0ff3e96-f045-46e3-a791-f4d66ea6ca37",
+                        "date_num": 19,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "1696a47c-b039-45e3-8bb9-23d81e6b1884",
+                        "date_num": 20,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "a51fb333-f582-4287-848b-e382f6c503ec",
+                        "date_num": 21,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "039a3cdc-c482-49e3-aa97-bd9facc7c30c",
+                        "date_num": 22,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "1019b71a-7ce4-4a9e-be88-a3a21e9e2fa5",
+                        "date_num": 23,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "d2b75ae9-a4d7-434e-a8e2-96df8b8a26dd",
+                        "date_num": 24,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "bb967b70-333f-430b-9f80-09271b1cdcb9",
+                        "date_num": 25,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "79c86750-bb72-4656-9713-b423140d3083",
+                        "date_num": 26,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "71f0a00f-79e8-4fab-969c-c4433b807ef4",
+                        "date_num": 27,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "50fff26f-1d60-43cc-a7de-9d4c57aee610",
+                        "date_num": 28,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "d648fe38-5e6d-48e4-b3d9-4bb76af1f098",
+                        "date_num": 29,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "cfa88726-a10a-4d41-aa82-11fe90e9ed2d",
+                        "date_num": 30,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "35461b31-7f45-4bb4-87a6-c2d8cd904327",
+                        "date_num": 31,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    }
+                ]
             },
             {
-                "schedule_id": "string",
-                "date_num": "number",
-                "is_holiday": "false",
-                "status": "DONE",
-                "sign_tl": "text"
+                "schedule_id": "cf5bb6b0-d790-4d2a-aacf-7596fc929da4",
+                "pic_id": "7cdf852c-559d-456f-9b15-6064983b104e",
+                "kanban_id": "f6c4cfa7-c361-4981-8d11-ec8d830595f7",
+                "zone_id": "20824a0e-97b8-4d77-8c6f-44da72eb7b65",
+                "freq_id": "fecb9a67-caf9-4559-ae8d-58b5f020a2fa",
+                "is_daily_to_weekly": false,
+                "is_weekly_to_monthly": false,
+                "zone_nm": "Zone 1",
+                "kanban_nm": "C-01-05",
+                "area_nm": "Baritori & Visual Checks",
+                "pic_nm": "tess",
+                "freq_nm": "Daily",
+                "row_span_pic": 1,
+                "row_span_freq": 6,
+                "row_span_zone": 4,
+                "children": [{
+                        "schedule_id": "cf5bb6b0-d790-4d2a-aacf-7596fc929da4",
+                        "date_num": 1,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "2df65760-c1ef-4154-a0f6-bf16438bc709",
+                        "date_num": 2,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "8573c10d-a7d8-438a-8a9c-6c258db6490b",
+                        "date_num": 3,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "b2d758b3-9842-42bd-9275-cd3af3a2427b",
+                        "date_num": 4,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "644698f1-ed52-4ab2-9e88-7b045c4943ef",
+                        "date_num": 5,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "c5bf69f4-65f2-4655-b6e8-ac21adc9bbb6",
+                        "date_num": 6,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "b8eeee12-4e78-4fff-a4e2-4e028ec661cd",
+                        "date_num": 7,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "402cefba-1e17-42aa-91fb-396f337fe251",
+                        "date_num": 8,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "1a9bc49d-1672-4162-82de-47d0c5b4e06e",
+                        "date_num": 9,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "ad6bb4b2-4f2e-4b6e-8642-adeb17e1cbd7",
+                        "date_num": 10,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "e651637c-7382-4731-b15e-dfd0e5ecc82d",
+                        "date_num": 11,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "5bd5c816-b950-4479-857f-773df8d2b3ae",
+                        "date_num": 12,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "c47a1641-ba60-4406-a221-00de7767ed9d",
+                        "date_num": 13,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "cd2feda3-c958-4f0d-b135-4d81cca04340",
+                        "date_num": 14,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "d2ae179a-c388-4148-a2db-371167e25f84",
+                        "date_num": 15,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "c07219f0-2dba-40dd-8cf1-b87e54d97d5f",
+                        "date_num": 16,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "9ab538f5-dabe-4f5c-ace2-e1662d4e50f5",
+                        "date_num": 17,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "2a109710-b12b-4770-8881-a6fe3c4eb55b",
+                        "date_num": 18,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "8cd07723-6ed5-4eed-9ac3-68fa99aa8b72",
+                        "date_num": 19,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "f7f9e9cc-08e2-4158-9206-1978ab7b0345",
+                        "date_num": 20,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "124373e7-d477-4e48-a6c9-83c07082128f",
+                        "date_num": 21,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "d995d6eb-898e-4893-8cc7-6a599db8c17b",
+                        "date_num": 22,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "8aebaaaa-ae7f-4e2b-908a-0a2f0e014f37",
+                        "date_num": 23,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "e53d79ef-fa37-41be-b51e-5d612df806d3",
+                        "date_num": 24,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "0a86fc6a-9ca4-4576-bbdc-f30a2b7a0c79",
+                        "date_num": 25,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "6f426330-9fb4-424d-b7b7-967949661630",
+                        "date_num": 26,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "aa635892-eb83-40a8-bb34-7d0c3fece68f",
+                        "date_num": 27,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "2d1e1b87-3da6-4cf2-821a-513eec985792",
+                        "date_num": 28,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "c994549b-8406-4745-8a03-2140cb88361a",
+                        "date_num": 29,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "86f2bceb-929f-4e84-82eb-b9fe79aaa46e",
+                        "date_num": 30,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "aea31932-5b0d-4ae2-8e47-0294c1b89ae2",
+                        "date_num": 31,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    }
+                ]
             },
             {
-                "schedule_id": "string",
-                "date_num": "number",
-                "is_holiday": "false",
-                "status": "FINDING",
-                "sign_tl": "string"
+                "schedule_id": "83bca3e6-a8e4-4a65-836b-b3f64808e36d",
+                "pic_id": "70142531-2412-463b-bd2c-07c86033a017",
+                "kanban_id": "f6c4cfa7-c361-4981-8d11-ec8d830595f7",
+                "zone_id": "3328ef5c-6c31-47be-a6b4-96dca1fb0e5b",
+                "freq_id": "fecb9a67-caf9-4559-ae8d-58b5f020a2fa",
+                "is_daily_to_weekly": false,
+                "is_weekly_to_monthly": false,
+                "zone_nm": "Zone 3",
+                "kanban_nm": "C-01-05",
+                "area_nm": "Baritori & Visual Checks",
+                "pic_nm": "RAHMAT HIDAYAT",
+                "freq_nm": "Daily",
+                "row_span_pic": 1,
+                "row_span_freq": 6,
+                "row_span_zone": 2,
+                "children": [{
+                        "schedule_id": "83bca3e6-a8e4-4a65-836b-b3f64808e36d",
+                        "date_num": 1,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "11e097f9-c386-49f2-97ed-440738fb3633",
+                        "date_num": 2,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "dc811ca7-657d-47f8-919f-9ba3ba83e982",
+                        "date_num": 3,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "ab36cf5c-75bb-47d2-8dc2-6f2ad4a24bd0",
+                        "date_num": 4,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "70b409ca-3a66-4d78-9cbb-2304a629db74",
+                        "date_num": 5,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "877d3eb2-a642-4160-8b5a-7e8f675567f6",
+                        "date_num": 6,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "86f281ae-8d66-4cd3-9716-cf604164d09c",
+                        "date_num": 7,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "b78a9566-1717-4589-998b-3d272888e72a",
+                        "date_num": 8,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "4fb349d2-10ef-4da0-a061-e89001e05918",
+                        "date_num": 9,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "1c792cfb-7ca3-4549-9725-b756b57773bc",
+                        "date_num": 10,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "9a4d37d4-03ea-43c3-a866-8e89d704bbf4",
+                        "date_num": 11,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "9512c9af-8072-4387-86cc-792dfa54f804",
+                        "date_num": 12,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "3c3f2a80-1b66-4a08-945e-7777977c2686",
+                        "date_num": 13,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "2559852e-b9d7-464e-8af4-d454945caecb",
+                        "date_num": 14,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "f261fcfe-e2c6-45db-af94-fc18ae15414f",
+                        "date_num": 15,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "8aa4c61b-01a8-43cf-8f66-8f437582699d",
+                        "date_num": 16,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "7d10a4b2-3b8a-4bb4-a614-19b4e7d07b9f",
+                        "date_num": 17,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "bd9eae41-5ee3-451e-8dd5-79f0bc561c05",
+                        "date_num": 18,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "3d9fc4c6-7e25-403d-9365-1614943fd9e7",
+                        "date_num": 19,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "f501b587-e557-4cd5-aa6b-6a7e3251d515",
+                        "date_num": 20,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "09dace1b-e7fd-407b-8d74-fa1da5dc9aaf",
+                        "date_num": 21,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "7a340b5c-6dcd-4667-9af4-86666654b971",
+                        "date_num": 22,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "1ca48800-891e-4c6e-bc67-afc0884acad5",
+                        "date_num": 23,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "d02a2b63-e65f-4720-8aef-64d259542662",
+                        "date_num": 24,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "937fc125-ae2e-4c30-99ad-650ee42f76de",
+                        "date_num": 25,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "4a18856e-2dad-4b67-b645-dd72e57f8f2d",
+                        "date_num": 26,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "5b2af09e-2115-4c68-a96d-d11e9469bc65",
+                        "date_num": 27,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "2da233aa-c1ed-42ac-b60f-8ff27fc209da",
+                        "date_num": 28,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "7e81bcb6-344c-4de7-bc86-a48d51d98507",
+                        "date_num": 29,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "38c1e650-fdb3-41d9-bef1-ece5119c19f4",
+                        "date_num": 30,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "966c5ff5-c4f7-458b-9fc2-da3677b98319",
+                        "date_num": 31,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    }
+                ]
             },
             {
-                "schedule_id": "string",
-                "date_num": "number",
-                "is_holiday": "false",
-                "status": "FINDING",
-                "sign_tl": "string"
+                "schedule_id": "8c37a173-cab5-404b-a5b9-f113d463b905",
+                "pic_id": "71ade54e-9a0e-4cc7-b183-89bbe2b4a3fb",
+                "kanban_id": "f6c4cfa7-c361-4981-8d11-ec8d830595f7",
+                "zone_id": "3328ef5c-6c31-47be-a6b4-96dca1fb0e5b",
+                "freq_id": "fecb9a67-caf9-4559-ae8d-58b5f020a2fa",
+                "is_daily_to_weekly": false,
+                "is_weekly_to_monthly": false,
+                "zone_nm": "Zone 3",
+                "kanban_nm": "C-01-05",
+                "area_nm": "Baritori & Visual Checks",
+                "pic_nm": "Winarno",
+                "freq_nm": "Daily",
+                "row_span_pic": 1,
+                "row_span_freq": 6,
+                "row_span_zone": 2,
+                "children": [{
+                        "schedule_id": "8c37a173-cab5-404b-a5b9-f113d463b905",
+                        "date_num": 1,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "a0514d99-e861-457a-bc0a-e9a5ccfe2f5e",
+                        "date_num": 2,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "7a8abe09-f8f6-4a7b-9e93-0746f00de18e",
+                        "date_num": 3,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "c952059f-2a1f-4850-a4fa-668feac7f03e",
+                        "date_num": 4,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "10033686-2fdd-4fb5-83ad-30c38c6ee03a",
+                        "date_num": 5,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "5af473f8-848b-48b2-9b10-eb28d3a17134",
+                        "date_num": 6,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "4542967c-98c0-4b93-adf7-424d2fb46742",
+                        "date_num": 7,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "5e667ae1-1fdc-4902-9317-aa05d3da06f4",
+                        "date_num": 8,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "51e99d99-3394-435d-af76-f1cc9a3b0fa5",
+                        "date_num": 9,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "cd7d214a-9889-4b26-ad37-d997a7ecfbb5",
+                        "date_num": 10,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "22f5bed9-0c3e-41d9-8963-c1580e5036ad",
+                        "date_num": 11,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "bb285ab5-f34b-4b71-a383-1750259bf30f",
+                        "date_num": 12,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "455ba843-a5f1-45c4-a27c-e9115068f6ca",
+                        "date_num": 13,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "fba135a9-983e-46a6-80d9-cb39c104a976",
+                        "date_num": 14,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "f6c8e07b-81eb-4511-af93-717f42612401",
+                        "date_num": 15,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "2ad27f60-7515-4b93-867a-2d451f139655",
+                        "date_num": 16,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "586ab4c1-3ccf-4c4d-a4ef-30f9fc49ee29",
+                        "date_num": 17,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "bbaa2efc-2cc2-4ba8-bf28-b8042250d65c",
+                        "date_num": 18,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "aa7ae5c2-949b-447b-b14f-9cb73b407f53",
+                        "date_num": 19,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "f3f97ae2-b242-4f7a-9e53-3acc06b0b533",
+                        "date_num": 20,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "1d78b133-f5ea-4020-a972-4e0d80dd0999",
+                        "date_num": 21,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "2faea7b4-47f3-4273-a54a-e775fc2622d7",
+                        "date_num": 22,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "175129c3-228e-4093-a067-411bf670ce6c",
+                        "date_num": 23,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "79a4e63c-b565-453b-9d26-523bc0de3903",
+                        "date_num": 24,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "a5dab091-43ad-4687-b5e1-135216bbef6a",
+                        "date_num": 25,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "31dbe4dd-0a88-4b91-922d-6e90925ce35b",
+                        "date_num": 26,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "b58d3b88-3965-422f-a999-06ff984edb77",
+                        "date_num": 27,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "0e18defe-dad6-4035-82e6-8518dcfc07f6",
+                        "date_num": 28,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "7e764df9-49a7-409a-b693-87d9a7bb6372",
+                        "date_num": 29,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "7971f460-a619-49f0-a679-f7c2304ade4f",
+                        "date_num": 30,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "8f4d29c3-2a07-44ff-b6bd-53ed9babc32f",
+                        "date_num": 31,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    }
+                ]
+            },
+            {
+                "schedule_id": "4023ac48-5079-416d-967a-34f8c3c042a0",
+                "pic_id": "0af31b69-cb5b-48d1-9f4e-8c651345e685",
+                "kanban_id": "f6c4cfa7-c361-4981-8d11-ec8d830595f7",
+                "zone_id": "8c7b2bc5-d3e0-4aff-8de2-072430dcffdf",
+                "freq_id": "0110cae0-19be-4f68-9046-1749bdec0c96",
+                "is_daily_to_weekly": false,
+                "is_weekly_to_monthly": false,
+                "zone_nm": "Zone 4",
+                "kanban_nm": "C-01-05",
+                "area_nm": "Baritori & Visual Checks",
+                "pic_nm": "Agus Sohari",
+                "freq_nm": "Weekly",
+                "row_span_pic": 1,
+                "row_span_freq": 2,
+                "row_span_zone": 2,
+                "children": [{
+                        "schedule_id": "4023ac48-5079-416d-967a-34f8c3c042a0",
+                        "date_num": 1,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "fcf5f686-0bd9-4b4c-8d43-ec419f2b9475",
+                        "date_num": 2,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "8f3efebe-4aa2-4bc7-a143-460fbc10fa17",
+                        "date_num": 3,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "104a8f9d-985f-496a-a041-dfd1e08b5324",
+                        "date_num": 4,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "3a2e3b62-cde8-4d84-9551-3dc8614ed8fa",
+                        "date_num": 5,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "34931a29-c685-438c-b2e8-198680a23063",
+                        "date_num": 6,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "5e8ef894-655a-4785-96f7-a1c90ab946aa",
+                        "date_num": 7,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "c432c357-6327-4759-ad74-6ae945d1ea5b",
+                        "date_num": 8,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "683df13c-9439-42d7-9e3d-c85126e82ce3",
+                        "date_num": 9,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "a8543be0-d43e-4617-bc88-ed3b6537c354",
+                        "date_num": 10,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "e3385a7e-e70f-4118-bcdf-19f30a9f4648",
+                        "date_num": 11,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "fabbf446-f0db-4829-a9ba-f7f2d1f1fadc",
+                        "date_num": 12,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "6e3aca67-c43b-4cb4-9400-0ef965990f2d",
+                        "date_num": 13,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "9462cd55-4812-46b6-8bf2-8ee62a1369a9",
+                        "date_num": 14,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "7d5853b9-d4e1-4e13-a4db-66571457aeb6",
+                        "date_num": 15,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "0053a967-6077-4a44-b1ca-400e590b4129",
+                        "date_num": 16,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "c0ebc6c8-c3e7-431b-b094-5d7e3d66c37e",
+                        "date_num": 17,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "fa81bb2e-7345-484c-805c-34006e70caac",
+                        "date_num": 18,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "d8206c4c-7612-4879-9750-b9d90aeecf05",
+                        "date_num": 19,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "e5132e73-80b1-49ba-ab48-cc76347bae08",
+                        "date_num": 20,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "80f41e48-b468-4172-97fd-31eb951670f1",
+                        "date_num": 21,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "a756f49e-d228-4ae6-8bb8-be3dbde7eb9e",
+                        "date_num": 22,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "f506bbac-5f32-4845-847e-da097eb5e359",
+                        "date_num": 23,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "84a96b90-d936-47f1-a163-d65de8776e3b",
+                        "date_num": 24,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "36ffcb3e-514c-4b82-bc6a-eae866e77f1d",
+                        "date_num": 25,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "6464171f-fbf0-4e47-93d8-9b7b507d13f3",
+                        "date_num": 26,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "ff099883-87ee-4115-bc2d-dcee42506b31",
+                        "date_num": 27,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "ff69c7ec-2ce4-41a6-9cd8-1917d3e36fe5",
+                        "date_num": 28,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "6091d4d1-3338-40d3-813f-c6fd33b50d5c",
+                        "date_num": 29,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "4942a7eb-1eeb-4052-8b50-b2f19515be50",
+                        "date_num": 30,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "556dfac9-0abd-4f75-8fa9-8b720bdb4e2b",
+                        "date_num": 31,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    }
+                ]
+            },
+            {
+                "schedule_id": "a336a9e3-2817-425e-bfd2-7f3f026f32b7",
+                "pic_id": "bba58c10-0db2-41f1-8e43-9466374918dc",
+                "kanban_id": "f6c4cfa7-c361-4981-8d11-ec8d830595f7",
+                "zone_id": "8c7b2bc5-d3e0-4aff-8de2-072430dcffdf",
+                "freq_id": "0110cae0-19be-4f68-9046-1749bdec0c96",
+                "is_daily_to_weekly": false,
+                "is_weekly_to_monthly": false,
+                "zone_nm": "Zone 4",
+                "kanban_nm": "C-01-05",
+                "area_nm": "Baritori & Visual Checks",
+                "pic_nm": "Fajar Tri Cahyono",
+                "freq_nm": "Weekly",
+                "row_span_pic": 2,
+                "row_span_freq": 2,
+                "row_span_zone": 2,
+                "children": [{
+                        "schedule_id": "a336a9e3-2817-425e-bfd2-7f3f026f32b7",
+                        "date_num": 1,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "2f131307-3313-4313-8c75-1763bb2e63d0",
+                        "date_num": 2,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "64c7063c-5d95-4d6d-bb34-e132aea196cd",
+                        "date_num": 3,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "771244ac-292c-4d63-aa40-7ebfdb867532",
+                        "date_num": 4,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "f836953d-997c-47af-bc07-ebf4225a808a",
+                        "date_num": 5,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "7006a488-e270-4ca5-95e2-faa6cdd9e0a2",
+                        "date_num": 6,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "3cb6f091-53be-4221-b4ed-aa0d58f20ab8",
+                        "date_num": 7,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "7ad16ade-b91d-484a-a902-990dc14e3347",
+                        "date_num": 8,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "944ce156-9dbd-4b00-b306-914027731704",
+                        "date_num": 9,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "317aeadf-91e6-4832-8d0b-b228efcfb747",
+                        "date_num": 10,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "754c807f-3c29-442e-8e67-a7ea4a8a4ab1",
+                        "date_num": 11,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "0375f090-db33-4612-8c6e-61b802692bd7",
+                        "date_num": 12,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "26f09a80-11ab-48b8-a4b2-5e4693dd43f2",
+                        "date_num": 13,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "69f4b2b6-132c-4a8e-946c-b1411740b909",
+                        "date_num": 14,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "2f92b759-32c2-426b-84d0-a5ec12a94a5f",
+                        "date_num": 15,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "0f8ecfa1-9dd3-4c70-a4c9-17dab50a7683",
+                        "date_num": 16,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "12a1b44b-a048-40da-91fb-e89a36fdfd0b",
+                        "date_num": 17,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "8a70fa35-a531-4ba3-9606-c8e92d0c9917",
+                        "date_num": 18,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "15ac4156-6acb-46a4-8350-336ec53ed01f",
+                        "date_num": 19,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "812d389d-b965-4494-b888-4bcb651e54e6",
+                        "date_num": 20,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "8615cea9-d0e8-41a1-b1b2-3df536077624",
+                        "date_num": 21,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "bac5f721-c0e1-4c61-95f0-de36968b47dc",
+                        "date_num": 22,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "d73073e8-d8bd-4503-b534-6f2b6ead2404",
+                        "date_num": 23,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "1e76ff72-14b4-4804-8deb-ac28f480774d",
+                        "date_num": 24,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "2afff3a3-6b87-4f51-ad8f-194736883287",
+                        "date_num": 25,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "f5d06b09-3ff7-41af-b16b-ab0165baf849",
+                        "date_num": 26,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "c4b7a01f-d5ef-43ce-8433-30b7b10d0498",
+                        "date_num": 27,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "5b3f6dc2-12e0-47a4-b9f3-e4cf9e777cbf",
+                        "date_num": 28,
+                        "status": null,
+                        "is_holiday": null,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "8e37435a-82b0-408c-8fa1-a2d55131c158",
+                        "date_num": 29,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "2edd3cd9-01f0-43e0-9538-799a6477d339",
+                        "date_num": 30,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    },
+                    {
+                        "schedule_id": "ccd0bd0d-2474-450f-b749-6ab988ce89dc",
+                        "date_num": 31,
+                        "status": null,
+                        "is_holiday": true,
+                        "sign": null
+                    }
+                ]
+            }
+        ],
+        "sign_checker": [{
+                "weekly": 9,
+                "col_span": 1
+            },
+            {
+                "weekly": 10,
+                "col_span": 5
+            },
+            {
+                "weekly": 11,
+                "col_span": 4
+            },
+            {
+                "weekly": 12,
+                "col_span": 5
+            },
+            {
+                "weekly": 13,
+                "col_span": 4
             }
         ]
-    }]
+    }
 }
