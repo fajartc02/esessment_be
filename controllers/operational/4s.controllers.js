@@ -12,36 +12,6 @@ const { holidayRequest } = require('../../helpers/externalRequest')
 const { generateMonthlyDates } = require('../../helpers/date')
 
 module.exports = {
-    addCleanPlan: async (req, res) => { },
-    addCleanSchedule: async (req, res) => { },
-    updateCleanSchedule: async (req, res) => { },
-    updateCleanChecker: async (req, res) => { },
-    deleteCleanPlan: async (req, res) => { },
-    getHoliday: async (req, res) => {
-        const holidayApi = await holidayRequest(3, 2024)
-        const marchDays = generateMonthlyDates(2024, 3)
-        const holidatData = holidayApi.data
-        const result = []
-        for (let i = 0; i < marchDays.length; i++)
-        {
-            const marchDay = marchDays[i];
-
-            for (let j = 0; j < holidatData.length; j++)
-            {
-                const holiday = holidatData[j];
-                if (marchDay.date == holiday.holiday_date)
-                {
-                    marchDay.is_holiday = true
-                    marchDay.holiday_name = holiday.holiday_name
-                    break
-                }
-            }
-
-            result.push(marchDay)
-        }
-
-        response.success(res, 'Success to get 4s schedules', result)
-    },
     get4sPlans: async (req, res) => {
         try
         {
@@ -245,20 +215,4 @@ module.exports = {
             response.failed(res, 'Error to get 4s schedule')
         }
     },
-    get4sSignCheckers: async (req, res) => {
-        try
-        {
-            const { plan_id } = req.query
-
-            const checkerQuery = await queryCustom(`
-            `)
-
-            const result = await Promise.all(checkerQuery)
-            response.success(res, 'Success to get 4s checker', result)
-        } catch (error)
-        {
-            console.log(error);
-            response.failed(res, 'Error to get 4s plans')
-        }
-    }
 }
