@@ -34,7 +34,8 @@ const table = {
     tb_r_4s_plans: 'tb_r_4s_plans',
     tb_r_4s_schedules: 'tb_r_4s_schedules',
     tb_r_4s_checkers: 'tb_r_4s_checkers',
-    tb_r_4s_revisions: 'tb_r_4s_revisions'
+    tb_r_4s_revisions: 'tb_r_4s_revisions',
+    v_4s_members: 'v_4s_members'
 }
 
 

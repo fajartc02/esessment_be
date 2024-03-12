@@ -185,52 +185,29 @@ const migrate = async () => {
         console.log('freqs', 'inserted')
         //#endregion
 
-        //#region seeder kanban
-        const kanbanSchema = await bulkToSchema([
+        //#region zones
+        const zoneSchema = await bulkToSchema([
             {
                 uuid: uuid(),
-                kanban_nm: 'C-01-05',
-                area_nm: 'Baritori & Visual Checks',
+                zone_nm: 'Zone 1',
             },
             {
                 uuid: uuid(),
-                kanban_nm: 'C-01-08',
-                area_nm: 'Lantai Mesin DC #2 (B)',
+                zone_nm: 'Zone 2',
+
             },
             {
                 uuid: uuid(),
-                kanban_nm: 'C-01-15',
-                area_nm: 'Mesin Die Cast #2 (C)',
+                zone_nm: 'Zone 3',
             },
             {
                 uuid: uuid(),
-                kanban_nm: 'C-01-18',
-                area_nm: 'Area Robot (D)',
+                zone_nm: 'Zone 4',
             },
-            {
-                uuid: uuid(),
-                kanban_nm: 'C-02-08',
-                area_nm: 'Mesin Bubut (A)',
-            },
-            {
-                uuid: uuid(),
-                kanban_nm: 'C-03-02',
-                area_nm: 'Meja Kerja Naturium (B)',
-            },
-            {
-                uuid: uuid(),
-                kanban_nm: 'C-01-01',
-                area_nm: 'CMM Room (A)',
-            },
-            {
-                uuid: uuid(),
-                kanban_nm: 'C-02-01',
-                area_nm: 'Roller To Room (B)',
-            }
-        ]);
-        const kanbanQuery = await db.query(`insert into ${table.tb_m_kanbans} (${kanbanSchema.columns}) VALUES ${kanbanSchema.values} returning *`)
-        const kanbanRows = kanbanQuery.rows
-        console.log('kanbans', 'inserted')
+        ])
+        const zoneQuery = await db.query(`insert into ${table.tb_m_zones} (${zoneSchema.columns}) VALUES ${zoneSchema.values} returning *`)
+        const zoneRows = zoneQuery.rows
+        console.log('zones', 'inserted')
         //#endregion
 
         //#region roles
@@ -352,32 +329,60 @@ const migrate = async () => {
         {
             const lineGroup = lineGroupRows[index];
 
-            //#region zones
-            const zoneSchema = await bulkToSchema([
+            //#region seeder kanban
+            const kanbanSchema = await bulkToSchema([
                 {
                     uuid: uuid(),
-                    zone_nm: 'Zone 1',
                     line_id: lineGroup.line_id,
+                    kanban_nm: 'C-01-05',
+                    area_nm: 'Baritori & Visual Checks',
                 },
                 {
                     uuid: uuid(),
-                    zone_nm: 'Zone 2',
                     line_id: lineGroup.line_id,
+                    kanban_nm: 'C-01-08',
+                    area_nm: 'Lantai Mesin DC #2 (B)',
                 },
                 {
                     uuid: uuid(),
-                    zone_nm: 'Zone 3',
                     line_id: lineGroup.line_id,
+                    kanban_nm: 'C-01-15',
+                    area_nm: 'Mesin Die Cast #2 (C)',
                 },
                 {
                     uuid: uuid(),
-                    zone_nm: 'Zone 4',
                     line_id: lineGroup.line_id,
+                    kanban_nm: 'C-01-18',
+                    area_nm: 'Area Robot (D)',
                 },
-            ])
-            const zoneQuery = await db.query(`insert into ${table.tb_m_zones} (${zoneSchema.columns}) VALUES ${zoneSchema.values} returning *`)
-            const zoneRows = zoneQuery.rows
-            console.log('zones', 'inserted')
+                {
+                    uuid: uuid(),
+                    line_id: lineGroup.line_id,
+                    kanban_nm: 'C-02-08',
+                    area_nm: 'Mesin Bubut (A)',
+                },
+                {
+                    uuid: uuid(),
+                    line_id: lineGroup.line_id,
+                    kanban_nm: 'C-03-02',
+                    area_nm: 'Meja Kerja Naturium (B)',
+                },
+                {
+                    uuid: uuid(),
+                    line_id: lineGroup.line_id,
+                    kanban_nm: 'C-01-01',
+                    area_nm: 'CMM Room (A)',
+                },
+                {
+                    uuid: uuid(),
+                    line_id: lineGroup.line_id,
+                    kanban_nm: 'C-02-01',
+                    area_nm: 'Roller To Room (B)',
+                }
+            ]);
+            const kanbanQuery = await db.query(`insert into ${table.tb_m_kanbans} (${kanbanSchema.columns}) VALUES ${kanbanSchema.values} returning *`)
+            const kanbanRows = kanbanQuery.rows
+            console.log('kanbans', 'inserted')
             //#endregion
 
             //#region seeder 4s plan
