@@ -14,7 +14,16 @@ module.exports = {
             {
                 if (item[key])
                 {
-                    containerValues.push(`'${item[key]}'`)
+                    if (typeof item[key] == 'string' && item[key].startsWith('func '))
+                    {
+                        const r = item[key].replace('func ', '')
+                        containerValues.push(`${r}`)    
+                    }
+                    else
+                    {
+                        containerValues.push(`'${item[key]}'`)    
+                    }
+                    
                 } else
                 {
                     containerValues.push(`NULL`)
@@ -23,12 +32,13 @@ module.exports = {
 
             const r = `(${containerValues.join(',')})`
             // console.log('item', item)
-            // console.log('values', r)
+            //console.log('values', r)
             return r
         })
 
         /* console.log('columns', containerColumn.join(','))
-        console.log('values', mapBulkData.join(',')) */
+         */
+        //console.log('values', mapBulkData.join(','))
 
         return {
             columns: containerColumn.join(','),

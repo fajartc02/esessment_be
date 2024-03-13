@@ -63,7 +63,7 @@ const generateSchedules = async (db) => {
             currentMonthDay.holiday_nm = null
         }
 
-        currentMonthDay.week_pos = Math.ceil(moment(currentMonthDay.date).date() / 7)
+        currentMonthDay.week_pos = `func date_part('week', '${currentMonthDay.date}'::date)`
         currentMonthDay.uuid = uuid()
         result.push(currentMonthDay)
     }
@@ -92,7 +92,7 @@ const generateSchedules = async (db) => {
             nextMonthDay.holiday_nm = null
         }
 
-        nextMonthDay.week_pos = Math.ceil(moment(nextMonthDay.date).date() / 7)
+        nextMonthDay.week_pos = `func date_part('week', '${nextMonthDay.date}'::date)`
         nextMonthDay.uuid = uuid()
         result.push(nextMonthDay)
     }

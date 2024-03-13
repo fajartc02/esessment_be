@@ -166,6 +166,7 @@ CREATE TABLE tb_r_4s_checkers(
 	uuid UUID not null,
 	plan_4s_id integer not null,
 	"date" date null,
+	week_pos integer not null, 
 	checker_nm character varying(100) null,
 	is_tl boolean null,
 	is_gl boolean null,

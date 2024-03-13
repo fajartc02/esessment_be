@@ -78,6 +78,8 @@ module.exports = {
                 schedule: [],
                 sign_checker: [],
             }
+            
+            const wherePlanId = `(select plan_4s_id from ${table.tb_r_4s_plans} where uuid = '${plan_id}')`
 
             let scheduleSql = `
                 select distinct on (tbrcs.kanban_id)
@@ -124,7 +126,7 @@ module.exports = {
                         limit 1
                     ) trcsr on true
                 where
-                    tbrcs.plan_4s_id = (select plan_4s_id from ${table.tb_r_4s_plans} where uuid = '${plan_id}')
+                    tbrcs.plan_4s_id = ${wherePlanId}
             `
 
             if (freq_id && freq_id != null && freq_id != '')
@@ -193,7 +195,7 @@ module.exports = {
                             left join ${table.tb_r_4s_checkers} trcc on trcs.plan_4s_id = trcc.plan_4s_id and is_gl = true  
                             left join ${table.tb_m_schedules} tmsc on trcs.schedule_id = tmsc.schedule_id
                         where
-                            trcs.plan_4s_id = (select plan_4s_id from ${table.tb_r_4s_plans} where uuid = '${plan_id}')
+                            trcs.plan_4s_id = ${wherePlanId}
                             and trcs.pic_id = (select member_4s_id from ${table.tb_m_4s_members} where uuid = '${item.pic_id}' limit 1)
                             and trcs.freq_id = (select freq_id from ${table.tb_m_freqs} where uuid = '${item.freq_id}' limit 1)
                     `)
@@ -220,19 +222,45 @@ module.exports = {
                 let planDateRow = planDateQuery.rows[0]
 
                 const signCheckerQuery = await queryCustom(`
-                    select 
-                        date_part('week', "date"::date) AS weekly,
-                        count(distinct "date")::integer as col_span
-                    from 
-                        ${table.tb_m_schedules}
-                    where
-                        date_part('month', "date") = '${planDateRow.month_num}'
-                        and date_part('year', "date") = '${planDateRow.year}'
-                        and (is_holiday is null or is_holiday = false)
-                    group by 
-                        weekly
-                    order by 
-                        weekly
+                    select
+                        weekly.*,
+						tr4c_gl.sign as gh_sign,
+						tr4c_sh.sign as sh_sign
+                    from (
+                        select
+                            week_pos,
+                            count(distinct "date")::integer as col_span
+                        from
+                            ${table.tb_m_schedules} tmsc
+                        where
+                            date_part('month', "date") = '${planDateRow.month_num}'
+                            and date_part('year', "date") = '${planDateRow.year}'
+                            and (is_holiday is null or is_holiday = false)
+                        group by 
+                            week_pos
+                        order by 
+                            week_pos
+                    ) weekly
+                    left join lateral (
+						select
+							sign
+						from
+							${table.tb_r_4s_checkers}
+						where
+							plan_4s_id = ${wherePlanId}
+							and week_pos = weekly.week_pos
+							and is_gl = true
+                    ) tr4c_gl on true
+                    left join lateral (
+						select
+							sign
+						from
+							${table.tb_r_4s_checkers}
+						where
+							plan_4s_id = ${wherePlanId}
+							and week_pos = weekly.week_pos
+							and is_sh = true
+                    ) tr4c_sh on true
                 `)
 
                 result.schedule = await Promise.all(scheduleRows)
