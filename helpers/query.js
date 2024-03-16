@@ -1,4 +1,4 @@
-const { database } = require('../config/database')
+const { database, databasePool } = require('../config/database')
 
 module.exports = {
     queryGET: async(table, whereCond = false, cols = null) => {
@@ -134,4 +134,30 @@ module.exports = {
                 });
         })
     },
+    queryTransaction: async (callback, finallyCallback = null) => {
+        const db = await databasePool.connect();
+        try
+        {
+            await db.query(`SET session_replication_role = 'replica'`)
+            await db.query('BEGIN')
+            try
+            {
+                await callback(db)
+                await db.query('COMMIT')
+            } catch (error)
+            {
+                console.log('error transaction', error)
+                await db.query('ROLLBACK')
+            }
+        }
+        finally
+        {
+            await db.query(`SET session_replication_role = 'origin'`)
+            db.release()
+            if (finallyCallback)
+            {
+                finallyCallback()
+            }
+        }
+    }
 }

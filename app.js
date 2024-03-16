@@ -1,4 +1,8 @@
-require('dotenv').config()
+const envFilePath = process.env.NODE_ENV.trim() == 'production'
+    ? './.env'
+    : (process.env.NODE_ENV.trim() == 'dev' ? './dev.env' : './local.env')
+require('dotenv').config({ path: envFilePath })
+
 var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
@@ -12,6 +16,7 @@ const { database } = require('./config/database')
 database.connect()
 console.log('DB Connecttion:');
 console.log({
+    env: process.env.NODE_ENV.trim(),
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,

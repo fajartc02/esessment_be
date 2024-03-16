@@ -8,6 +8,7 @@ const { register, login } = require('./auth/index')
 const operational = require('./operational/index')
 const master = require('./master/index');
 const auth = require('../../helpers/auth');
+const clean = require('./operational/4s')
 
 router.use('/verify', auth.verifyToken, (req, res) => {
     try {
@@ -22,6 +23,7 @@ router.use('/register', register)
 
 router.use('/operational', operational)
 router.use('/master', master)
+router.use('/4s', clean)
 
 
 router.get('/file', (req, res) => {
