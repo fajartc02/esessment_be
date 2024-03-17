@@ -20,7 +20,7 @@ const multipleUuidToIds = async (raws = [{}]) => {
   let arrQuery = []
   let arrSelect = []
   for (let i = 0; i < raws.length; i++) {
-    let as = null
+    let as = ''
     if (typeof raws[i].alias != "undefined") {
       as = `as ${raws[i].alias}`
     }

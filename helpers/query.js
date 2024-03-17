@@ -1,13 +1,15 @@
 const { database, databasePool } = require('../config/database')
 
 module.exports = {
-    queryGET: async(table, whereCond = false, cols = null) => {
-        return new Promise(async(resolve, reject) => {
+    queryGET: async (table, whereCond = false, cols = null) => {
+        return new Promise(async (resolve, reject) => {
             let selectedCols = '*'
-            if (cols) {
+            if (cols)
+            {
                 selectedCols = cols.join(',')
             }
-            if (!whereCond) {
+            if (!whereCond)
+            {
                 whereCond = ''
             }
             let q = `SELECT ${selectedCols} FROM ${table} ${whereCond}`
@@ -20,11 +22,12 @@ module.exports = {
                 });
         })
     },
-    queryPOST: async(table, data) => {
-        return new Promise(async(resolve, reject) => {
+    queryPOST: async (table, data) => {
+        return new Promise(async (resolve, reject) => {
             let containerColumn = []
             let containerValues = []
-            for (const key in data) {
+            for (const key in data)
+            {
                 containerColumn.push(key)
                 containerValues.push(data[key] && data[key] != 'null' ? `'${data[key]}'` : 'NULL')
             }
@@ -39,29 +42,36 @@ module.exports = {
                 });
         })
     },
-    queryBulkPOST: async(table, data) => {
-        return new Promise(async(resolve, reject) => {
+    queryBulkPOST: async (table, data) => {
+        return new Promise(async (resolve, reject) => {
             let containerColumn = []
             let containerValues = []
             let mapBulkData = await data.map(item => {
                 containerValues = []
-                for (const key in item) {
-                    if (key != 'childs') {
-                        if (item[key]) {
+                for (const key in item)
+                {
+                    if (key != 'childs')
+                    {
+                        if (item[key])
+                        {
                             console.log();
-                            if (typeof item[key] == 'object') {
+                            if (typeof item[key] == 'object')
+                            {
                                 containerValues.push(`'{${item[key].join(',')}}'`)
-                            } else {
+                            } else
+                            {
                                 containerValues.push(`'${item[key]}'`)
                             }
-                        } else {
+                        } else
+                        {
                             containerValues.push(`NULL`)
                         }
                     }
                 }
                 return `(${containerValues.join(',')})`
             })
-            for (const key in data[0]) {
+            for (const key in data[0])
+            {
                 containerColumn.push(key)
             }
             let q = `INSERT INTO ${table} (${containerColumn.join(',')}) VALUES ${mapBulkData.join(',')} RETURNING *`
@@ -75,13 +85,16 @@ module.exports = {
                 });
         })
     },
-    queryPUT: async(table, data, whereCond = '') => {
-        return new Promise(async(resolve, reject) => {
+    queryPUT: async (table, data, whereCond = '') => {
+        return new Promise(async (resolve, reject) => {
             let containerSetValues = []
-            for (const key in data) {
-                if (data[key] == 'CURRENT_TIMESTAMP') {
+            for (const key in data)
+            {
+                if (data[key] == 'CURRENT_TIMESTAMP')
+                {
                     containerSetValues.push(`${key} = CURRENT_TIMESTAMP`)
-                } else if (data[key] && data[key] != 'null') {
+                } else if (data[key] && data[key] != 'null')
+                {
                     containerSetValues.push(`${key} = '${data[key]}'`)
                 }
             }
@@ -96,8 +109,8 @@ module.exports = {
                 });
         })
     },
-    queryDELETE: async(table, whereCond = '') => {
-        return new Promise(async(resolve, reject) => {
+    queryDELETE: async (table, whereCond = '') => {
+        return new Promise(async (resolve, reject) => {
             let q = `DELETE FROM ${table} ${whereCond}`
             await database.query(q)
                 .then((result) => {
@@ -107,10 +120,11 @@ module.exports = {
                 });
         })
     },
-    querySoftDELETE: async(table, data, whereCond = '') => {
-        return new Promise(async(resolve, reject) => {
+    querySoftDELETE: async (table, data, whereCond = '') => {
+        return new Promise(async (resolve, reject) => {
             let containerSetValues = []
-            for (const key in data) {
+            for (const key in data)
+            {
                 containerSetValues.push(`${key} = '${data[key]}'`)
             }
             let q = `UPDATE ${table} SET ${containerSetValues.join(',')} FROM ${whereCond}`
@@ -122,8 +136,8 @@ module.exports = {
                 });
         })
     },
-    queryCustom: async(sql) => {
-        return new Promise(async(resolve, reject) => {
+    queryCustom: async (sql) => {
+        return new Promise(async (resolve, reject) => {
             let q = sql
             console.log(q);
             await database.query(q)
@@ -159,5 +173,68 @@ module.exports = {
                 finallyCallback()
             }
         }
-    }
+    },
+    queryPOSTSubQuery: async (table, data) => {
+        return new Promise(async (resolve, reject) => {
+            let containerColumn = []
+            let containerValues = []
+            for (const key in data)
+            {
+                containerColumn.push(key)
+
+                let value = data[key]
+                if (typeof value === 'string' && value.includes('select'))
+                {
+                    value = `${data[key]}`
+                } else
+                {
+                    value = `'${data[key]}'`
+                }
+
+                containerValues.push(data[key] && data[key] != 'null' ? `${value}` : 'NULL')
+            }
+            let q = `INSERT INTO ${table}(${containerColumn.join(',')}) VALUES (${containerValues.join(',')}) RETURNING *`
+            console.log(q);
+            await database.query(q)
+                .then((result) => {
+                    resolve(result)
+                }).catch((err) => {
+                    console.log(err);
+                    reject(err)
+                });
+        })
+    },
+    queryPUTSubQuery: async (table, data, whereCond = '') => {
+        return new Promise(async (resolve, reject) => {
+            let containerSetValues = []
+            for (const key in data)
+            {
+                if (data[key] == 'CURRENT_TIMESTAMP')
+                {
+                    containerSetValues.push(`${key} = CURRENT_TIMESTAMP`)
+                } else if (data[key] && data[key] != 'null')
+                {
+                    let value = data[key]
+                    if (typeof value === 'string' && value.includes('select'))
+                    {
+                        value = `${data[key]}`
+                    } else
+                    {
+                        value = `'${data[key]}'`
+                    }
+
+                    containerSetValues.push(`${key} = ${value}`)
+                }
+            }
+
+            let q = `UPDATE ${table} SET ${containerSetValues.join(',')} ${whereCond} RETURNING *`
+            console.log(q);
+            await database.query(q)
+                .then((result) => {
+                    resolve(result)
+                }).catch((err) => {
+                    reject(err)
+                });
+        })
+    },
 }
