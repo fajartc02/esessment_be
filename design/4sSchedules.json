@@ -1,17 +1,17 @@
-{
-    "status": 200,
-    "message": "Success to get 4s schedule",
-    "data": {
-        "schedule": [{
-                "schedule_id": "43b9390c-7ebe-4c22-ad3b-882247b0a6fe",
-                "pic_id": "bba58c10-0db2-41f1-8e43-9466374918dc",
-                "kanban_id": "f6c4cfa7-c361-4981-8d11-ec8d830595f7",
-                "zone_id": "20824a0e-97b8-4d77-8c6f-44da72eb7b65",
-                "freq_id": "fecb9a67-caf9-4559-ae8d-58b5f020a2fa",
-                "is_daily_to_weekly": false,
-                "is_weekly_to_monthly": false,
+const router = require('express')()
+const {
+    get4sSubSchedule,
+    getHoliday,
+    get4sMainSchedule,
+} = require('../../../controllers/operational/4s.controllers')
+const auth = require('../../../helpers/auth')
+
+router.get('/main-schedule', auth.verifyToken, get4sMainSchedule)
+router.get('/sub-schedule', auth.verifyToken, get4sSubSchedule)
+
+module.exports = routerkly_to_monthly": false,
                 "zone_nm": "Zone 1",
-                "kanban_nm": "C-01-05",
+                "kanban_no": "C-01-05",
                 "area_nm": "Baritori & Visual Checks",
                 "pic_nm": "Fajar Tri Cahyono",
                 "freq_nm": "Daily",
@@ -246,7 +246,7 @@
                 "is_daily_to_weekly": false,
                 "is_weekly_to_monthly": false,
                 "zone_nm": "Zone 1",
-                "kanban_nm": "C-01-05",
+                "kanban_no": "C-01-05",
                 "area_nm": "Baritori & Visual Checks",
                 "pic_nm": "Dita Nurlita",
                 "freq_nm": "Daily",
@@ -481,7 +481,7 @@
                 "is_daily_to_weekly": false,
                 "is_weekly_to_monthly": false,
                 "zone_nm": "Zone 1",
-                "kanban_nm": "C-01-05",
+                "kanban_no": "C-01-05",
                 "area_nm": "Baritori & Visual Checks",
                 "pic_nm": "TESS",
                 "freq_nm": "Daily",
@@ -716,7 +716,7 @@
                 "is_daily_to_weekly": false,
                 "is_weekly_to_monthly": false,
                 "zone_nm": "Zone 1",
-                "kanban_nm": "C-01-05",
+                "kanban_no": "C-01-05",
                 "area_nm": "Baritori & Visual Checks",
                 "pic_nm": "tess",
                 "freq_nm": "Daily",
@@ -951,7 +951,7 @@
                 "is_daily_to_weekly": false,
                 "is_weekly_to_monthly": false,
                 "zone_nm": "Zone 3",
-                "kanban_nm": "C-01-05",
+                "kanban_no": "C-01-05",
                 "area_nm": "Baritori & Visual Checks",
                 "pic_nm": "RAHMAT HIDAYAT",
                 "freq_nm": "Daily",
@@ -1186,7 +1186,7 @@
                 "is_daily_to_weekly": false,
                 "is_weekly_to_monthly": false,
                 "zone_nm": "Zone 3",
-                "kanban_nm": "C-01-05",
+                "kanban_no": "C-01-05",
                 "area_nm": "Baritori & Visual Checks",
                 "pic_nm": "Winarno",
                 "freq_nm": "Daily",
@@ -1421,7 +1421,7 @@
                 "is_daily_to_weekly": false,
                 "is_weekly_to_monthly": false,
                 "zone_nm": "Zone 4",
-                "kanban_nm": "C-01-05",
+                "kanban_no": "C-01-05",
                 "area_nm": "Baritori & Visual Checks",
                 "pic_nm": "Agus Sohari",
                 "freq_nm": "Weekly",
@@ -1656,7 +1656,7 @@
                 "is_daily_to_weekly": false,
                 "is_weekly_to_monthly": false,
                 "zone_nm": "Zone 4",
-                "kanban_nm": "C-01-05",
+                "kanban_no": "C-01-05",
                 "area_nm": "Baritori & Visual Checks",
                 "pic_nm": "Fajar Tri Cahyono",
                 "freq_nm": "Weekly",

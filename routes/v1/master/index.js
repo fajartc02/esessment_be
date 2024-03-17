@@ -16,6 +16,7 @@ const groups = require('./groups')
 const categories = require('./categories')
 const factors = require('./factors')
 const judgments = require('./judgments')
+const zones = require('./zones')
 
 router.use('/companies', companies)
 router.use('/plants', plants)
@@ -33,6 +34,7 @@ router.use('/groups', groups)
 router.use('/categories', categories)
 router.use('/factors', factors)
 router.use('/judgments', judgments)
+router.use("/zones", zones)
 
 
 module.exports = router

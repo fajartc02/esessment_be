@@ -1,12 +1,12 @@
-const router = require('express')()
+const router = require("express")()
 const {
-    get4sSchedules,
-    getHoliday,
-    get4sPlans,
-} = require('../../../controllers/operational/4s.controllers')
-const auth = require('../../../helpers/auth')
+  get4sSubSchedule,
+  getHoliday,
+  get4sMainSchedule,
+} = require("../../../controllers/operational/4s.controllers")
+const auth = require("../../../helpers/auth")
 
-router.get('/plan', auth.verifyToken, get4sPlans)
-router.get('/schedule', auth.verifyToken, get4sSchedules)
+router.get("/main-schedule", auth.verifyToken, get4sMainSchedule)
+router.get("/sub-schedule", auth.verifyToken, get4sSubSchedule)
 
 module.exports = router
