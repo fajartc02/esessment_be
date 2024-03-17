@@ -14,12 +14,6 @@ const table = {
     tb_m_factors: 'tb_m_factors',
     tb_m_categories: 'tb_m_categories',
     tb_m_judgments: 'tb_m_judgments',
-    tb_m_kanbans: 'tb_m_kanbans',
-    tb_m_freqs: 'tb_m_freqs',
-    tb_m_zones: 'tb_m_zones',
-    tb_m_schedules: 'tb_m_schedules',
-    tb_m_roles: 'tb_m_roles',
-    tb_m_4s_members: 'tb_m_4s_members',
     tb_r_observations: 'tb_r_observations',
     tb_r_obs_members: 'tb_r_obs_members',
     tb_r_obs_checker: 'tb_r_obs_checker',
@@ -30,12 +24,25 @@ const table = {
     tb_r_focus_theme: 'tb_r_focus_theme',
     tb_r_henkaten: 'tb_r_henkaten',
     tb_r_findings: 'tb_r_findings',
-    //4s
-    tb_r_4s_plans: 'tb_r_4s_plans',
-    tb_r_4s_schedules: 'tb_r_4s_schedules',
-    tb_r_4s_checkers: 'tb_r_4s_checkers',
-    tb_r_4s_revisions: 'tb_r_4s_revisions',
-    v_4s_members: 'v_4s_members'
+
+    //#region 4s
+    //#region master 4s
+    tb_m_kanbans: 'tb_m_kanbans',
+    tb_m_freqs: 'tb_m_freqs',
+    tb_m_zones: 'tb_m_zones',
+    tb_m_schedules: 'tb_m_schedules',
+    tb_m_4s_item_check_kanbans: 'tb_m_4s_item_check_kanbans',
+    tb_m_4s_opt_changes: 'tb_m_4s_opt_changes',
+    tb_m_4s_opt_depts: 'tb_m_4s_opt_depts',
+    tb_m_4s_evaluations: 'tb_m_4s_evaluations',
+    //#endregion
+    tb_r_4s_main_schedules: 'tb_r_4s_main_schedules',
+    tb_r_4s_sub_schedules: 'tb_r_4s_sub_schedules',
+    tb_r_4s_schedule_sign_checkers: 'tb_r_4s_schedule_sign_checkers',
+    tb_r_4s_schedule_revisions: 'tb_r_4s_schedule_revisions',
+    tb_r_4s_schedule_item_check_kanbans: 'tb_r_4s_schedule_item_check_kanbans',
+    tb_r_4s_findings: 'tb_r_4s_findings'
+    //#endregion
 }
 
 
