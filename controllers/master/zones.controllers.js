@@ -18,8 +18,12 @@ module.exports = {
   getZones: async (req, res) => {
     try
     {
-      let { id, line_id, limit, current_page, zone_nm } = req.query
-      const fromCondition = ` ${table.tb_m_zones} tmz join ${table.tb_m_lines} tml on tmz.line_id = tml.line_id `
+      let { id, line_id, limit, current_page, zone_nm, freq_id } = req.query
+      const fromCondition = ` 
+        ${table.tb_m_zones} tmz 
+        join ${table.tb_m_lines} tml on tmz.line_id = tml.line_id 
+        join ${table.tb_m_freqs} tmf on tmz.freq_id = tmf.freq_id
+      `
 
       current_page = parseInt(current_page ?? 1)
       limit = parseInt(limit ?? 10)
@@ -32,8 +36,10 @@ module.exports = {
           select
               tml.uuid as line_id,
               tmz.uuid as zone_id,
+              tmf.uuid as freq_id,
               tmz.zone_nm,
               tml.line_nm,
+              tmf.freq_nm,
               tmz.created_by,
               tmz.created_dt
           from
@@ -53,6 +59,10 @@ module.exports = {
       if (zone_nm)
       {
         filterCondition.push(` tml.zone_nm = '${zone_nm}' `)
+      }
+      if (freq_id)
+      {
+        filterCondition.push(` tmf.uuid = '${freq_id}' `)
       }
 
       const qOffset = (limit != -1 && limit) && current_page > 1 ? `OFFSET ${limit * (current_page - 1)}` : ``
@@ -99,7 +109,8 @@ module.exports = {
       const insertBody = {
         ...req.body,
         uuid: uuid(),
-        line_id: ` (select line_id from ${table.tb_m_lines} where uuid = '${req.body.line_id}') `
+        line_id: ` (select line_id from ${table.tb_m_lines} where uuid = '${req.body.line_id}') `,
+        freq_id: ` (select freq_id from ${table.tb_m_freqs} where uuid = '${req.body.freq_id}') `
       }
 
       const attrsInsert = await attrsUserInsertData(req, insertBody)
