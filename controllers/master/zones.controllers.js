@@ -1,5 +1,5 @@
 const table = require("../../config/table")
-const { queryPUT, queryCustom, queryPOSTSubQuery, queryPUTSubQuery } = require("../../helpers/query")
+const { queryPUT, queryCustom, queryPOST } = require("../../helpers/query")
 
 const response = require("../../helpers/response")
 const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData")
@@ -103,7 +103,7 @@ module.exports = {
       }
 
       const attrsInsert = await attrsUserInsertData(req, insertBody)
-      const result = await queryPOSTSubQuery(table.tb_m_zones, attrsInsert)
+      const result = await queryPOST(table.tb_m_zones, attrsInsert)
       response.success(res, "Success to add zone", result)
     } catch (error)
     {
@@ -133,7 +133,7 @@ module.exports = {
       }
 
       const attrsUserUpdate = await attrsUserUpdateData(req, updateBody)
-      const result = await queryPUTSubQuery(
+      const result = await queryPUT(
         table.tb_m_zones,
         attrsUserUpdate,
         `WHERE zone_id = '${zone_id}'`

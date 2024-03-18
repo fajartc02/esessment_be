@@ -292,9 +292,9 @@ const migrate = async () => {
             console.log('item check kanbans', 'inserted')
             //#endregion
         }
-    }, () => {
-        process.exit()
     }).then((res) => {
+        process.exit()
+    }).catch((err) => {
         process.exit()
     })
 }
