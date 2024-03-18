@@ -17,6 +17,7 @@ const categories = require('./categories')
 const factors = require('./factors')
 const judgments = require('./judgments')
 const zones = require('./zones')
+const kanbans = require('./kanbans')
 
 router.use('/companies', companies)
 router.use('/plants', plants)
@@ -35,6 +36,7 @@ router.use('/categories', categories)
 router.use('/factors', factors)
 router.use('/judgments', judgments)
 router.use("/zones", zones)
+router.use("/kanbans", kanbans)
 
 
 module.exports = router

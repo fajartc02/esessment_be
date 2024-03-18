@@ -1,6 +1,6 @@
 const multer = require("multer");
-
 const path = require("path");
+const fs = require('fs');
 
 const checkFileType = function(file, cb) { //Allowed file extensions
     const fileTypes = /jpeg|jpg|png|gif|svg|pdf|/;
@@ -24,8 +24,16 @@ const storageEngine = multer.diskStorage({  
     destination: function(req, file, cb) {
         // console.log('req.body');
         // console.log(req.body);
+
         console.log(file);
-        cb(null, `./uploads/${req.body.dest}/`)
+
+        const path = `./uploads/${req.body.dest}/`
+        if (!fs.existsSync(path))
+        {
+            fs.mkdirSync(path, { recursive: true })
+        }
+
+        cb(null, path)
     },
     filename: (req, file, cb) => {
         cb(null, `${Date.now()}--${file.originalname}`);

@@ -277,9 +277,9 @@ const migrate = async () => {
         }
 
         console.log('Seeder Completed!!!')
-    }, () => {
-        process.exit()
     }).then((res) => {
+        process.exit()
+    }).catch((err) => {
         process.exit()
     })
 }

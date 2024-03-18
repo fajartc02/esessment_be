@@ -1,5 +1,6 @@
 const { database, databasePool } = require('../config/database')
 
+
 module.exports = {
     queryGET: async (table, whereCond = false, cols = null) => {
         return new Promise(async (resolve, reject) => {
@@ -29,7 +30,17 @@ module.exports = {
             for (const key in data)
             {
                 containerColumn.push(key)
-                containerValues.push(data[key] && data[key] != 'null' ? `'${data[key]}'` : 'NULL')
+                
+                let value = data[key]
+                if (typeof value === 'string' && value.includes('select'))
+                {
+                    value = `${data[key]}`
+                } else
+                {
+                    value = `'${data[key]}'`
+                }
+
+                containerValues.push(data[key] && data[key] != 'null' ? `${value}` : 'NULL')
             }
             let q = `INSERT INTO ${table}(${containerColumn.join(',')}) VALUES (${containerValues.join(',')}) RETURNING *`
             console.log(q);
@@ -95,7 +106,16 @@ module.exports = {
                     containerSetValues.push(`${key} = CURRENT_TIMESTAMP`)
                 } else if (data[key] && data[key] != 'null')
                 {
-                    containerSetValues.push(`${key} = '${data[key]}'`)
+                    let value = data[key]
+                    if (typeof value === 'string' && value.includes('select'))
+                    {
+                        value = `${data[key]}`
+                    } else
+                    {
+                        value = `'${data[key]}'`
+                    }
+
+                    containerSetValues.push(`${key} = ${value}`)
                 }
             }
 
@@ -148,33 +168,33 @@ module.exports = {
                 });
         })
     },
-    queryTransaction: async (callback, finallyCallback = null) => {
-        const db = await databasePool.connect();
+    queryTransaction: async (callback = async () => { }) => {
+        const db = await databasePool.connect()
+    
+        const finish = async () => {
+            await db.query(`SET session_replication_role = 'origin'`)
+            db.release()
+        }
+
         try
         {
             await db.query(`SET session_replication_role = 'replica'`)
             await db.query('BEGIN')
-            try
-            {
-                await callback(db)
-                await db.query('COMMIT')
-            } catch (error)
-            {
-                console.log('error transaction', error)
-                await db.query('ROLLBACK')
-            }
+            
+            const r = await callback(db)
+            await db.query('COMMIT')
+            await finish()
+            return r
         }
-        finally
+        catch (error)
         {
-            await db.query(`SET session_replication_role = 'origin'`)
-            db.release()
-            if (finallyCallback)
-            {
-                finallyCallback()
-            }
+            console.log('error transaction', error)
+            await db.query('ROLLBACK')
+            await finish()
+            throw error
         }
     },
-    queryPOSTSubQuery: async (table, data) => {
+    queryPostTransaction: async (dbPool, table, data) => {
         return new Promise(async (resolve, reject) => {
             let containerColumn = []
             let containerValues = []
@@ -195,7 +215,7 @@ module.exports = {
             }
             let q = `INSERT INTO ${table}(${containerColumn.join(',')}) VALUES (${containerValues.join(',')}) RETURNING *`
             console.log(q);
-            await database.query(q)
+            await dbPool.query(q)
                 .then((result) => {
                     resolve(result)
                 }).catch((err) => {
@@ -204,7 +224,7 @@ module.exports = {
                 });
         })
     },
-    queryPUTSubQuery: async (table, data, whereCond = '') => {
+    queryPutTransaction: async (dbPool, table, data, whereCond = '') => {
         return new Promise(async (resolve, reject) => {
             let containerSetValues = []
             for (const key in data)
@@ -229,7 +249,7 @@ module.exports = {
 
             let q = `UPDATE ${table} SET ${containerSetValues.join(',')} ${whereCond} RETURNING *`
             console.log(q);
-            await database.query(q)
+            await dbPool.query(q)
                 .then((result) => {
                     resolve(result)
                 }).catch((err) => {
