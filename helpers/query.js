@@ -1,5 +1,6 @@
 const { database, databasePool } = require('../config/database')
 
+const _defaultCallbackTrans = async (db = databasePool) => {}
 
 module.exports = {
     queryGET: async (table, whereCond = false, cols = null) => {
@@ -168,7 +169,7 @@ module.exports = {
                 });
         })
     },
-    queryTransaction: async (callback = async () => { }) => {
+    queryTransaction: async (callback = _defaultCallbackTrans) => {
         const db = await databasePool.connect()
     
         const finish = async () => {
