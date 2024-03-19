@@ -17,13 +17,13 @@ module.exports = {
                     if (typeof item[key] == 'string' && item[key].startsWith('func '))
                     {
                         const r = item[key].replace('func ', '')
-                        containerValues.push(`${r}`)    
+                        containerValues.push(`${r}`)
                     }
                     else
                     {
-                        containerValues.push(`'${item[key]}'`)    
+                        containerValues.push(`'${item[key]}'`)
                     }
-                    
+
                 } else
                 {
                     containerValues.push(`NULL`)
@@ -45,5 +45,4 @@ module.exports = {
             values: mapBulkData.join(',')
         }
     }
-
 }

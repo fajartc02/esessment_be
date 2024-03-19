@@ -9,7 +9,7 @@ const { databasePool } = require('../../config/database');
 const table = require('../../config/table')
 const moment = require('moment')
 const { queryTransaction } = require('../../helpers/query')
-const { bulkToSchema } = require('./seederHelper')
+const { bulkToSchema } = require('../../helpers/schema')
 
 console.log('env', {
     env: process.env.NODE_ENV,

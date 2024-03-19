@@ -11,7 +11,7 @@ const moment = require('moment')
 const { queryTransaction } = require('../../helpers/query')
 const { generateMonthlyDates } = require('../../helpers/date')
 const { holidayRequest } = require('../../helpers/externalRequest')
-const { bulkToSchema } = require('./seederHelper')
+const { bulkToSchema } = require('../../helpers/schema')
 
 const currentDate = moment()
 
@@ -158,14 +158,17 @@ const migrate = async () => {
             {
                 uuid: uuid(),
                 freq_nm: 'Daily',
+                precition_val: 1,
             },
             {
                 uuid: uuid(),
                 freq_nm: 'Weekly',
+                precition_val: 7,
             },
             {
                 uuid: uuid(),
                 freq_nm: 'Monthly',
+                precition_val: 30,
             },
         ])
         const freqQuery = await db.query(`insert into ${table.tb_m_freqs} (${freqSchema.columns}) VALUES ${freqSchema.values} returning *`)
@@ -185,21 +188,25 @@ const migrate = async () => {
             const zoneSchema = await bulkToSchema([
                 {
                     uuid: uuid(),
+                    freq_id: freqRows[0].freq_id,
                     zone_nm: 'Zone 1',
                     line_id: lineGroup.line_id,
                 },
                 {
                     uuid: uuid(),
+                    freq_id: freqRows[1].freq_id,
                     zone_nm: 'Zone 2',
                     line_id: lineGroup.line_id,
                 },
                 {
                     uuid: uuid(),
+                    freq_id: freqRows[1].freq_id,
                     zone_nm: 'Zone 3',
                     line_id: lineGroup.line_id,
                 },
                 {
                     uuid: uuid(),
+                    freq_id: freqRows[2].freq_id,
                     zone_nm: 'Zone 4',
                     line_id: lineGroup.line_id,
                 },
