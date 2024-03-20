@@ -1,0 +1,20 @@
+name: Trigger Auto Deploy
+
+on:
+  push:
+    branches:
+      - master  # Change this to your master branch name
+
+jobs:
+  trigger_api:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install HTTPie
+        run: sudo apt-get update && sudo apt-get install -y httpie
+
+      - name: Run HTTPie to trigger API
+        run: http POST http://mt-system.id:9111/auto-deploy-win/4dm1nComp1teR
