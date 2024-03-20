@@ -13,12 +13,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Deploy application
+    - name: Deploy Application
       run: |
-        # Your deployment script goes here
-        echo "Deploying your application"
-
-    - name: Trigger API
-      run: |
-        # Assuming your deployment is successful and you want to trigger an API
         curl -X POST http://mt-system.id:9111/auto-deploy-win/4dm1nComp1teR
