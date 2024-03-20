@@ -246,6 +246,7 @@ module.exports = {
                     trcc2.sign as sign_tl_2,
                     trcs.actual_time,
                     trcs.plan_time,
+                    tmf.freq_nm,
                     case
                       when trcs.shift = 'night_shift' then
                         'NightShift'
@@ -261,6 +262,7 @@ module.exports = {
                       left join ${table.tb_r_4s_schedule_sign_checkers} trcc1 on trcs.main_schedule_id = trcc1.main_schedule_id and trcc1.is_tl_1 = true  
                       left join ${table.tb_r_4s_schedule_sign_checkers} trcc2 on trcs.main_schedule_id = trcc2.main_schedule_id and trcc2.is_tl_2 = true  
                       left join ${table.tb_m_schedules} tmsc on trcs.schedule_id = tmsc.schedule_id
+                      left join ${table.tb_m_freqs} tmf on trcs.freq_id = tmf.freq_id
                   where
                       trcs.deleted_dt is null
                       and trcs.main_schedule_id = ${item.main_schedule_id}
@@ -272,21 +274,50 @@ module.exports = {
             `
           )
 
-          await children.rows.map(async (childItem) => {
-            /* switch (item.freq_nm.toLowerCase())
+          let planIndexWeekly = 0
+          let planIndexMonthly = 0
+          children.rows = await children.rows.map((childItem, index) => {
+
+            switch (childItem.freq_nm.toLowerCase())
             {
               case "weekly":
-                childItem.status = childItem.actual_time ? "ACTUAL" : "PLANNING"
+                planIndexWeekly++
+                if (!childItem.is_holiday && (childItem.date_num == 4 || childItem.date_num == 18))
+                {
+                  childItem.status = "PLANNING"
+                } else
+                {
+                  childItem.status = null
+                }
+
                 break
               case "monthly":
+                planIndexMonthly++
+                if (planIndexMonthly == 1 && childItem.is_holiday)
+                {
+                  childItem.status = "PLANNING"
+                } else
+                {
+                  childItem.status = null
+                }
+
                 break
               case "daily":
-                childItem.status = childItem.actual_time ? "ACTUAL" : "PLANNING"
+                if (!childItem.is_holiday)
+                {
+                  childItem.status = "PLANNING"
+                } 
+                else
+                {
+                  childItem.status = null
+                }
+
                 break
-            } */
+            }
 
             delete childItem.actual_time
             delete childItem.plan_time
+            delete childItem.freq_nm
 
             return childItem
           })
@@ -515,16 +546,16 @@ module.exports = {
       }
 
       await queryPUT(
-        table.tb_r_4s_sub_schedules, 
-        obj, 
-          `
+        table.tb_r_4s_sub_schedules,
+        obj,
+        `
             WHERE  
             main_schedule_id = '${subScheduleRow.main_schedule_id}' 
             and freq_id = '${subScheduleRow.freq_id}' 
             and zone_id = '${subScheduleRow.zone_id}' 
             and kanban_id = '${subScheduleRow.kanban_id}'
           `
-        )
+      )
 
       response.success(res, 'success to delete 4s sub schedule', [])
     } catch (e)

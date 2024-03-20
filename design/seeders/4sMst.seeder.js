@@ -223,48 +223,56 @@ const migrate = async () => {
                     zone_id: zoneRows[1].zone_id,
                     kanban_no: 'C-01-05',
                     area_nm: 'Baritori & Visual Checks',
+                    standart_time: 30,
                 },
                 {
                     uuid: uuid(),
                     zone_id: zoneRows[1].zone_id,
                     kanban_no: 'C-01-08',
                     area_nm: 'Lantai Mesin DC #2 (B)',
+                    standart_time: 30,
                 },
                 {
                     uuid: uuid(),
                     zone_id: zoneRows[1].zone_id,
                     kanban_no: 'C-01-15',
                     area_nm: 'Mesin Die Cast #2 (C)',
+                    standart_time: 30,
                 },
                 {
                     uuid: uuid(),
                     zone_id: zoneRows[1].zone_id,
                     kanban_no: 'C-01-18',
                     area_nm: 'Area Robot (D)',
+                    standart_time: 30,
                 },
                 {
                     uuid: uuid(),
                     zone_id: zoneRows[3].zone_id,
                     kanban_no: 'C-02-08',
                     area_nm: 'Mesin Bubut (A)',
+                    standart_time: 40,
                 },
                 {
                     uuid: uuid(),
                     zone_id: zoneRows[3].zone_id,
                     kanban_no: 'C-03-02',
                     area_nm: 'Meja Kerja Naturium (B)',
+                    standart_time: 40,
                 },
                 {
                     uuid: uuid(),
                     zone_id: zoneRows[0].zone_id,
                     kanban_no: 'C-01-01',
                     area_nm: 'CMM Room (A)',
+                    standart_time: 50,
                 },
                 {
                     uuid: uuid(),
                     zone_id: zoneRows[0].zone_id,
                     kanban_no: 'C-02-01',
                     area_nm: 'Roller To Room (B)',
+                    standart_time: 50,
                 }
             ]);
 
