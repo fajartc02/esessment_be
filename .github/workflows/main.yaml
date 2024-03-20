@@ -1,20 +1,24 @@
-name: Trigger Auto Deploy
+name: Deploy
 
 on:
   push:
     branches:
-      - master  # Change this to your master branch name
+      - master  # Trigger deployment on master branch changes
 
 jobs:
-  trigger_api:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Install HTTPie
-        run: sudo apt-get update && sudo apt-get install -y httpie
+    - name: Deploy application
+      run: |
+        # Your deployment script goes here
+        echo "Deploying your application"
 
-      - name: Run HTTPie to trigger API
-        run: http POST http://mt-system.id:9111/auto-deploy-win/4dm1nComp1teR
+    - name: Trigger API
+      run: |
+        # Assuming your deployment is successful and you want to trigger an API
+        curl -X POST http://mt-system.id:9111/auto-deploy-win/4dm1nComp1teR
