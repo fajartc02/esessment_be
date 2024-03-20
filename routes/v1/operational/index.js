@@ -5,7 +5,8 @@ const memberVoice = require('./memberVoice')
 const focusThema = require('./focusThema')
 const henkaten = require('./henkaten')
 const graph = require('./graph')
-const r4s = require("./4s")
+const r4s = require("./schedule4s")
+const finding4s = require('./finding4s')
 
 router.use('/observation', observations)
 router.use('/findingCm', findingCm)
@@ -14,5 +15,6 @@ router.use('/henkaten', henkaten)
 router.use('/focus-thema', focusThema)
 router.use('/graph', graph)
 router.use("/4s", r4s)
+router.use("/finding4s", finding4s)
 
 module.exports = router
