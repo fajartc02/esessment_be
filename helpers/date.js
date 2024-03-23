@@ -1,6 +1,4 @@
-const padTwoDigits = (number) => {
-    return (parseInt(number) < 10) ? '0' + number.toString() : number.toString();
-}
+const { padTwoDigits } = require('./formatting')
 
 module.exports = {
     generateMonthlyDates: (year, month) => {

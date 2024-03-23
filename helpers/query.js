@@ -1,6 +1,6 @@
 const { database, databasePool } = require('../config/database')
 
-const _defaultCallbackTrans = async (db = databasePool) => {}
+const _defaultCallbackTrans = async (db = databasePool) => { }
 
 module.exports = {
     queryGET: async (table, whereCond = false, cols = null) => {
@@ -31,7 +31,7 @@ module.exports = {
             for (const key in data)
             {
                 containerColumn.push(key)
-                
+
                 let value = data[key]
                 if (typeof value === 'string' && value.includes('select'))
                 {
@@ -157,10 +157,14 @@ module.exports = {
                 });
         })
     },
-    queryCustom: async (sql) => {
+    
+    queryCustom: async (sql, log = true) => {
         return new Promise(async (resolve, reject) => {
             let q = sql
-            console.log(q);
+            if (log)
+            {
+                console.log(q);
+            }
             await database.query(q)
                 .then((result) => {
                     resolve(result)
@@ -171,7 +175,7 @@ module.exports = {
     },
     queryTransaction: async (callback = _defaultCallbackTrans) => {
         const db = await databasePool.connect()
-    
+
         const finish = async () => {
             await db.query(`SET session_replication_role = 'origin'`)
             db.release()
@@ -181,7 +185,7 @@ module.exports = {
         {
             await db.query(`SET session_replication_role = 'replica'`)
             await db.query('BEGIN')
-            
+
             const r = await callback(db)
             await db.query('COMMIT')
             await finish()

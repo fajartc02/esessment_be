@@ -70,7 +70,7 @@ module.exports = {
 
       filterCondition = filterCondition.join(' and ')
       zoneQuery = zoneQuery.concat(` ${filterCondition} `)
-      zoneQuery = zoneQuery.concat(` order by tmz.created_by ${qLimit} ${qOffset} `)
+      zoneQuery = zoneQuery.concat(` order by tmz.created_dt ${qLimit} ${qOffset} `)
       //#endregion
 
       const zones = await queryCustom(zoneQuery)

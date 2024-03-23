@@ -16,12 +16,138 @@ const idToUuid = require("../../helpers/idToUuid")
 const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData")
 const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData")
 const multipleUuidToIds = require("../../helpers/multipleUuidToId")
+const { padTwoDigits } = require("../../helpers/formatting")
+
+const fromSubScheduleSql = `
+    ${table.tb_r_4s_sub_schedules} tbrcs
+    join ${table.tb_r_4s_main_schedules} trmsc on tbrcs.main_schedule_id = trmsc.main_schedule_id
+    left join ${table.tb_m_users} tmu on tmu.user_id = tbrcs.pic_id
+    join ${table.tb_m_kanbans} tmk on tbrcs.kanban_id = tmk.kanban_id
+    join ${table.tb_m_zones} tmz on tbrcs.zone_id = tmz.zone_id
+    join ${table.tb_m_freqs} tmf on tbrcs.freq_id = tmf.freq_id
+    join ${table.tb_m_schedules} tmsc on tbrcs.schedule_id = tmsc.schedule_id
+`
+
+const selectSubScheduleCol = [
+  'tbrcs.main_schedule_id',
+  'trmsc.uuid as main_schedule_uuid',
+  'tbrcs.uuid as sub_schedule_id',
+  'tmu.uuid as pic_id',
+  'tmk.uuid as kanban_id',
+  'tmz.uuid as zone_id',
+  'tmf.uuid as freq_id',
+  'tmf.freq_id as freq_real_id',
+  'tmz.zone_id as zone_real_id',
+  'tmk.kanban_id as kanban_real_id',
+  'tmu.user_id as pic_real_id',
+  'tmz.zone_nm',
+  'tmk.kanban_no',
+  'tmk.area_nm',
+  'tmk.standart_time',
+  'tmu.fullname as pic_nm',
+  'tmf.freq_nm'
+]
+
+const selectSubScheduleSql = selectSubScheduleCol.join(', ')
+
+/**
+ * @typedef {Object} ChildrenSubSchedule
+ * 
+ * @param {number} mainScheduleRealId 
+ * @param {number} freqRealId 
+ * @param {number} zoneRealId 
+ * @param {number} kanbanRealId 
+ * @param {?number} picRealId 
+ * @returns {Promise<Array<ChildrenSubSchedule>>}
+ */
+const childrenSubSchedule = async (
+  mainScheduleRealId,
+  freqRealId,
+  zoneRealId,
+  kanbanRealId,
+  picRealId
+) => {
+  let byPic = ``
+  if (picRealId)
+  {
+    byPic = ` and trcs.pic_id = '${picRealId}' `
+  }
+  let childrenSql = `
+              select * from (
+                 select
+                    tbrcs.uuid as sub_schedule_id,
+                    trcc1.tl1_sign_checker_id,
+                    trcc2.tl2_sign_checker_id,
+                    EXTRACT('Day' FROM tmsc.date)::INTEGER as date_num,
+                    tmsc.is_holiday,
+                    case
+                      when tbrcs.shift = 'night_shift' then
+                        'NightShift'
+                      when tbrcs.plan_time is not null and tbrcs.actual_time is null then
+                        'PLANNING'
+                      when tbrcs.actual_time is not null then
+                        'ACTUAL'
+                      else
+                        null
+                    end as status,
+                    trcc1.sign as sign_tl_1,
+                    trcc2.sign as sign_tl_2
+                  from
+                      ${fromSubScheduleSql}
+                      left join lateral (
+                                        select
+                                          uuid as tl1_sign_checker_id,
+                                          sign
+                                        from
+                                          ${table.tb_r_4s_schedule_sign_checkers}
+                                        where
+                                          main_schedule_id = tbrcs.main_schedule_id
+                                          and is_tl_1 = true 
+                                          and end_date = tmsc."date"
+                                        limit 1
+                      ) trcc1 on true
+                      left join lateral (
+                                        select
+                                          uuid as tl2_sign_checker_id,
+                                          sign
+                                        from
+                                          ${table.tb_r_4s_schedule_sign_checkers}
+                                        where
+                                          main_schedule_id = tbrcs.main_schedule_id
+                                          and is_tl_2 = true 
+                                          and end_date = tmsc."date"
+                                        limit 1
+                      ) trcc2 on true
+                  where
+                      tbrcs.deleted_dt is null
+                      and tbrcs.main_schedule_id = ${mainScheduleRealId}
+                      and tbrcs.freq_id = '${freqRealId}'
+                      and tbrcs.zone_id = '${zoneRealId}'
+                      and tbrcs.kanban_id = '${kanbanRealId}'
+                      ${byPic}
+              ) a order by date_num      
+           `
+
+  const children = await queryCustom(childrenSql)
+
+  return children.rows
+}
 
 module.exports = {
   get4sMainSchedule: async (req, res) => {
     try
     {
-      const { line_id } = req.query
+      const { line_id, group_id, month_year_num } = req.query
+      let { limit, current_page } = req.query
+
+      current_page = parseInt(current_page ?? 1)
+      limit = parseInt(limit ?? 10)
+
+      const fromSql = `
+          ${table.tb_r_4s_main_schedules} trcp
+          join ${table.tb_m_lines} tml on trcp.line_id = tml.line_id
+          join ${table.tb_m_groups} tmg on trcp.group_id = tmg.group_id
+      `
 
       let mainScheduleSql = `
                 select 
@@ -36,22 +162,67 @@ module.exports = {
                     tml.line_nm,
                     tmg.group_nm
                 from
-                    ${table.tb_r_4s_main_schedules} trcp
-                    join ${table.tb_m_lines} tml on trcp.line_id = tml.line_id
-                    join ${table.tb_m_groups} tmg on trcp.group_id = tmg.group_id
+                    ${fromSql}
                 where 
-                    trcp.deleted_dt is null
+                    1 = 1
             `
+
+      let filterCondition = [
+        ' and trcp.deleted_dt is null '
+      ]
 
       if (line_id && line_id != null && line_id != "")
       {
-        mainScheduleSql = mainScheduleSql.concat(
-          ` and trcp.line_id = (select line_id from ${table.tb_m_lines} where uuid = '${line_id}') `
-        )
+        filterCondition.push(` trcp.line_id = (select line_id from ${table.tb_m_lines} where uuid = '${line_id}') `)
+      }
+      if (month_year_num && month_year_num != null && month_year_num != "")
+      {
+        let MYFilterSplit = month_year_num.split('-')
+        if (MYFilterSplit.length == 1)
+        {
+          if (MYFilterSplit[0].length == 4)
+          {
+            filterCondition.push(` trcp.year_num = '${MYFilterSplit[0]}}' `)
+          }
+          else
+          {
+            filterCondition.push(` trcp.month_num = '${MYFilterSplit[0]}}' `)
+          }
+        }
+        else
+        {
+          filterCondition.push(` trcp.year_num || '-' || trcp.month_num = '${MYFilterSplit[0]}-${padTwoDigits(MYFilterSplit[1])}' `)
+        }
+      }
+      if (group_id && group_id != null && group_id != "")
+      {
+        filterCondition.push(` trcp.group_id = (select group_id from ${table.tb_m_groups} where uuid = '${group_id}') `)
       }
 
+      const qOffset = (limit != -1 && limit) && current_page > 1 ? `OFFSET ${limit * (current_page - 1)}` : ``
+      const qLimit = (limit != -1 && limit) ? `LIMIT ${limit}` : ``
+
+      filterCondition = filterCondition.join(' and ')
+      mainScheduleSql = mainScheduleSql.concat(` ${filterCondition} `)
+      mainScheduleSql = mainScheduleSql.concat(` order by trcp.created_dt ${qLimit} ${qOffset} `)
+
       const mainScheduleQuery = await queryCustom(mainScheduleSql)
-      const result = await Promise.all(mainScheduleQuery.rows)
+      let result = mainScheduleQuery.rows
+
+      if (result.length > 0)
+      {
+        const count = await queryCustom(`select count(trcp.main_schedule_id)::integer as count from ${fromSql} where 1 = 1 ${filterCondition}`)
+        const countRows = count.rows[0]
+        result = {
+          current_page: current_page,
+          total_page: +countRows.count > 0 ? Math.ceil(countRows.count / +limit) : 0,
+          total_data: countRows.count,
+          limit: limit,
+          list: result,
+        }
+      }
+
+      //const result = await Promise.all(mainScheduleQuery.rows)
 
       response.success(res, "Success to get 4s main schedule", result)
     } catch (error)
@@ -63,7 +234,7 @@ module.exports = {
   get4sSubSchedule: async (req, res) => {
     try
     {
-      const { main_schedule_id, freq_id, zone_id, kanban_id } = req.query
+      const { main_schedule_id, freq_id, zone_id, kanban_id, line_id, group_id, month_year_num } = req.query
 
       if (
         !main_schedule_id ||
@@ -83,66 +254,77 @@ module.exports = {
       }
 
       let scheduleSql = `
-          select distinct on (tbrcs.kanban_id)
-              tbrcs.main_schedule_id,    
-              tbrcs.uuid as sub_schedule_id,
-              tmu.uuid as pic_id,
-              tmk.uuid as kanban_id,
-              tmz.uuid as zone_id,
-              tmf.uuid as freq_id,
-              tmz.zone_nm,
-              tmk.kanban_no,
-              tmk.area_nm,
-              tmk.standart_time,
-              tmu.fullname as pic_nm,
-              tmf.freq_nm
+          select * from (
+            select distinct on (tbrcs.freq_id, tbrcs.zone_id, tbrcs.kanban_id)
+              ${selectSubScheduleSql}  
           from
-              ${table.tb_r_4s_sub_schedules} tbrcs
-              join ${table.tb_r_4s_main_schedules} trmsc on tbrcs.main_schedule_id = trmsc.main_schedule_id
-              join ${table.tb_m_users} tmu on tmu.user_id = tbrcs.pic_id
-              join ${table.tb_m_kanbans} tmk on tbrcs.kanban_id = tbrcs.kanban_id
-              join ${table.tb_m_zones} tmz on tbrcs.zone_id = tmz.zone_id
-              join ${table.tb_m_freqs} tmf on tbrcs.freq_id = tmf.freq_id
-              join ${table.tb_m_schedules} tmsc on tbrcs.schedule_id = tmsc.schedule_id
-              join lateral (
-                  select
-                    pic_id,
-                    kanban_id,
-                    count(*) as total
-                  from
-                      ${table.tb_r_4s_sub_schedules}
-                  where
-                    main_schedule_id = tbrcs.main_schedule_id
-                  group by 
-                    kanban_id, 
-                    pic_id
-                ) tbrcs_group on tbrcs_group.pic_id = tbrcs.pic_id and tbrcs_group.kanban_id = tbrcs.kanban_id
+             ${fromSubScheduleSql}
           where
             tbrcs.deleted_dt is null
             and tbrcs.main_schedule_id = (select main_schedule_id from ${table.tb_r_4s_main_schedules} where uuid = '${main_schedule_id}')
-
+          ) a 
+          where
+            1 = 1
         `
+
+      let filterCondition = []
 
       if (freq_id && freq_id != null && freq_id != "")
       {
-        scheduleSql = scheduleSql.concat(
-          ` and tbrcs.freq_id = (select freq_id from ${table.tb_m_freqs} where uuid = '${freq_id}') `
-        )
+        filterCondition.push(` tbrcs.freq_id = (select freq_id from ${table.tb_m_freqs} where uuid = '${freq_id}') `)
       }
       if (zone_id && zone_id != null && zone_id != "")
       {
-        scheduleSql = scheduleSql.concat(
-          ` and tbrcs.zone_id = (select zone_id from ${table.tb_m_zones} where uuid = '${zone_id}') `
-        )
+        filterCondition.push(` tbrcs.zone_id = (select zone_id from ${table.tb_m_zones} where uuid = '${zone_id}') `)
       }
       if (kanban_id && kanban_id != null && kanban_id != "")
       {
-        scheduleSql = scheduleSql.concat(
-          ` and tbrcs.kanban_id = (select kanban_id from ${table.tb_m_kanbans} where uuid = '${kanban_id}') `
-        )
+        filterCondition.push(` tbrcs.kanban_id = (select kanban_id from ${table.tb_m_kanbans} where uuid = '${kanban_id}') `)
+      }
+      if (line_id && line_id != null && line_id != "")
+      {
+        filterCondition.push(` trmsc.line_id = (select line_id from ${table.tb_m_lines} where uuid = '${line_id}') `)
+      }
+      if (month_year_num && month_year_num != null && month_year_num != "")
+      {
+        let MYFilterSplit = month_year_num.split('-')
+
+        if (MYFilterSplit.length == 1)
+        {
+          if (MYFilterSplit[0].length == 4)
+          {
+            filterCondition.push(` trmsc.year_num = '${MYFilterSplit[0]}}' `)
+          }
+          else
+          {
+            filterCondition.push(` trmsc.month_num = '${MYFilterSplit[0]}}' `)
+          }
+        }
+        else
+        {
+          filterCondition.push(` trmsc.year_num || '-' || trmsc.month_num = '${MYFilterSplit[0]}-${padTwoDigits(MYFilterSplit[1])}' `)
+        }
+      }
+      if (group_id && group_id != null && group_id != "")
+      {
+        filterCondition.push(` trmsc.group_id = (select group_id from ${table.tb_m_groups} where uuid = '${group_id}') `)
       }
 
+      filterCondition = filterCondition.join(' and ')
+      scheduleSql = scheduleSql.concat(` ${filterCondition} `)
+      scheduleSql = scheduleSql.concat(` 
+            order by 
+            case freq_nm 
+              when 'Daily' then 1
+              when 'Weekly' then 2
+              when 'Monthly' then 3
+            end 
+          `
+      )
+
+      console.log('scheduleSql', scheduleSql)
       const scheduleQuery = await queryCustom(scheduleSql)
+
       if (scheduleQuery.rows && scheduleQuery.rows.length > 0)
       {
         let mainScheduleRealId = null
@@ -184,42 +366,49 @@ module.exports = {
               freqRotationRow[0].is_weekly_to_monthly ?? false
           }
 
-          const countRowSpanQuery = await queryCustom(`
-            with
-                pics as (
-                    select
-                        count(distinct kanban_id)::integer as pic_rows
-                    from
-                        ${table.tb_r_4s_sub_schedules}
-                    where
-                        pic_id = (select user_id from ${table.tb_m_users} where uuid = '${item.pic_id}' limit 1)
-                        and freq_id = ${whereFreqId}
-                    group by
-                        pic_id
-                ),
-                zones as (
-                    select
-                        count(distinct kanban_id)::integer as zone_rows
-                    from
-                        ${table.tb_r_4s_sub_schedules}
-                    where
-                        zone_id = (select zone_id from ${table.tb_m_zones} where uuid = '${item.zone_id}' limit 1)
-                        and freq_id = ${whereFreqId}
-                    group by
-                        zone_id
-                ),
-                freqs as (
-                    select
-                        count(distinct kanban_id)::integer as freq_rows
-                    from
-                        ${table.tb_r_4s_sub_schedules}
-                    where
-                        freq_id = ${whereFreqId}
-                    group by
-                        freq_id
-                )
-                select * from pics, zones, freqs
-          `)
+          const countRowSpanSql = `
+              with
+                  pics as (
+                      select
+                          count(distinct kanban_id)::integer as pic_rows
+                      from
+                          ${table.tb_r_4s_sub_schedules}
+                      where
+                          pic_id = (select user_id from ${table.tb_m_users} where uuid = '${item.pic_id}' limit 1)
+                          and freq_id = ${whereFreqId}
+                      group by
+                          pic_id
+                  ),
+                  zones as (
+                      select
+                          count(distinct kanban_id)::integer as zone_rows
+                      from
+                          ${table.tb_r_4s_sub_schedules}
+                      where
+                          zone_id = (select zone_id from ${table.tb_m_zones} where uuid = '${item.zone_id}' limit 1)
+                          and freq_id = ${whereFreqId}
+                      group by
+                          zone_id
+                  ),
+                  freqs as (
+                      select
+                          count(distinct kanban_id)::integer as freq_rows
+                      from
+                          ${table.tb_r_4s_sub_schedules}
+                      where
+                          freq_id = ${whereFreqId}
+                      group by
+                          freq_id
+                  )
+                  select * from 
+                    pics 
+                    full outer join zones on true 
+                    full outer join freqs on true
+            `
+
+          //console.log('countRowSpanSql', countRowSpanSql)
+          const countRowSpanQuery = await queryCustom(countRowSpanSql)
+
 
           let countRows = countRowSpanQuery.rows
           if (countRows && countRows.length > 0)
@@ -235,187 +424,121 @@ module.exports = {
             item.row_span_zone = 1
           }
 
-          const children = await queryCustom(`
-              select * from (
-                 select
-                    distinct on (trcs.uuid)
-                    trcs.uuid as sub_schedule_id,
-                    EXTRACT('Day' FROM tmsc.date)::INTEGER as date_num,
-                    tmsc.is_holiday,
-                    trcc1.sign as sign_tl_1,
-                    trcc2.sign as sign_tl_2,
-                    trcs.actual_time,
-                    trcs.plan_time,
-                    tmf.freq_nm,
-                    case
-                      when trcs.shift = 'night_shift' then
-                        'NightShift'
-                      when trcs.plan_time is not null and trcs.actual_time is null then
-                        'PLANNING'
-                      when trcs.actual_time is not null then
-                        'ACTUAL'
-                      else
-                        null
-                    end as status
-                  from
-                      ${table.tb_r_4s_sub_schedules} trcs
-                      left join ${table.tb_r_4s_schedule_sign_checkers} trcc1 on trcs.main_schedule_id = trcc1.main_schedule_id and trcc1.is_tl_1 = true  
-                      left join ${table.tb_r_4s_schedule_sign_checkers} trcc2 on trcs.main_schedule_id = trcc2.main_schedule_id and trcc2.is_tl_2 = true  
-                      left join ${table.tb_m_schedules} tmsc on trcs.schedule_id = tmsc.schedule_id
-                      left join ${table.tb_m_freqs} tmf on trcs.freq_id = tmf.freq_id
-                  where
-                      trcs.deleted_dt is null
-                      and trcs.main_schedule_id = ${item.main_schedule_id}
-                      and trcs.pic_id = (select user_id from ${table.tb_m_users} where uuid = '${item.pic_id}' limit 1)
-                      and trcs.freq_id = (select freq_id from ${table.tb_m_freqs} where uuid = '${item.freq_id}' limit 1)
-                      -- and trcs.zone_id = (select zone_id from ${table.tb_m_zones} where uuid = '${item.zone_id}' limit 1)
-                      -- and trcs.kanban_id = (select kanban_id from ${table.tb_m_kanbans} where uuid = '${item.kanban_id}' limit 1)
-              ) a order by date_num      
-            `
+          item.children = await childrenSubSchedule(
+            mainScheduleRealId,
+            item.freq_real_id,
+            item.zone_real_id,
+            item.kanban_real_id,
+            item.pic_real_id
           )
 
-          let planIndexWeekly = 0
-          let planIndexMonthly = 0
-          children.rows = await children.rows.map((childItem, index) => {
+          item.main_schedule_id = item.main_schedule_uuid
 
-            switch (childItem.freq_nm.toLowerCase())
-            {
-              case "weekly":
-                planIndexWeekly++
-                if (!childItem.is_holiday && (childItem.date_num == 4 || childItem.date_num == 18))
-                {
-                  childItem.status = "PLANNING"
-                } else
-                {
-                  childItem.status = null
-                }
-
-                break
-              case "monthly":
-                planIndexMonthly++
-                if (planIndexMonthly == 1 && childItem.is_holiday)
-                {
-                  childItem.status = "PLANNING"
-                } else
-                {
-                  childItem.status = null
-                }
-
-                break
-              case "daily":
-                if (!childItem.is_holiday)
-                {
-                  childItem.status = "PLANNING"
-                } 
-                else
-                {
-                  childItem.status = null
-                }
-
-                break
-            }
-
-            delete childItem.actual_time
-            delete childItem.plan_time
-            delete childItem.freq_nm
-
-            return childItem
-          })
-
-          item.children = children.rows
-          item.main_schedule_id = main_schedule_id
+          delete item.freq_real_id
+          delete item.zone_real_id
+          delete item.kanban_real_id
+          delete item.pic_real_id
+          delete item.main_schedule_uuid
 
           return item
         })
 
-        const planDateQuery = await queryCustom(`
-                    select 
-                        month_num,
-                        year_num
-                    from
-                        ${table.tb_r_4s_main_schedules} 
-                    where
-                        uuid = '${main_schedule_id}'
-            `)
-        let planDateRow = planDateQuery.rows[0]
-
-        const glSignCheckerQuery = await queryCustom(`
-          select
-            weekly.*,
-						tr4c_gl.sign as sign_gl
-          from (
-              select
-                  week_num,
-                  count(distinct "date")::integer as col_span
-              from
-                  ${table.tb_m_schedules} tmsc
-              where
-                  date_part('month', "date") = '${planDateRow.month_num}'
-                  and date_part('year', "date") = '${planDateRow.year_num}'
-                  and (is_holiday is null or is_holiday = false)
-              group by 
-                  week_num
-              order by 
-                  week_num
-          ) weekly
-          left join lateral (
-						select
-							sign
-						from
-							${table.tb_r_4s_schedule_sign_checkers}
-						where
-							main_schedule_id = ${mainScheduleRealId}
-							and week_num = weekly.week_num
-							and is_gl = true
-          ) tr4c_gl on true
-        `)
-
-        const shColspan = (arr) => {
-          let a = []
-          let r = []
-
-          arr.forEach((v) => a.push(Object.assign({}, v)))
-
-          for (var i = 0; i < a.length; ++i)
+        const signCheckerQuery = async (who = '') => {
+          let whoIs = ``
+          if (who == 'gl')
           {
-            if (a[i].col_span > 1)
-            {
-              for (var j = i + 1; j < a.length; ++j)
-              {
-                a[i].week_num = i + 1
-                a[i].col_span = a[i].col_span + a[j].col_span
-                delete a[i].sign_gl
-                a[i].sign_sh = null
-                a.splice(j++, 1)
-              }
-            } else
-            {
-              delete a[i].sign_gl
-              a[i].week_num = i + 1
-              a[i].sign_sh = null
-              r.push(a)
-            }
+            whoIs = 'and is_gl = true'
+          } else if (who == 'sh')
+          {
+            whoIs = 'and is_sh = true'
           }
 
-          return r
+          return await queryCustom(`
+              select 
+                uuid as sign_checker_id,
+                sign,
+                start_date,
+                end_date,
+                (end_date - start_date)::integer + 1 as col_span 
+              from 
+                ${table.tb_r_4s_schedule_sign_checkers} 
+              where 
+                main_schedule_id = '${mainScheduleRealId}' 
+                ${whoIs}
+              order by
+                start_date
+            `)
         }
 
-        const glSignCheckerRows = glSignCheckerQuery.rows
+        const signGl = await signCheckerQuery('gl')
+        const signSh = await signCheckerQuery('sh')
 
         result.schedule = await Promise.all(scheduleRows)
-        result.sign_checker_gl = glSignCheckerRows
-        result.sign_checker_sh = shColspan(glSignCheckerRows)[0]
+        result.sign_checker_gl = signGl.rows
+        result.sign_checker_sh = signSh.rows
 
-        response.success(res, "Success to get 4s schedule", result)
+        response.success(res, "Success to get 4s sub schedule", result)
       } else
       {
-        response.success(res, "Success to get 4s schedule", result)
+        response.success(res, "Success to get 4s sub schedule", result)
       }
     } catch (error)
     {
       console.log(error)
-      response.failed(res, "Error to get 4s schedule")
+      response.failed(res, "Error to get 4s sub schedule")
     }
+  },
+  detail4sSubSchedule: async (req, res) => {
+    try
+    {
+      const sub_schedule_uuid = req.params.id
+
+      const subScheduleSql = `
+        select 
+          ${selectSubScheduleSql}
+        from
+          ${fromSubScheduleSql}
+        where
+          tbrcs.uuid = '${sub_schedule_uuid}'
+    `
+
+      let subScheduleQuery = await queryCustom(subScheduleSql)
+      if (subScheduleQuery.rows.length == 0)
+      {
+        throw "Can't find 4s sub schedule with id provided"
+      }
+
+      subScheduleQuery = subScheduleQuery[0]
+      subScheduleQuery.children = await childrenSubSchedule(
+        subScheduleQuery.main_schedule_id,
+        subScheduleQuery.freq_real_id,
+        subScheduleQuery.zone_real_id,
+        subScheduleQuery.kanbanRealId,
+        subScheduleQuery.pic_real_id
+      )
+
+      subScheduleQuery.main_schedule_id = subScheduleQuery.main_schedule_uuid
+
+      delete subScheduleQuery.freq_real_id
+      delete subScheduleQuery.zone_real_id
+      delete subScheduleQuery.kanban_real_id
+      delete subScheduleQuery.pic_real_id
+      delete subScheduleQuery.main_schedule_uuid
+
+      const result = {
+        schedule: subScheduleQuery,
+        zona: []
+      }
+
+      response.success(res, "Success to get detail 4s sub schedule", subScheduleQuery)
+    }
+    catch (error)
+    {
+      console.log(error)
+      response.failed(res, "Error to get 4s sub schedule detail")
+    }
+
+
   },
   edi4sSubSchedule: async (req, res) => {
     try
@@ -496,8 +619,27 @@ module.exports = {
   sign4sSchedule: async (req, res) => {
     try
     {
+      const sign_checker_id = req.params.sign_checker_id
+
+      let signCheckerQuery = await queryGET(
+        table.tb_r_4s_schedule_sign_checkers,
+        `where uuid = '${sign_checker_id}'`,
+        [
+          'sign',
+          'is_tl_1',
+          'is_tl_2',
+          'is_gl',
+          'is_sh'
+        ]
+      )
+
+      if (!signCheckerQuery || signCheckerQuery.length == 0)
+      {
+        throw "invalid params, unknown data"
+      }
+
       let attrsUpdate = await attrsUserUpdateData(req, req.body)
-      await queryPUT(table.tb_r_4s_schedule_sign_checkers, attrsUpdate, `WHERE uuid = '${req.body.sign_checker_id}'`)
+      await queryPUT(table.tb_r_4s_schedule_sign_checkers, attrsUpdate, `WHERE uuid = '${sign_checker_id}'`)
       response.success(res, 'success to sign 4s schedule', [])
     } catch (e)
     {
