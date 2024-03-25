@@ -1,7 +1,5 @@
 const table = require("../../config/table")
 const {
-  queryPOST,
-  queryBulkPOST,
   queryCustom,
   queryGET,
   queryPUT,
@@ -10,18 +8,14 @@ const {
 } = require("../../helpers/query")
 
 const response = require("../../helpers/response")
-const getLastIdData = require("../../helpers/getLastIdData")
-const uuidToId = require("../../helpers/uuidToId")
-const idToUuid = require("../../helpers/idToUuid")
-const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData")
 const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData")
-const multipleUuidToIds = require("../../helpers/multipleUuidToId")
 const { padTwoDigits } = require("../../helpers/formatting")
 
 const fromSubScheduleSql = `
     ${table.tb_r_4s_sub_schedules} tbrcs
     join ${table.tb_r_4s_main_schedules} trmsc on tbrcs.main_schedule_id = trmsc.main_schedule_id
-    left join ${table.tb_m_users} tmu on tmu.user_id = tbrcs.pic_id
+    left join ${table.tb_m_users} tmu_plan on tmu_plan.user_id = tbrcs.plan_pic_id
+    left join ${table.tb_m_users} tmu_actual on tmu_actual.user_id = tbrcs.actual_pic_id
     join ${table.tb_m_kanbans} tmk on tbrcs.kanban_id = tmk.kanban_id
     join ${table.tb_m_zones} tmz on tbrcs.zone_id = tmz.zone_id
     join ${table.tb_m_freqs} tmf on tbrcs.freq_id = tmf.freq_id
@@ -32,19 +26,21 @@ const selectSubScheduleCol = [
   'tbrcs.main_schedule_id',
   'trmsc.uuid as main_schedule_uuid',
   'tbrcs.uuid as sub_schedule_id',
-  'tmu.uuid as pic_id',
   'tmk.uuid as kanban_id',
   'tmz.uuid as zone_id',
   'tmf.uuid as freq_id',
   'tmf.freq_id as freq_real_id',
   'tmz.zone_id as zone_real_id',
+  'tmu_plan.uuid as pic_id',
+  'tmu_actual.uuid as actual_pic_id',
   'tmk.kanban_id as kanban_real_id',
-  'tmu.user_id as pic_real_id',
+  'tmu_plan.user_id as pic_real_id',
   'tmz.zone_nm',
   'tmk.kanban_no',
   'tmk.area_nm',
   'tmk.standart_time',
-  'tmu.fullname as pic_nm',
+  'tmu_plan.fullname as pic_nm',
+  'tmu_actual.fullname as actual_pic_nm',
   'tmf.freq_nm'
 ]
 
@@ -65,13 +61,14 @@ const childrenSubSchedule = async (
   freqRealId,
   zoneRealId,
   kanbanRealId,
-  picRealId
+  planPicRealId
 ) => {
   let byPic = ``
-  if (picRealId)
+  if (planPicRealId)
   {
-    byPic = ` and trcs.pic_id = '${picRealId}' `
+    byPic = ` and trcs.plan_pic_id = '${planPicRealId}' `
   }
+
   let childrenSql = `
               select * from (
                  select
@@ -128,7 +125,7 @@ const childrenSubSchedule = async (
               ) a order by date_num      
            `
 
-  const children = await queryCustom(childrenSql)
+  const children = await queryCustom(childrenSql, false)
 
   return children.rows
 }
@@ -323,7 +320,7 @@ module.exports = {
       )
 
       console.log('scheduleSql', scheduleSql)
-      const scheduleQuery = await queryCustom(scheduleSql)
+      const scheduleQuery = await queryCustom(scheduleSql, false)
 
       if (scheduleQuery.rows && scheduleQuery.rows.length > 0)
       {
@@ -356,7 +353,7 @@ module.exports = {
                         order by
                             schedule_revision_id desc 
                         limit 1
-                    `)
+                    `, false)
           const freqRotationRow = freqRotationQuery.rows
           if (freqRotationRow && freqRotationRow.length > 0)
           {
@@ -374,10 +371,10 @@ module.exports = {
                       from
                           ${table.tb_r_4s_sub_schedules}
                       where
-                          pic_id = (select user_id from ${table.tb_m_users} where uuid = '${item.pic_id}' limit 1)
+                          plan_pic_id = (select user_id from ${table.tb_m_users} where uuid = '${item.plan_pic_id}' limit 1)
                           and freq_id = ${whereFreqId}
                       group by
-                          pic_id
+                          plan_pic_id
                   ),
                   zones as (
                       select
@@ -407,7 +404,7 @@ module.exports = {
             `
 
           //console.log('countRowSpanSql', countRowSpanSql)
-          const countRowSpanQuery = await queryCustom(countRowSpanSql)
+          const countRowSpanQuery = await queryCustom(countRowSpanSql, false)
 
 
           let countRows = countRowSpanQuery.rows
@@ -467,7 +464,7 @@ module.exports = {
                 ${whoIs}
               order by
                 start_date
-            `)
+            `, false)
         }
 
         const signGl = await signCheckerQuery('gl')
@@ -488,19 +485,45 @@ module.exports = {
       response.failed(res, "Error to get 4s sub schedule")
     }
   },
+  get4sItemCheckKanban: async (req, res) => {
+    try {
+      const subScheduleUuid = req.params.id
+      let subScheduleQuery = await queryCustom(subScheduleSql)
+      if (subScheduleQuery.rows.length == 0)
+      {
+        throw "Can't find 4s sub schedule with id provided"
+      }
+
+      subScheduleQuery = subScheduleQuery[0]
+      const itemCheckSql = `
+        select
+
+        from 
+          ${fromSubScheduleSql}
+        
+      `
+      const itemCheckQuery = await queryCustom(itemCheckSql)
+
+
+      response.success(res, "Success to get 4s item check kanban", [])
+    } catch (error) {
+      console.log(error)
+      response.failed(res, "Error to get 4s item check kanban")
+    }
+  },
   detail4sSubSchedule: async (req, res) => {
     try
     {
       const sub_schedule_uuid = req.params.id
 
       const subScheduleSql = `
-        select 
-          ${selectSubScheduleSql}
-        from
-          ${fromSubScheduleSql}
-        where
-          tbrcs.uuid = '${sub_schedule_uuid}'
-    `
+          select 
+            ${selectSubScheduleSql}
+          from
+            ${fromSubScheduleSql}
+          where
+            tbrcs.uuid = '${sub_schedule_uuid}'
+        `
 
       let subScheduleQuery = await queryCustom(subScheduleSql)
       if (subScheduleQuery.rows.length == 0)
@@ -537,8 +560,6 @@ module.exports = {
       console.log(error)
       response.failed(res, "Error to get 4s sub schedule detail")
     }
-
-
   },
   edi4sSubSchedule: async (req, res) => {
     try
@@ -568,8 +589,8 @@ module.exports = {
         return dt.replace(/ /g, '')
       })
 
-      const picData = {
-        pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${pic_id}') `,
+      const body = {
+        plan_pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${pic_id}') `,
         kanban_id: ` (select kanban_id from ${table.tb_m_kanbans} where uuid = '${kanban_id}') `,
         freq_id: ` (select freq_id from ${table.tb_m_freqs} where uuid = '${freq_id}') `,
         zone_id: ` (select zone_id from ${table.tb_m_zones} where uuid = '${zone_id}') `,
@@ -577,7 +598,7 @@ module.exports = {
 
 
       await queryTransaction(async (db) => {
-        const attrsUpdatePicFinding = await attrsUserUpdateData(req, picData)
+        const attrsUpdate = await attrsUserUpdateData(req, body)
         const updateCondition = `
             main_schedule_id = '${schedulRow.main_schedule_id}' 
             and freq_id = '${schedulRow.freq_id}' 
@@ -588,7 +609,7 @@ module.exports = {
         await queryPutTransaction(
           db,
           table.tb_r_4s_sub_schedules,
-          attrsUpdatePicFinding,
+          attrsUpdate,
           `WHERE ${updateCondition}`
         )
 
@@ -609,11 +630,72 @@ module.exports = {
         await db.query(temp.join('; '))
       })
 
-      response.success(res, "Success to edit 4s schedule plan")
+      response.success(res, "Success to edit 4s schedule plan", [])
     } catch (e)
     {
       console.log(e)
       response.failed(res, "Error to edit 4s schedule plan")
+    }
+  },
+  editActual4sSubSchedule: async (req, res) => {
+    try
+    {
+      const { pic_id, actual_dt } = req.body
+
+      let schedulRow = await queryGET(
+        table.tb_r_4s_sub_schedules,
+        `WHERE sub_schedule_id = (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.params.id}' limit 1)`,
+        [
+          'main_schedule_id',
+          'freq_id',
+          'zone_id',
+          'kanban_id',
+          'plan_pic_id'
+        ]
+      )
+
+      if (!schedulRow)
+      {
+        response.failed(
+          res,
+          "Error to edit 4s actual schedule, can't find schedule data"
+        )
+        return
+      }
+
+      schedulRow = schedulRow[0]
+
+      if (!schedulRow.plan_pic_id)
+      {
+        response.failed(
+          res,
+          "Error to edit 4s actual schedule, plan user id doesn't exists. Please edit the plan pic first"
+        )
+        return
+      }
+
+      await queryTransaction(async (db) => {
+        const attrsUpdate = await attrsUserUpdateData(req, {
+          actual_pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${pic_id}') `,
+          actual_time: actual_dt,
+        })
+
+        await queryPutTransaction(
+          db,
+          table.tb_r_4s_sub_schedules,
+          attrsUpdate,
+          `WHERE main_schedule_id = '${schedulRow.main_schedule_id}' 
+            and freq_id = '${schedulRow.freq_id}' 
+            and zone_id = '${schedulRow.zone_id}' 
+            and kanban_id = '${schedulRow.kanban_id}'`
+        )
+      })
+
+      response.success(res, 'success to edit actual 4s schedule', [])
+    } catch (error)
+    {
+      console.log(error)
+      response.failed(res, "Error to edit actual 4s schedule")
     }
   },
   sign4sSchedule: async (req, res) => {

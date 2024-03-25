@@ -35,6 +35,7 @@ module.exports = {
                    select
                         tmic.uuid as item_check_kanban_id,
                         tmk.uuid as kanban_id,
+                        tmk.kanban_no,
                         tmic.item_check_nm,
                         tmic.standart_time,
                         tmic.created_by,

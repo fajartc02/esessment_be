@@ -28,7 +28,9 @@ module.exports = {
             const fromCondition = `  
                 ${table.tb_m_kanbans} tmk 
                 join ${table.tb_m_zones} tmz on tmk.zone_id = tmz.zone_id 
-                join ${table.tb_m_lines} tml on tmz.line_id = tmz.line_id 
+                join lateral (
+                    select * from ${table.tb_m_lines} where line_id = tmz.line_id
+                ) tml on tml.line_id = tmz.line_id 
             `
 
             current_page = parseInt(current_page ?? 1)
@@ -74,7 +76,7 @@ module.exports = {
 
             filterCondition = filterCondition.join(' and ')
             kanbanSql.concat(` ${filterCondition} `)
-            kanbanSql.concat(` order by tmk.created_by ${qLimit} ${qOffset} `)
+            kanbanSql.concat(` order by tmk.created_dt ${qLimit} ${qOffset} `)
             //#endregion
 
             let kanbanQuery = await queryCustom(kanbanSql)

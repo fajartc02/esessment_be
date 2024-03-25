@@ -170,6 +170,16 @@ const migrate = async () => {
                 freq_nm: 'Monthly',
                 precition_val: 30,
             },
+            {
+                uuid: uuid(),
+                freq_nm: '2 Month',
+                precition_val: 60,
+            },
+            {
+                uuid: uuid(),
+                freq_nm: '3 Month',
+                precition_val: 90,
+            },
         ])
         const freqQuery = await db.query(`insert into ${table.tb_m_freqs} (${freqSchema.columns}) VALUES ${freqSchema.values} returning *`)
         const freqRows = freqQuery.rows
@@ -177,7 +187,7 @@ const migrate = async () => {
         //#endregion
 
         //#region generate schedule
-        await generateSchedules(db)
+        //await generateSchedules(db)
         //#endregion
 
         for (let index = 0; index < lineGroupRows.length; index++)
@@ -188,117 +198,231 @@ const migrate = async () => {
             const zoneSchema = await bulkToSchema([
                 {
                     uuid: uuid(),
+                    zone_nm: 'Zona 4',
                     freq_id: freqRows[0].freq_id,
-                    zone_nm: 'Zone 1',
                     line_id: lineGroup.line_id,
                 },
                 {
                     uuid: uuid(),
+                    zone_nm: '1A-1B',
                     freq_id: freqRows[1].freq_id,
-                    zone_nm: 'Zone 2',
                     line_id: lineGroup.line_id,
                 },
                 {
                     uuid: uuid(),
-                    freq_id: freqRows[1].freq_id,
-                    zone_nm: 'Zone 3',
-                    line_id: lineGroup.line_id,
-                },
-                {
-                    uuid: uuid(),
+                    zone_nm: 'Zona 2',
                     freq_id: freqRows[2].freq_id,
-                    zone_nm: 'Zone 4',
+                    line_id: lineGroup.line_id,
+                },
+                {
+                    uuid: uuid(),
+                    zone_nm: '1A-1B',
+                    freq_id: freqRows[2].freq_id,
+                    line_id: lineGroup.line_id,
+                },
+                {
+                    uuid: uuid(),
+                    zone_nm: 'Zona 3',
+                    freq_id: freqRows[2].freq_id,
                     line_id: lineGroup.line_id,
                 },
             ])
+
             const zoneQuery = await db.query(`insert into ${table.tb_m_zones} (${zoneSchema.columns}) VALUES ${zoneSchema.values} returning *`)
             const zoneRows = zoneQuery.rows
             console.log('zones', 'inserted')
             //#endregion
 
             //#region seeder kanban
-            const kanbanSchema = await bulkToSchema([
-                {
-                    uuid: uuid(),
-                    zone_id: zoneRows[1].zone_id,
-                    kanban_no: 'C-01-05',
-                    area_nm: 'Baritori & Visual Checks',
-                    standart_time: 30,
-                },
-                {
-                    uuid: uuid(),
-                    zone_id: zoneRows[1].zone_id,
-                    kanban_no: 'C-01-08',
-                    area_nm: 'Lantai Mesin DC #2 (B)',
-                    standart_time: 30,
-                },
-                {
-                    uuid: uuid(),
-                    zone_id: zoneRows[1].zone_id,
-                    kanban_no: 'C-01-15',
-                    area_nm: 'Mesin Die Cast #2 (C)',
-                    standart_time: 30,
-                },
-                {
-                    uuid: uuid(),
-                    zone_id: zoneRows[1].zone_id,
-                    kanban_no: 'C-01-18',
-                    area_nm: 'Area Robot (D)',
-                    standart_time: 30,
-                },
-                {
-                    uuid: uuid(),
-                    zone_id: zoneRows[3].zone_id,
-                    kanban_no: 'C-02-08',
-                    area_nm: 'Mesin Bubut (A)',
-                    standart_time: 40,
-                },
-                {
-                    uuid: uuid(),
-                    zone_id: zoneRows[3].zone_id,
-                    kanban_no: 'C-03-02',
-                    area_nm: 'Meja Kerja Naturium (B)',
-                    standart_time: 40,
-                },
-                {
-                    uuid: uuid(),
-                    zone_id: zoneRows[0].zone_id,
-                    kanban_no: 'C-01-01',
-                    area_nm: 'CMM Room (A)',
-                    standart_time: 50,
-                },
-                {
-                    uuid: uuid(),
-                    zone_id: zoneRows[0].zone_id,
-                    kanban_no: 'C-02-01',
-                    area_nm: 'Roller To Room (B)',
-                    standart_time: 50,
-                }
-            ]);
+            let kanbanJSON = JSON.parse(`
+                [
+                    {
+                        "zone_id": 1,
+                        "kanban_no": "4.10",
+                        "area_nm": "Tempat Sampah",
+                        "kanban_imgs": null
+                    },
+                    {
+                        "zone_id": 2,
+                        "kanban_no": "1.1",
+                        "area_nm": "SST Buka CR Cap",
+                        "kanban_imgs": null
+                    },
+                    {
+                        "zone_id": 4,
+                        "kanban_no": "1.2",
+                        "area_nm": "IMZY-0013, IMTS-0027",
+                        "kanban_imgs": null
+                    },
+                    {
+                        "zone_id": 4,
+                        "kanban_no": "1.4",
+                        "area_nm": "IMAT-0014",
+                        "kanban_imgs": null
+                    },
+                    {
+                        "zone_id": 4,
+                        "kanban_no": "1.8",
+                        "area_nm": "IMAT-0011",
+                        "kanban_imgs": null
+                    },
+                    {
+                        "zone_id": 4,
+                        "kanban_no": "1.13",
+                        "area_nm": "IMAM-001",
+                        "kanban_imgs": null
+                    },
+                    {
+                        "zone_id": 3,
+                        "kanban_no": "2.3",
+                        "area_nm": "IMAT-0041",
+                        "kanban_imgs": null
+                    },
+                    {
+                        "zone_id": 3,
+                        "kanban_no": "2.4",
+                        "area_nm": "IMTS-0039",
+                        "kanban_imgs": null
+                    },
+                    {
+                        "zone_id": 3,
+                        "kanban_no": "2.5",
+                        "area_nm": "IMTS-0037",
+                        "kanban_imgs": null
+                    },
+                    {
+                        "zone_id": 3,
+                        "kanban_no": "2.6",
+                        "area_nm": "Shiffer Transfer",
+                        "kanban_imgs": null
+                    },
+                    {
+                        "zone_id": 5,
+                        "kanban_no": "3.2",
+                        "area_nm": "IMZY-0028",
+                        "kanban_imgs": null
+                    },
+                    {
+                        "zone_id": 2,
+                        "kanban_no": "1.3",
+                        "area_nm": "CYI Bore Cheker",
+                        "kanban_imgs": null
+                    },
+                    {
+                        "zone_id": 2,
+                        "kanban_no": "1.6",
+                        "area_nm": "Protector Conrod",
+                        "kanban_imgs": null
+                    },
+                    {
+                        "zone_id": 2,
+                        "kanban_no": "1.10",
+                        "area_nm": "JIG Bearing Upper",
+                        "kanban_imgs": null
+                    },
+                    {
+                        "zone_id": 2,
+                        "kanban_no": "1.11",
+                        "area_nm": "JIG Bearing Lower",
+                        "kanban_imgs": null
+                    },
+                    {
+                        "zone_id": 5,
+                        "kanban_no": "3.4",
+                        "area_nm": "IMZY-002899",
+                        "kanban_imgs": null
+                    }
+                ]
+            `)
 
-            const kanbanQuery = await db.query(`insert into ${table.tb_m_kanbans} (${kanbanSchema.columns}) VALUES ${kanbanSchema.values} returning *`)
-            const kanbanRows = kanbanQuery.rows
+            kanbanJSON = kanbanJSON.map((item) => ({
+                ...item,
+                uuid: uuid(),
+            }))
+            const kanbanSchema = await bulkToSchema(kanbanJSON);
+            await db.query(`insert into ${table.tb_m_kanbans} (${kanbanSchema.columns}) VALUES ${kanbanSchema.values} returning *`)
             console.log('kanbans', 'inserted')
             //#endregion
 
             //#region seeder item check kanban
+
             const itemCheckSchema = await bulkToSchema([
                 {
                     uuid: uuid(),
-                    kanban_id: kanbanRows[kanbanRows.length - 1].kanban_id,
-                    item_check_nm: 'Roller, Oil Pan',
+                    kanban_id: 1, // daily
+                    item_check_nm: 'Pipa M/C Kawata',
                     standart_time: 5
                 },
                 {
                     uuid: uuid(),
-                    kanban_id: kanbanRows[kanbanRows.length - 1].kanban_id,
+                    kanban_id: 1,// daily
+                    item_check_nm: 'Panel M/C Kawata',
+                    standart_time: 5
+                },
+                {
+                    uuid: uuid(),
+                    kanban_id: 1,// daily
+                    item_check_nm: 'Lantai',
+                    standart_time: 5
+                },
+                {
+                    uuid: uuid(),
+                    kanban_id: 2, // Weekly
+                    item_check_nm: 'Roller Oil Pan',
+                    standart_time: 5
+                },
+                {
+                    uuid: uuid(),
+                    kanban_id: 12,// Weekly
                     item_check_nm: 'Rotari Table',
                     standart_time: 5
                 },
                 {
                     uuid: uuid(),
-                    kanban_id: kanbanRows[kanbanRows.length - 1].kanban_id,
-                    item_check_nm: 'Dolly Transfer',
+                    kanban_id: 13,// Weekly
+                    item_check_nm: 'Daily Transfer',
+                    standart_time: 5
+                },
+                {
+                    uuid: uuid(),
+                    kanban_id: 14, // Weekly
+                    item_check_nm: 'Jig Lubang Pin HD',
+                    standart_time: 5
+                },
+                {
+                    uuid: uuid(),
+                    kanban_id: 15,// Weekly
+                    item_check_nm: 'Lantai',
+                    standart_time: 5
+                },
+                {
+                    uuid: uuid(),
+                    kanban_id: 9,// Monthly
+                    item_check_nm: 'Jalur Hijau',
+                    standart_time: 5
+                },
+                {
+                    uuid: uuid(),
+                    kanban_id: 7,// Monthly
+                    item_check_nm: 'Garis Kuning',
+                    standart_time: 5
+                },
+                {
+                    uuid: uuid(),
+                    kanban_id: 8,// Monthly
+                    item_check_nm: 'Zebra Cross',
+                    standart_time: 5
+                },
+                {
+                    uuid: uuid(),
+                    kanban_id: 8,// Monthly
+                    item_check_nm: 'Stiker Tunjuk Arah Kanan',
+                    standart_time: 5
+                },
+                {
+                    uuid: uuid(),
+                    kanban_id: 10,// Monthly
+                    item_check_nm: 'Stiker IN/OUT',
                     standart_time: 5
                 },
             ])
