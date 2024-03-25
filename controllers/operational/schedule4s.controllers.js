@@ -20,10 +20,14 @@ const fromSubScheduleSql = `
     join ${table.tb_m_zones} tmz on tbrcs.zone_id = tmz.zone_id
     join ${table.tb_m_freqs} tmf on tbrcs.freq_id = tmf.freq_id
     join ${table.tb_m_schedules} tmsc on tbrcs.schedule_id = tmsc.schedule_id
+    join lateral (
+      select * from ${table.tb_m_lines} where line_id = trmsc.line_id
+    ) tml on true
 `
 
 const selectSubScheduleCol = [
   'tbrcs.main_schedule_id',
+  'tml.uuid as line_id',
   'trmsc.uuid as main_schedule_uuid',
   'tbrcs.uuid as sub_schedule_id',
   'tmk.uuid as kanban_id',
@@ -41,7 +45,9 @@ const selectSubScheduleCol = [
   'tmk.standart_time',
   'tmu_plan.fullname as pic_nm',
   'tmu_actual.fullname as actual_pic_nm',
-  'tmf.freq_nm'
+  'tmf.freq_nm',
+  'trmsc.year_num',
+  'trmsc.month_num'
 ]
 
 const selectSubScheduleSql = selectSubScheduleCol.join(', ')
@@ -268,19 +274,19 @@ module.exports = {
 
       if (freq_id && freq_id != null && freq_id != "")
       {
-        filterCondition.push(` tbrcs.freq_id = (select freq_id from ${table.tb_m_freqs} where uuid = '${freq_id}') `)
+        filterCondition.push(` freq_id = '${freq_id}' `)
       }
       if (zone_id && zone_id != null && zone_id != "")
       {
-        filterCondition.push(` tbrcs.zone_id = (select zone_id from ${table.tb_m_zones} where uuid = '${zone_id}') `)
+        filterCondition.push(` zone_id = '${zone_id}' `)
       }
       if (kanban_id && kanban_id != null && kanban_id != "")
       {
-        filterCondition.push(` tbrcs.kanban_id = (select kanban_id from ${table.tb_m_kanbans} where uuid = '${kanban_id}') `)
+        filterCondition.push(` kanban_id = '${kanban_id}' `)
       }
       if (line_id && line_id != null && line_id != "")
       {
-        filterCondition.push(` trmsc.line_id = (select line_id from ${table.tb_m_lines} where uuid = '${line_id}') `)
+        filterCondition.push(` line_id = '${line_id}' `)
       }
       if (month_year_num && month_year_num != null && month_year_num != "")
       {
@@ -290,25 +296,29 @@ module.exports = {
         {
           if (MYFilterSplit[0].length == 4)
           {
-            filterCondition.push(` trmsc.year_num = '${MYFilterSplit[0]}}' `)
+            filterCondition.push(` year_num = '${MYFilterSplit[0]}}' `)
           }
           else
           {
-            filterCondition.push(` trmsc.month_num = '${MYFilterSplit[0]}}' `)
+            filterCondition.push(` month_num = '${MYFilterSplit[0]}}' `)
           }
         }
         else
         {
-          filterCondition.push(` trmsc.year_num || '-' || trmsc.month_num = '${MYFilterSplit[0]}-${padTwoDigits(MYFilterSplit[1])}' `)
+          filterCondition.push(` year_num || '-' || month_num = '${MYFilterSplit[0]}-${padTwoDigits(MYFilterSplit[1])}' `)
         }
       }
       if (group_id && group_id != null && group_id != "")
       {
-        filterCondition.push(` trmsc.group_id = (select group_id from ${table.tb_m_groups} where uuid = '${group_id}') `)
+        filterCondition.push(` group_id = '${group_id}' `)
       }
 
-      filterCondition = filterCondition.join(' and ')
-      scheduleSql = scheduleSql.concat(` ${filterCondition} `)
+      if (filterCondition.length > 0)
+      {
+        filterCondition = filterCondition.join(' and ')
+        scheduleSql = scheduleSql.concat(` and ${filterCondition} `)
+      }
+
       scheduleSql = scheduleSql.concat(` 
             order by 
             case freq_nm 
@@ -436,6 +446,8 @@ module.exports = {
           delete item.kanban_real_id
           delete item.pic_real_id
           delete item.main_schedule_uuid
+          delete item.year_num
+          delete item.month_num
 
           return item
         })
@@ -486,7 +498,8 @@ module.exports = {
     }
   },
   get4sItemCheckKanban: async (req, res) => {
-    try {
+    try
+    {
       const subScheduleUuid = req.params.id
       let subScheduleQuery = await queryCustom(subScheduleSql)
       if (subScheduleQuery.rows.length == 0)
@@ -506,7 +519,8 @@ module.exports = {
 
 
       response.success(res, "Success to get 4s item check kanban", [])
-    } catch (error) {
+    } catch (error)
+    {
       console.log(error)
       response.failed(res, "Error to get 4s item check kanban")
     }
