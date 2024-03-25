@@ -33,6 +33,10 @@ module.exports = {
 
             let itemCheckQuery = `
                    select
+                        row_number () over (
+                            order by
+                            tmic.created_dt
+                        )::integer as no,
                         tmic.uuid as item_check_kanban_id,
                         tmk.uuid as kanban_id,
                         tmk.kanban_no,
@@ -71,11 +75,12 @@ module.exports = {
             {
                 if (nullId)
                 {
-                    const count = await queryCustom(`select count(tmic.item_check_kanban_id) as count from ${fromCondition} where 1 = 1 ${filterCondition}`)
+                    const count = await queryCustom(`select count(tmic.item_check_kanban_id)::integer as count from ${fromCondition} where 1 = 1 ${filterCondition}`)
                     const countRows = count.rows[0]
                     result = {
                         current_page: current_page,
                         total_page: +countRows.count > 0 ? Math.ceil(countRows.count / +limit) : 0,
+                        total_data: countRows.count,
                         limit: limit,
                         list: itemChecks.rows,
                     }

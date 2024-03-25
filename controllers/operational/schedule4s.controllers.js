@@ -154,6 +154,10 @@ module.exports = {
 
       let mainScheduleSql = `
                 select 
+                    row_number () over (
+                        order by
+                        trcp.created_dt
+                    )::integer as no,
                     trcp.uuid as main_schedule_id,
                     tml.uuid as line_id,
                     tmg.uuid  as group_id,
@@ -329,7 +333,7 @@ module.exports = {
           `
       )
 
-      console.log('scheduleSql', scheduleSql)
+      //console.log('scheduleSql', scheduleSql)
       const scheduleQuery = await queryCustom(scheduleSql, false)
 
       if (scheduleQuery.rows && scheduleQuery.rows.length > 0)
@@ -342,7 +346,7 @@ module.exports = {
           const whereSubScheduleId = ` (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${item.sub_schedule_id}') `
           const whereFreqId = ` ((select freq_id from ${table.tb_m_freqs} where uuid = '${item.freq_id}' limit 1)) `
 
-          const freqRotationQuery = await queryCustom(`
+          /* const freqRotationQuery = await queryCustom(`
                         select
                             case
                                 when freq_nm = 'Daily' and '${item.freq_nm}' = 'Weekly' then
@@ -371,7 +375,7 @@ module.exports = {
               freqRotationRow[0].is_daily_to_weekly ?? false
             item.is_weekly_to_monthly =
               freqRotationRow[0].is_weekly_to_monthly ?? false
-          }
+          } */
 
           const countRowSpanSql = `
               with
@@ -485,44 +489,13 @@ module.exports = {
         result.schedule = await Promise.all(scheduleRows)
         result.sign_checker_gl = signGl.rows
         result.sign_checker_sh = signSh.rows
-
-        response.success(res, "Success to get 4s sub schedule", result)
-      } else
-      {
-        response.success(res, "Success to get 4s sub schedule", result)
       }
+
+      response.success(res, "Success to get 4s sub schedule", result)
     } catch (error)
     {
       console.log(error)
       response.failed(res, "Error to get 4s sub schedule")
-    }
-  },
-  get4sItemCheckKanban: async (req, res) => {
-    try
-    {
-      const subScheduleUuid = req.params.id
-      let subScheduleQuery = await queryCustom(subScheduleSql)
-      if (subScheduleQuery.rows.length == 0)
-      {
-        throw "Can't find 4s sub schedule with id provided"
-      }
-
-      subScheduleQuery = subScheduleQuery[0]
-      const itemCheckSql = `
-        select
-
-        from 
-          ${fromSubScheduleSql}
-        
-      `
-      const itemCheckQuery = await queryCustom(itemCheckSql)
-
-
-      response.success(res, "Success to get 4s item check kanban", [])
-    } catch (error)
-    {
-      console.log(error)
-      response.failed(res, "Error to get 4s item check kanban")
     }
   },
   get4sSignCheckerBySignCheckerId: async (req, res) => {

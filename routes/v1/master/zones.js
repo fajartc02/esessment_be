@@ -9,7 +9,7 @@ const auth = require("../../../helpers/auth")
 
 router.put("/edit/:id", auth.verifyToken, editZone)
 router.delete("/delete/:id", auth.verifyToken, deleteZone)
-router.post("/", auth.verifyToken, postZone)
-router.get("/", auth.verifyToken, getZones)
+router.post("/add", auth.verifyToken, postZone)
+router.get("/get", auth.verifyToken, getZones)
 
 module.exports = router

@@ -28,7 +28,7 @@ const uploadMiddleware = (req, res, next) => {
 
 router.delete("/delete/:id", auth.verifyToken, deleteKanbans)
 router.put("/edit/:id", auth.verifyToken, uploadMiddleware, editKanbans)
-router.post("/", auth.verifyToken, uploadMiddleware, postKanbans)
-router.get("/", auth.verifyToken, getKanbans)
+router.post("/add", auth.verifyToken, uploadMiddleware, postKanbans)
+router.get("/get", auth.verifyToken, getKanbans)
 
 module.exports = router

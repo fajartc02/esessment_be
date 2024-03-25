@@ -199,31 +199,21 @@ const migrate = async () => {
                 {
                     uuid: uuid(),
                     zone_nm: 'Zona 4',
-                    freq_id: freqRows[0].freq_id,
                     line_id: lineGroup.line_id,
                 },
                 {
                     uuid: uuid(),
                     zone_nm: '1A-1B',
-                    freq_id: freqRows[1].freq_id,
                     line_id: lineGroup.line_id,
                 },
                 {
                     uuid: uuid(),
                     zone_nm: 'Zona 2',
-                    freq_id: freqRows[2].freq_id,
-                    line_id: lineGroup.line_id,
-                },
-                {
-                    uuid: uuid(),
-                    zone_nm: '1A-1B',
-                    freq_id: freqRows[2].freq_id,
                     line_id: lineGroup.line_id,
                 },
                 {
                     uuid: uuid(),
                     zone_nm: 'Zona 3',
-                    freq_id: freqRows[2].freq_id,
                     line_id: lineGroup.line_id,
                 },
             ])
@@ -238,96 +228,112 @@ const migrate = async () => {
                 [
                     {
                         "zone_id": 1,
+                        "freq_id": 1,
                         "kanban_no": "4.10",
                         "area_nm": "Tempat Sampah",
                         "kanban_imgs": null
                     },
                     {
                         "zone_id": 2,
+                        "freq_id": 2,
                         "kanban_no": "1.1",
                         "area_nm": "SST Buka CR Cap",
                         "kanban_imgs": null
                     },
                     {
                         "zone_id": 4,
+                        "freq_id": 4,
                         "kanban_no": "1.2",
                         "area_nm": "IMZY-0013, IMTS-0027",
                         "kanban_imgs": null
                     },
                     {
                         "zone_id": 4,
+                        "freq_id": 4,
                         "kanban_no": "1.4",
                         "area_nm": "IMAT-0014",
                         "kanban_imgs": null
                     },
                     {
                         "zone_id": 4,
+                        "freq_id": 4,
                         "kanban_no": "1.8",
                         "area_nm": "IMAT-0011",
                         "kanban_imgs": null
                     },
                     {
                         "zone_id": 4,
+                        "freq_id": 4,
                         "kanban_no": "1.13",
                         "area_nm": "IMAM-001",
                         "kanban_imgs": null
                     },
                     {
                         "zone_id": 3,
+                        "freq_id": 3,
                         "kanban_no": "2.3",
                         "area_nm": "IMAT-0041",
                         "kanban_imgs": null
                     },
                     {
                         "zone_id": 3,
+                        "freq_id": 3,
                         "kanban_no": "2.4",
                         "area_nm": "IMTS-0039",
                         "kanban_imgs": null
                     },
                     {
                         "zone_id": 3,
+                        "freq_id": 3,
                         "kanban_no": "2.5",
                         "area_nm": "IMTS-0037",
                         "kanban_imgs": null
                     },
                     {
                         "zone_id": 3,
+                        "freq_id": 3,
                         "kanban_no": "2.6",
                         "area_nm": "Shiffer Transfer",
                         "kanban_imgs": null
                     },
                     {
                         "zone_id": 5,
+                        "freq_id": 3,
                         "kanban_no": "3.2",
                         "area_nm": "IMZY-0028",
                         "kanban_imgs": null
                     },
                     {
                         "zone_id": 2,
+                        "freq_id": 2,
                         "kanban_no": "1.3",
                         "area_nm": "CYI Bore Cheker",
                         "kanban_imgs": null
                     },
                     {
                         "zone_id": 2,
+                        "freq_id": 2,
                         "kanban_no": "1.6",
                         "area_nm": "Protector Conrod",
                         "kanban_imgs": null
                     },
                     {
                         "zone_id": 2,
+                        "freq_id": 2,
                         "kanban_no": "1.10",
                         "area_nm": "JIG Bearing Upper",
                         "kanban_imgs": null
                     },
                     {
                         "zone_id": 2,
+                        "freq_id": 2,
                         "kanban_no": "1.11",
                         "area_nm": "JIG Bearing Lower",
                         "kanban_imgs": null
                     },
                     {
                         "zone_id": 5,
+                        "freq_id": 3,
                         "kanban_no": "3.4",
                         "area_nm": "IMZY-002899",
                         "kanban_imgs": null

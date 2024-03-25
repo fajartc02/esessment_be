@@ -170,9 +170,9 @@ const genSubSchedule = async (shiftRows = []) => {
                     tmk.area_nm,
                     tmf.precition_val
                 from
-                    tb_m_kanbans tmk
-                    join tb_m_zones tmz on tmk.zone_id = tmz.zone_id
-                    join tb_m_freqs tmf on tmf.freq_id = tmz.freq_id
+                    ${table.tb_m_kanbans} tmk
+                    join ${table.tb_m_zones} tmz on tmk.zone_id = tmz.zone_id
+                    join ${table.tb_m_freqs} tmf on tmf.freq_id = tmk.freq_id
             `)
     const kanbanRows = kanbanQuery.rows
     //#endregion

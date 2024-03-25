@@ -17,6 +17,10 @@ module.exports = {
                 table.tb_m_freqs,
                 `where deleted_dt is null`,
                 [
+                    `row_number () over (
+                            order by
+                            created_dt
+                        )::integer as no`,
                     'uuid as id',
                     'freq_nm',
                     'precition_val',

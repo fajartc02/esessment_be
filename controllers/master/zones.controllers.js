@@ -18,28 +18,29 @@ module.exports = {
   getZones: async (req, res) => {
     try
     {
-      let { id, line_id, limit, current_page, zone_nm, freq_id } = req.query
+      let { id, line_id, limit, current_page, zone_nm } = req.query
       const fromCondition = ` 
         ${table.tb_m_zones} tmz 
         join ${table.tb_m_lines} tml on tmz.line_id = tml.line_id 
-        join ${table.tb_m_freqs} tmf on tmz.freq_id = tmf.freq_id
       `
 
       current_page = parseInt(current_page ?? 1)
       limit = parseInt(limit ?? 10)
 
       let filterCondition = [
-        ' and tmz.deleted_dt is null '
+        'tmz.deleted_dt is null'
       ]
 
-      let zoneQuery = `
+      let zoneSql = `
           select
+              row_number () over (
+                  order by
+                  tmz.created_dt
+              )::integer as no,
               tml.uuid as line_id,
               tmz.uuid as zone_id,
-              tmf.uuid as freq_id,
               tmz.zone_nm,
               tml.line_nm,
-              tmf.freq_nm,
               tmz.created_by,
               tmz.created_dt
           from
@@ -58,22 +59,21 @@ module.exports = {
       }
       if (zone_nm)
       {
-        filterCondition.push(` tml.zone_nm = '${zone_nm}' `)
-      }
-      if (freq_id)
-      {
-        filterCondition.push(` tmf.uuid = '${freq_id}' `)
+        filterCondition.push(` tmz.zone_nm = '${zone_nm}' `)
       }
 
       const qOffset = (limit != -1 && limit) && current_page > 1 ? `OFFSET ${limit * (current_page - 1)}` : ``
       const qLimit = (limit != -1 && limit) ? `LIMIT ${limit}` : ``
 
-      filterCondition = filterCondition.join(' and ')
-      zoneQuery = zoneQuery.concat(` ${filterCondition} `)
-      zoneQuery = zoneQuery.concat(` order by tmz.created_dt ${qLimit} ${qOffset} `)
+      if (filterCondition.length > 0)
+      {
+        filterCondition = filterCondition.join(' and ')
+        zoneSql = zoneSql.concat(` and ${filterCondition} `)
+      }
+      zoneSql = zoneSql.concat(` order by tmz.created_dt ${qLimit} ${qOffset} `)
       //#endregion
 
-      const zones = await queryCustom(zoneQuery)
+      const zones = await queryCustom(zoneSql, false)
       const nullId = id == null || id == -1 || id == ''
       let result = zones.rows
 
@@ -81,11 +81,12 @@ module.exports = {
       {
         if (nullId)
         {
-          const count = await queryCustom(`select count(tmz.zone_id) as count from ${fromCondition} where 1 = 1 ${filterCondition}`)
+          const count = await queryCustom(`select count(tmz.zone_id)::integer as count from ${fromCondition} where ${filterCondition}`)
           const countRows = count.rows[0]
           result = {
             current_page: current_page,
             total_page: +countRows.count > 0 ? Math.ceil(countRows.count / +limit) : 0,
+            total_data: countRows.count,
             limit: limit,
             list: zones.rows,
           }
@@ -110,7 +111,6 @@ module.exports = {
         ...req.body,
         uuid: uuid(),
         line_id: ` (select line_id from ${table.tb_m_lines} where uuid = '${req.body.line_id}') `,
-        freq_id: ` (select freq_id from ${table.tb_m_freqs} where uuid = '${req.body.freq_id}') `
       }
 
       const attrsInsert = await attrsUserInsertData(req, insertBody)

@@ -28,12 +28,10 @@ const migrate = async () => {
         await Promise.all([
             db.query(`DELETE FROM ${table.tb_r_4s_main_schedules} CASCADE`),
             db.query(`DELETE FROM ${table.tb_r_4s_sub_schedules} CASCADE`),
-            db.query(`DELETE FROM ${table.tb_r_4s_schedule_revisions} CASCADE`),
             db.query(`DELETE FROM ${table.tb_r_4s_schedule_sign_checkers} CASCADE`),
 
             db.query(`ALTER TABLE ${table.tb_r_4s_main_schedules} ALTER COLUMN main_schedule_id RESTART WITH 1`),
             db.query(`ALTER TABLE ${table.tb_r_4s_sub_schedules} ALTER COLUMN sub_schedule_id RESTART WITH 1`),
-            db.query(`ALTER TABLE ${table.tb_r_4s_schedule_revisions} ALTER COLUMN schedule_revision_id RESTART WITH 1`),
             db.query(`ALTER TABLE ${table.tb_r_4s_schedule_sign_checkers} ALTER COLUMN sign_checker_id RESTART WITH 1`),
         ]).then((res) => {
             console.log('delete and reset count complete')

@@ -26,14 +26,7 @@ console.log(`Migration Running ...`)
 const migrate = async () => {
     const clearRows = async (db) => {
         await Promise.all([
-            db.query(`DELETE FROM ${table.tb_m_4s_opt_changes} CASCADE`),
-            db.query(`DELETE FROM ${table.tb_m_4s_opt_depts} CASCADE`),
-            db.query(`DELETE FROM ${table.tb_m_4s_evaluations} CASCADE`),
-
-
-            db.query(`ALTER TABLE ${table.tb_m_4s_opt_changes} ALTER COLUMN opt_change_id RESTART WITH 1`),
-            db.query(`ALTER TABLE ${table.tb_m_4s_opt_depts} ALTER COLUMN opt_dept_id RESTART WITH 1`),
-            db.query(`ALTER TABLE ${table.tb_m_4s_evaluations} ALTER COLUMN evaluation_id RESTART WITH 1`),
+            db.query(`DELETE FROM ${table.tb_m_system} WHERE system_type in ('OPT_CHANGE', 'OPT_DEPT', 'EVALUATION')  CASCADE`),
         ]).then((res) => {
             console.log('delete and reset count complete')
         })
@@ -42,68 +35,68 @@ const migrate = async () => {
     await queryTransaction(async (db) => {
         await clearRows(db)
 
-        //#region finding4sMst insert tb_m_4s_opt_changes
-        const optChangeSchema = await bulkToSchema([
+        //#region finding4sMst insert tb_m_system
+        const systemSchema = await bulkToSchema([
+            //#region finding4sMst opt_changes schema
             {
                 uuid: uuid(),
-                opt_nm: 'Perubahan Item Check'
+                system_type: 'OPT_CHANGE',
+                system_value: 'Perubahan Item Check'
             },
             {
                 uuid: uuid(),
-                opt_nm: 'Perubahan Kanban'
+                system_type: 'OPT_CHANGE',
+                system_value: 'Perubahan Kanban'
+            },
+            //#endregion
+            //#region finding4sMst opt_depts schema
+            {
+                uuid: uuid(),
+                system_type: 'OPT_DEPT',
+                system_value: 'Produksi'
+            },
+            {
+                uuid: uuid(),
+                system_type: 'OPT_DEPT',
+                system_value: 'Kaizen'
+            },
+            {
+                uuid: uuid(),
+                system_type: 'OPT_DEPT',
+                system_value: 'Maintenance'
+            },
+            {
+                uuid: uuid(),
+                system_type: 'OPT_DEPT',
+                system_value: 'Engginering'
+            },
+            //#endregion
+            //#region finding4sMst evaluations schema
+            {
+                uuid: uuid(),
+                system_type: 'EVALUATION',
+                system_value: 'Order Part'
+            },
+            {
+                uuid: uuid(),
+                system_type: 'EVALUATION',
+                system_value: 'Countermeasure'
+            },
+            {
+                uuid: uuid(),
+                system_type: 'EVALUATION',
+                system_value: 'Monitor/Follow'
+            },
+            {
+                uuid: uuid(),
+                system_type: 'EVALUATION',
+                system_value: 'Finish'
             }
+            //#endregion
         ])
 
-        await db.query(`insert into ${table.tb_m_4s_opt_changes} (${optChangeSchema.columns}) VALUES ${optChangeSchema.values} returning *`)
+        await db.query(`insert into ${table.tb_m_system} (${systemSchema.columns}) VALUES ${systemSchema.values}`)
         console.log('tb_m_4s_opt_changes', 'inserted')
-        //#endregion
-
-        //#region finding4sMst insert tb_m_4s_opt_depts
-        const optDeptSchema = await bulkToSchema([
-            {
-                uuid: uuid(),
-                dept_nm: 'Produksi'
-            },
-            {
-                uuid: uuid(),
-                dept_nm: 'Kaizen'
-            },
-            {
-                uuid: uuid(),
-                dept_nm: 'Maintenance'
-            },
-            {
-                uuid: uuid(),
-                dept_nm: 'Engginering'
-            }
-        ])
-
-        await db.query(`insert into ${table.tb_m_4s_opt_depts} (${optDeptSchema.columns}) VALUES ${optDeptSchema.values} returning *`)
-        console.log('tb_m_4s_opt_depts', 'inserted')
-        //#endregion
-
-        //#region finding4sMst insert tb_m_4s_evaluations
-        const evaluationSchema = await bulkToSchema([
-            {
-                uuid: uuid(),
-                evaluation_nm: 'Order Part'
-            },
-            {
-                uuid: uuid(),
-                evaluation_nm: 'Countermeasure'
-            },
-            {
-                uuid: uuid(),
-                evaluation_nm: 'Monitor/Follow'
-            },
-            {
-                uuid: uuid(),
-                evaluation_nm: 'Finish'
-            }
-        ])
-
-        await db.query(`insert into ${table.tb_m_4s_evaluations} (${evaluationSchema.columns}) VALUES ${evaluationSchema.values} returning *`)
-        console.log('tb_m_4s_evaluations', 'inserted')
         //#endregion
 
         console.log('Seeder Completed!!!')

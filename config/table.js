@@ -24,7 +24,7 @@ const table = {
     tb_r_focus_theme: 'tb_r_focus_theme',
     tb_r_henkaten: 'tb_r_henkaten',
     tb_r_findings: 'tb_r_findings',
-
+    tb_m_system: 'tb_m_system',
     //#region 4s
     //#region master 4s
     tb_m_kanbans: 'tb_m_kanbans',
@@ -32,14 +32,10 @@ const table = {
     tb_m_zones: 'tb_m_zones',
     tb_m_schedules: 'tb_m_schedules',
     tb_m_4s_item_check_kanbans: 'tb_m_4s_item_check_kanbans',
-    tb_m_4s_opt_changes: 'tb_m_4s_opt_changes',
-    tb_m_4s_opt_depts: 'tb_m_4s_opt_depts',
-    tb_m_4s_evaluations: 'tb_m_4s_evaluations',
     //#endregion
     tb_r_4s_main_schedules: 'tb_r_4s_main_schedules',
     tb_r_4s_sub_schedules: 'tb_r_4s_sub_schedules',
     tb_r_4s_schedule_sign_checkers: 'tb_r_4s_schedule_sign_checkers',
-    tb_r_4s_schedule_revisions: 'tb_r_4s_schedule_revisions',
     tb_r_4s_schedule_item_check_kanbans: 'tb_r_4s_schedule_item_check_kanbans',
     tb_r_4s_findings: 'tb_r_4s_findings',
     v_4s_finding_list: 'v_4s_finding_list'
