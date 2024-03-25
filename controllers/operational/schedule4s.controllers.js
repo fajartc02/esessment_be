@@ -525,6 +525,56 @@ module.exports = {
       response.failed(res, "Error to get 4s item check kanban")
     }
   },
+  get4sSignCheckerBySignCheckerId: async (req, res) => {
+    try
+    {
+      const signCheckerUuid = req.params.sign_checker_id
+
+      const signCheckerRows = await queryGET(
+        table.tb_r_4s_schedule_sign_checkers,
+        `where uuid = '${signCheckerUuid}'`,
+        [
+          'uuid as sign_checker_id',
+          'sign',
+          'is_tl_1',
+          'is_tl_2',
+          'is_gl',
+          'is_sh',
+        ]
+      )
+
+      let result = {}
+      if (signCheckerRows)
+      {
+        result = signCheckerRows[0] ?? {}
+        if (result)
+        {
+          if (!result.is_tl_1)
+          {
+            delete result.is_tl_1
+          }
+          if (!result.is_tl_2)
+          {
+            delete result.is_tl_2
+          }
+          if (!result.is_gl)
+          {
+            delete result.is_gl
+          }
+          if (!result.is_sh)
+          {
+            delete result.is_sh
+          }
+        }
+      }
+
+      response.success(res, "Success to get 4s sign checker", result)
+    } catch (error)
+    {
+      console.log(error)
+      response.failed(res, "Error to get 4s sign checker")
+    }
+  },
   detail4sSubSchedule: async (req, res) => {
     try
     {
