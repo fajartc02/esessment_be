@@ -189,12 +189,12 @@ module.exports = {
           }
           else
           {
-            filterCondition.push(` trcp.month_num = '${MYFilterSplit[0]}}' `)
+            filterCondition.push(` trcp.month_num = '${parseInt(MYFilterSplit[0])}}' `)
           }
         }
         else
         {
-          filterCondition.push(` trcp.year_num || '-' || trcp.month_num = '${MYFilterSplit[0]}-${padTwoDigits(MYFilterSplit[1])}' `)
+          filterCondition.push(` trcp.year_num || '-' || trcp.month_num = '${MYFilterSplit[0]}-${parseInt(MYFilterSplit[1])}' `)
         }
       }
       if (group_id && group_id != null && group_id != "")
@@ -300,12 +300,12 @@ module.exports = {
           }
           else
           {
-            filterCondition.push(` month_num = '${MYFilterSplit[0]}}' `)
+            filterCondition.push(` month_num = '${parseInt(MYFilterSplit[0])}}' `)
           }
         }
         else
         {
-          filterCondition.push(` year_num || '-' || month_num = '${MYFilterSplit[0]}-${padTwoDigits(MYFilterSplit[1])}' `)
+          filterCondition.push(` year_num || '-' || month_num = '${MYFilterSplit[0]}-${parseInt(MYFilterSplit[1])}' `)
         }
       }
       if (group_id && group_id != null && group_id != "")
