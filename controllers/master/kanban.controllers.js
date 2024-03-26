@@ -90,7 +90,7 @@ module.exports = {
                 filterCondition = filterCondition.join(' and ')
                 kanbanSql = kanbanSql.concat(` and ${filterCondition} `)
             }
-            
+
             kanbanSql = kanbanSql.concat(` order by tmk.created_dt ${qLimit} ${qOffset} `)
             //#endregion
 
@@ -174,7 +174,7 @@ module.exports = {
                 fs.rmdirSync(uploadPath, { recursive: true })
             }
 
-            console.log(error)
+            console.log('postKanbans', error)
             response.failed(res, error)
         }
     },

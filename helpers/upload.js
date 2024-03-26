@@ -2,7 +2,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require('fs');
 
-const checkFileType = function(file, cb) { //Allowed file extensions
+const checkFileType = function (file, cb) { //Allowed file extensions
     const fileTypes = /jpeg|jpg|png|gif|svg|pdf|/;
     console.log(file);
 
@@ -14,14 +14,15 @@ const checkFileType = function(file, cb) { //Allowed file extensions
     const mimeType = fileTypes.test(file.mimetype);
 
 
-    if (mimeType && extName) { return cb(null, true); } else {
+    if (mimeType && extName) { return cb(null, true); } else
+    {
         cb("Error: You can Only Upload Images!!");
     }
 };
 
 //Setting storage engine
-const storageEngine = multer.diskStorage({  
-    destination: function(req, file, cb) {
+const storageEngine = multer.diskStorage({
+    destination: function (req, file, cb) {
         // console.log('req.body');
         // console.log(req.body);
 
@@ -41,10 +42,10 @@ const storageEngine = multer.diskStorage({  
 });
 
 //initializing multer
-const upload = multer({  
+const upload = multer({
     storage: storageEngine,
     //limits: { fileSize: 10000000 }, // 10 MB Max
-    fileFilter: (req, file, cb) => {     checkFileType(file, cb);   },
+    fileFilter: (req, file, cb) => { checkFileType(file, cb); },
 });
 
 

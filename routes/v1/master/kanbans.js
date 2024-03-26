@@ -12,15 +12,7 @@ const auth = require("../../../helpers/auth")
 
 const uploadMiddleware = (req, res, next) => {
     const multer = require('multer')
-    //const upload = require('../../../helpers/upload').array('kanban_imgs', 4);
-    const upload = require('../../../helpers/upload').fields(
-        [
-            {
-                name: 'kanban_imgs',
-                maxCount: 4
-            },
-        ]
-    )
+    const upload = require('../../../helpers/upload').array('kanban_imgs', 4);
 
     upload(req, res, function (err) {
         if (err instanceof multer.MulterError)
@@ -32,7 +24,7 @@ const uploadMiddleware = (req, res, next) => {
         {
             console.log('failed upload kanban imgs', err)
             return response.failed(res, err)
-        }
+        } 
 
         console.log('uploadMiddleware', 'passed')
         next()
