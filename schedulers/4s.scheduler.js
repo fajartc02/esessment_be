@@ -127,16 +127,18 @@ const genMainSchedule = async () => {
                 select 
                     tml.line_id,
                     tmg.group_id
+                    ,tmsm.month_num
                 from 
                     (select * from tb_m_lines order by line_id asc limit 1) tml,
-                    (select * from tb_m_groups where group_nm in ('WHITE', 'RED')) tmg
+                    (select * from tb_m_groups where group_nm in ('WHITE', 'RED')) tmg,
+                    (select date_part('month', date) as month_num from tb_m_schedules group by month_num) tmsm
             `)
 
     for (let lnIndex = 0; lnIndex < lgQuery.rows.length; lnIndex++)
     {
         result.push({
             uuid: uuid(),
-            month_num: currentMonth,
+            month_num: lgQuery.rows[lnIndex].month_num,
             year_num: currentYear,
             line_id: lgQuery.rows[lnIndex].line_id,
             group_id: lgQuery.rows[lnIndex].group_id,
@@ -194,6 +196,9 @@ const genSubSchedule = async (shiftRows = []) => {
             {
                 countSame++
                 skip = false
+                if(countSame > 5){
+                    countSame = 1
+                }
             }
             else
             {
@@ -352,7 +357,7 @@ const genSubSchedule = async (shiftRows = []) => {
                                                 non_holiday.day_of_week = '${countSame}'
                                                 and date_part('week', tmsc."date") = '${shiftRows[sIndex].week_num}'
                                             order by 
-                                                tmsc.date asc
+                                                tmsc.date
                                             limit 1
                                         `
 
@@ -593,12 +598,18 @@ const genSignCheckers = async (shiftRows = []) => {
 }
 //#endregion
 
+//#region scheduler generate item check kanban
+const genItemCheckKanbanTrans = async (shiftRows = []) => {
+
+}
+//#region 
+
 //#region scheduler main 
 const main = async () => {
     try
     {
-        await clear4sRows();
-        await generateSchedules(databasePool)
+        //await clear4sRows();
+        //await generateSchedules(databasePool)
 
         //#region scheduler shift generator
         const shiftSql = `
@@ -609,12 +620,27 @@ const main = async () => {
                                 case
                                     when date_part('week', "date"::date) = 9 or date_part('week'::text, "date") = 10 then 
                                         'morning_shift'
+                                    when tms2.shift_type = 'morning_shift' then 'night_shift'
                                     when date_part('week', "date"::date)::integer % 2 = 0 then 
                                         'morning_shift'
                                     else 'night_shift'
                                 end as shift_type
                             from
-                                ${table.tb_m_schedules}
+                                ${table.tb_m_schedules} tms1
+                                full outer join (
+                                    select date_part('week', "date"::date) as week_num,
+                                       case
+                                           when date_part('week', "date"::date)::integer % 2 = 0 then
+                                               'morning_shift'
+                                           else 'night_shift'
+                                           end                         as shift_type
+                                    from tb_m_schedules
+                                    where date_part('month', "date") = '${currentMonth - 1}'
+                                    and date_part('year', "date") = '${currentYear}'
+                                    group by week_num, shift_type
+                                    order by week_num desc
+                                    limit 1
+                                ) tms2 on true
                             where 
                                 date_part('month', "date") = '${currentMonth}'
                                 and date_part('year', "date") = '${currentYear}'
@@ -664,6 +690,7 @@ const main = async () => {
         //console.log('shiftSql', shiftSql)
         const shiftQuery = await databasePool.query(shiftSql)
         const shiftRows = shiftQuery.rows
+        //console.log('shiftRows', shiftSql)
         //#endregion
 
         //#region scheduler bulk temp var
@@ -675,6 +702,9 @@ const main = async () => {
         const signCheckerTl2BulkSchema = signCheckers.tl2
         const signChckerGlBulkSchema = signCheckers.gl
         const signChckerShBulkSchema = signCheckers.sh
+        //console.warn('signCheckers', signCheckers)
+
+        const itemCheckKanbanSchema = await genItemCheckKanbanTrans(shiftRows)
         //#endregion
 
 
@@ -691,6 +721,7 @@ const main = async () => {
 
             let subScheduleTemp = []
             let signCheckersTemp = []
+            let itemCheckKanbanTemp = []
 
             for (let mIndex = 0; mIndex < mainScheduleInserted.rows.length; mIndex++)
             {
@@ -761,6 +792,12 @@ const main = async () => {
                         is_sh: true,
                     })
                 }
+
+               /*  for (let ikIndex = 0; ikIndex < itemCheckKanbanSchema.length; ikIndex++) {
+                    itemCheckKanbanTemp.push({
+
+                    })
+                } */
                 //#endregion
             }
 

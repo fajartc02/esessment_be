@@ -117,7 +117,6 @@ const migrate = async () => {
                     {
                         uuid: uuid(),
                         main_schedule_id: mainScheduleRows[0].main_schedule_id,
-                        pic_id: userRows[0].user_id,
                         kanban_id: kanbanRows[0].kanban_id,
                         zone_id: zoneRows[0].zone_id,
                         freq_id: freqRows[0].freq_id,
@@ -136,7 +135,6 @@ const migrate = async () => {
                     {
                         uuid: uuid(),
                         main_schedule_id: mainScheduleRows[0].main_schedule_id,
-                        pic_id: userRows[1].user_id,
                         kanban_id: kanbanRows[1].kanban_id,
                         zone_id: zoneRows[0].zone_id,
                         freq_id: freqRows[0].freq_id,
@@ -155,7 +153,6 @@ const migrate = async () => {
                     {
                         uuid: uuid(),
                         main_schedule_id: mainScheduleRows[0].main_schedule_id,
-                        pic_id: userRows[2].user_id,
                         kanban_id: kanbanRows[2].kanban_id,
                         zone_id: zoneRows[0].zone_id,
                         freq_id: freqRows[0].freq_id,
@@ -174,7 +171,6 @@ const migrate = async () => {
                     {
                         uuid: uuid(),
                         main_schedule_id: mainScheduleRows[0].main_schedule_id,
-                        pic_id: userRows[3].user_id,
                         kanban_id: kanbanRows[3].kanban_id,
                         zone_id: zoneRows[0].zone_id,
                         freq_id: freqRows[0].freq_id,
@@ -193,7 +189,6 @@ const migrate = async () => {
                     {
                         uuid: uuid(),
                         main_schedule_id: mainScheduleRows[0].main_schedule_id,
-                        pic_id: userRows[4].user_id,
                         kanban_id: kanbanRows[4].kanban_id,
                         zone_id: zoneRows[2].zone_id,
                         freq_id: freqRows[0].freq_id,
@@ -212,7 +207,6 @@ const migrate = async () => {
                     {
                         uuid: uuid(),
                         main_schedule_id: mainScheduleRows[0].main_schedule_id,
-                        pic_id: userRows[5].user_id,
                         kanban_id: kanbanRows[5].kanban_id,
                         zone_id: zoneRows[2].zone_id,
                         freq_id: freqRows[0].freq_id,
@@ -231,7 +225,6 @@ const migrate = async () => {
                     {
                         uuid: uuid(),
                         main_schedule_id: mainScheduleRows[0].main_schedule_id,
-                        pic_id: userRows[6].user_id,
                         kanban_id: kanbanRows[6].kanban_id,
                         zone_id: zoneRows[3].zone_id,
                         freq_id: freqRows[1].freq_id,
@@ -250,7 +243,6 @@ const migrate = async () => {
                     {
                         uuid: uuid(),
                         main_schedule_id: mainScheduleRows[0].main_schedule_id,
-                        pic_id: userRows[0].user_id,
                         kanban_id: kanbanRows[7].kanban_id,
                         zone_id: zoneRows[3].zone_id,
                         freq_id: freqRows[1].freq_id,

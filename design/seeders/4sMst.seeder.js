@@ -63,7 +63,6 @@ const generateSchedules = async (db) => {
             currentMonthDay.holiday_nm = null
         }
 
-        currentMonthDay.week_num = `func date_part('week', '${currentMonthDay.date}'::date)`
         currentMonthDay.uuid = uuid()
         result.push(currentMonthDay)
     }
@@ -92,7 +91,6 @@ const generateSchedules = async (db) => {
             nextMonthDay.holiday_nm = null
         }
 
-        nextMonthDay.week_pos = `func date_part('week', '${nextMonthDay.date}'::date)`
         nextMonthDay.uuid = uuid()
         result.push(nextMonthDay)
     }
@@ -187,7 +185,7 @@ const migrate = async () => {
         //#endregion
 
         //#region generate schedule
-        //await generateSchedules(db)
+        await generateSchedules(db)
         //#endregion
 
         for (let index = 0; index < lineGroupRows.length; index++)

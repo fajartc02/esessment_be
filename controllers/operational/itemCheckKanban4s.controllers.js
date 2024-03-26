@@ -126,7 +126,8 @@ module.exports = {
                     //console.log(`cSql ${item.freq_nm}`, cSql)
                     const children = await queryCustom(cSql, false)
                     children.rows = children.rows.map((child) => {
-                        if(child.week){
+                        if (child.week)
+                        {
                             child.offset = child.week
                             delete child.week
                         }
@@ -164,7 +165,39 @@ module.exports = {
             response.failed(res, "Error to get 4s item check kanban")
         }
     },
-    editItemCheckKanban4s: async (req, res) => {
+    getItemCheckKanban4sByKanbanId: async (req, res) => {
+        try
+        {
 
+            response.success(res, "Success to edit 4s item check kanban", [])
+        } catch (error)
+        {
+            console.log(error)
+            response.failed(res, "Error to get 4s item check kanban by kanban id")
+        }
+    },
+    editItemCheckKanban4s: async (req, res) => {
+        try
+        {
+            const itemCheckKanbanUuid = req.params.id
+            const { actual_time, judgement } = req.body
+
+            const updateBody = {
+                ...req.body,
+            }
+
+            const attrsUserUpdate = await attrsUserUpdateData(req, updateBody)
+            const result = await queryPUT(
+                table.tb_r_4s_schedule_item_check_kanbans,
+                attrsUserUpdate,
+                `WHERE uuid = '${itemCheckKanbanUuid}'`
+            )
+
+            response.success(res, "Success to edit 4s item check kanban", result)
+        } catch (error)
+        {
+            console.log(error)
+            response.failed(res, "Error to edit 4s item check kanban")
+        }
     }
 }

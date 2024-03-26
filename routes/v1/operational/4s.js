@@ -3,6 +3,7 @@ const {
   get4sSubSchedule,
   get4sMainSchedule,
   get4sSignCheckerBySignCheckerId,
+  getDetail4sSubSchedule,
   edi4sSubSchedule,
   editActual4sSubSchedule,
   sign4sSchedule,
@@ -19,7 +20,7 @@ router.get("/main-schedule", auth.verifyToken, get4sMainSchedule)
 router.delete("/main-schedule/delete/:id", auth.verifyToken, delete4sMainSchedule)
 
 router.get("/sub-schedule", auth.verifyToken, get4sSubSchedule)
-router.get("/sub-schedule/:id", auth.verifyToken, get4sSubSchedule)
+router.get("/sub-schedule/:id", auth.verifyToken, getDetail4sSubSchedule)
 router.get('/sub-schedule/sign/:sign_checker_id', auth.verifyToken, get4sSignCheckerBySignCheckerId)
 
 router.put('/sub-schedule/edit/:id', auth.verifyToken, edi4sSubSchedule)

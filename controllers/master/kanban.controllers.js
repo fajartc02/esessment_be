@@ -149,6 +149,8 @@ module.exports = {
             delete req.body.dest
 
             const transaction = await queryTransaction(async (db) => {
+                console.log('upload proccessing')
+
                 const insertBody = {
                     ...req.body,
                     uuid: uuid(),
@@ -156,6 +158,8 @@ module.exports = {
                     zone_id: ` (select zone_id from ${table.tb_m_zones} where uuid = '${req.body.zone_id}') `,
                     kanban_imgs: kanban_imgs.join('; ')
                 }
+
+                console.log('attrsInsert postKanbans', insertBody)
 
                 const attrsInsert = await attrsUserInsertData(req, insertBody)
                 return await queryPostTransaction(db, table.tb_m_kanbans, attrsInsert)

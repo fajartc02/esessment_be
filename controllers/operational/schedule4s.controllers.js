@@ -10,24 +10,30 @@ const {
 const response = require("../../helpers/response")
 const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData")
 const { padTwoDigits } = require("../../helpers/formatting")
+const moment = require('moment')
 
 const fromSubScheduleSql = `
     ${table.tb_r_4s_sub_schedules} tbrcs
-    join ${table.tb_r_4s_main_schedules} trmsc on tbrcs.main_schedule_id = trmsc.main_schedule_id
-    left join ${table.tb_m_users} tmu_plan on tmu_plan.user_id = tbrcs.plan_pic_id
-    left join ${table.tb_m_users} tmu_actual on tmu_actual.user_id = tbrcs.actual_pic_id
+    join ${table.tb_m_schedules} tmsc on tbrcs.schedule_id = tmsc.schedule_id
     join ${table.tb_m_kanbans} tmk on tbrcs.kanban_id = tmk.kanban_id
     join ${table.tb_m_zones} tmz on tbrcs.zone_id = tmz.zone_id
     join ${table.tb_m_freqs} tmf on tbrcs.freq_id = tmf.freq_id
-    join ${table.tb_m_schedules} tmsc on tbrcs.schedule_id = tmsc.schedule_id
+    join ${table.tb_r_4s_main_schedules} trmsc on 
+      tbrcs.main_schedule_id = trmsc.main_schedule_id 
+      and trmsc.month_num = date_part('month', tmsc.date)
+      and trmsc.year_num = date_part('year', tmsc.date)
+    left join ${table.tb_m_users} tmu_plan on tmu_plan.user_id = tbrcs.plan_pic_id
+    left join ${table.tb_m_users} tmu_actual on tmu_actual.user_id = tbrcs.actual_pic_id
     join lateral (
       select * from ${table.tb_m_lines} where line_id = trmsc.line_id
     ) tml on true
+    join ${table.tb_m_groups} tmg on trmsc.group_id = tmg.group_id
 `
 
 const selectSubScheduleCol = [
-  'tbrcs.main_schedule_id',
   'tml.uuid as line_id',
+  'tmg.uuid as group_id',
+  'tbrcs.main_schedule_id',
   'trmsc.uuid as main_schedule_uuid',
   'tbrcs.uuid as sub_schedule_id',
   'tmk.uuid as kanban_id',
@@ -39,6 +45,8 @@ const selectSubScheduleCol = [
   'tmu_actual.uuid as actual_pic_id',
   'tmk.kanban_id as kanban_real_id',
   'tmu_plan.user_id as pic_real_id',
+  'tml.line_nm',
+  'tmg.group_nm',
   'tmz.zone_nm',
   'tmk.kanban_no',
   'tmk.area_nm',
@@ -47,7 +55,7 @@ const selectSubScheduleCol = [
   'tmu_actual.fullname as actual_pic_nm',
   'tmf.freq_nm',
   'trmsc.year_num',
-  'trmsc.month_num'
+  'trmsc.month_num',
 ]
 
 const selectSubScheduleSql = selectSubScheduleCol.join(', ')
@@ -130,7 +138,7 @@ const childrenSubSchedule = async (
                       ${byPic}
               ) a order by date_num      
            `
-
+  //console.warn('childrensql', childrenSql)
   const children = await queryCustom(childrenSql, false)
 
   return children.rows
@@ -548,7 +556,7 @@ module.exports = {
       response.failed(res, "Error to get 4s sign checker")
     }
   },
-  detail4sSubSchedule: async (req, res) => {
+  getDetail4sSubSchedule: async (req, res) => {
     try
     {
       const sub_schedule_uuid = req.params.id
@@ -560,23 +568,75 @@ module.exports = {
             ${fromSubScheduleSql}
           where
             tbrcs.uuid = '${sub_schedule_uuid}'
+          limit 1
         `
 
-      let subScheduleQuery = await queryCustom(subScheduleSql)
+      let subScheduleQuery = await queryCustom(subScheduleSql, false)
       if (subScheduleQuery.rows.length == 0)
       {
         throw "Can't find 4s sub schedule with id provided"
       }
 
-      subScheduleQuery = subScheduleQuery[0]
-      subScheduleQuery.children = await childrenSubSchedule(
-        subScheduleQuery.main_schedule_id,
-        subScheduleQuery.freq_real_id,
-        subScheduleQuery.zone_real_id,
-        subScheduleQuery.kanbanRealId,
-        subScheduleQuery.pic_real_id
+      subScheduleQuery = subScheduleQuery.rows[0]
+
+      const planningDates = await queryCustom(
+        `
+          select 
+            tms.date
+          from 
+            ${table.tb_r_4s_sub_schedules} trss
+            join ${table.tb_m_schedules} tms on trss.schedule_id = tms.schedule_id
+          where
+            trss.plan_time is not null 
+            and trss.main_schedule_id = '${subScheduleQuery.main_schedule_id}'
+            and trss.freq_id = '${subScheduleQuery.freq_real_id}'
+            and trss.zone_id = '${subScheduleQuery.zone_real_id}'
+            and trss.kanban_id = '${subScheduleQuery.kanban_real_id}'
+        `,
+        false
       )
 
+     
+
+      const morningShiftDates = await queryCustom(
+        `
+          select
+            tms.date
+          from
+            ${table.tb_r_4s_sub_schedules} trss
+            join ${table.tb_m_schedules} tms on trss.schedule_id = tms.schedule_id
+          where
+            trss.shift = 'morning_shift'
+            and trss.main_schedule_id = '${subScheduleQuery.main_schedule_id}'
+            and trss.freq_id = '${subScheduleQuery.freq_real_id}'
+            and trss.zone_id = '${subScheduleQuery.zone_real_id}'
+            and trss.kanban_id = '${subScheduleQuery.kanban_real_id}'
+        `,
+        false
+      )
+
+      
+
+      const nightShiftDates = await queryCustom(
+        `
+          select
+            tms.date
+          from
+            ${table.tb_r_4s_sub_schedules} trss
+            join ${table.tb_m_schedules} tms on trss.schedule_id = tms.schedule_id
+          where
+            trss.shift = 'night_shift'
+            and trss.main_schedule_id = '${subScheduleQuery.main_schedule_id}'
+            and trss.freq_id = '${subScheduleQuery.freq_real_id}'
+            and trss.zone_id = '${subScheduleQuery.zone_real_id}'
+            and trss.kanban_id = '${subScheduleQuery.kanban_real_id}'
+        `,
+        false
+      )
+
+      subScheduleQuery.planning_dates = planningDates.rows.map((item) => moment(item.date).format('YYYY-MM-DD'))
+      subScheduleQuery.morning_shift_dates = morningShiftDates.rows.map((item) => moment(item.date).format('YYYY-MM-DD'))
+      subScheduleQuery.night_shift_dates = nightShiftDates.rows.map((item) => moment(item.date).format('YYYY-MM-DD'))
       subScheduleQuery.main_schedule_id = subScheduleQuery.main_schedule_uuid
 
       delete subScheduleQuery.freq_real_id
@@ -584,11 +644,6 @@ module.exports = {
       delete subScheduleQuery.kanban_real_id
       delete subScheduleQuery.pic_real_id
       delete subScheduleQuery.main_schedule_uuid
-
-      const result = {
-        schedule: subScheduleQuery,
-        zona: []
-      }
 
       response.success(res, "Success to get detail 4s sub schedule", subScheduleQuery)
     }
@@ -604,7 +659,7 @@ module.exports = {
       /**
        * plan_dates = 2024-03-01; 2024-03-02; ....
        */
-      const { pic_id, kanban_id, zone_id, freq_id, plan_dates } = req.body
+      const { pic_id, kanban_id, zone_id, freq_id, plan_dates, morning_shift_dates, night_shift_dates } = req.body
 
       let schedulRow = await queryGET(
         table.tb_r_4s_sub_schedules,
@@ -625,6 +680,15 @@ module.exports = {
       const planTimeMapped = plan_dates.split(';').map((dt) => {
         return dt.replace(/ /g, '')
       })
+
+      const morningShiftMapped = morning_shift_dates.split(';').map((dt) => {
+        return dt.replace(/ /g, '')
+      })
+
+      const nightShiftMapped = night_shift_dates.split(';').map((dt) => {
+        return dt.replace(/ /g, '')
+      })
+
 
       const body = {
         plan_pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${pic_id}') `,
@@ -650,18 +714,33 @@ module.exports = {
           `WHERE ${updateCondition}`
         )
 
+        const updateDatesSql = (date = '', colSet = `trss.plan_time = '${date}'`, condition = updateCondition) => {
+          return `
+              update 
+                ${table.tb_r_4s_sub_schedules}  trss
+                join ${table.tb_m_schedules} tmsc on trss.schedule_id = tmsc.schedule_id
+              set 
+                ${colSet} 
+              where 
+                ${condition} 
+                and tmsc."date" = '${date}'
+            `
+        }
+
         let temp = []
         for (let i = 0; i < planTimeMapped.length; i++)
         {
-          temp.push(`
-              update 
-                ${table.tb_r_4s_sub_schedules} 
-              set 
-                plan_time = '${planTimeMapped[i]}' 
-              where 
-                ${updateCondition} 
-                and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${planTimeMapped[i]}' limit 1)
-            `)
+          temp.push(updateDatesSql(planTimeMapped[i]))
+        }
+
+        for (let i = 0; i < morningShiftMapped.length; i++)
+        {
+          temp.push(updateDatesSql(morningShiftMapped[i], `trss.shift = 'morning_shift'`, `trss.main_schedule_id = '${schedulRow.main_schedule_id}'`))
+        }
+
+        for (let i = 0; i < nightShiftMapped.length; i++)
+        {
+          temp.push(updateDatesSql(nightShiftMapped[i], `trss.shift = 'night_shift'`, `trss.main_schedule_id = '${schedulRow.main_schedule_id}'`))
         }
 
         await db.query(temp.join('; '))
