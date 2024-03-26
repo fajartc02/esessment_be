@@ -19,7 +19,7 @@ const uploadMiddleware = (req, res, next) => {
         {
             console.log('failed upload kanban imgs', 'File Upload Max. 4')
             console.log('failed upload kanban imgs', err)
-            return response.failed(res, 'File Upload Max. 4')
+            return response.failed(res, err.message)
         } else if (err)
         {
             console.log('failed upload kanban imgs', err)
