@@ -8,7 +8,6 @@ const {
 
 const response = require("../../../helpers/response")
 const auth = require("../../../helpers/auth")
-const multer = require('multer')
 const upload = require('../../../helpers/upload')
 
 /* const uploadMiddleware = (req, res, next) => {
