@@ -18,6 +18,7 @@ const uploadMiddleware = (req, res, next) => {
         if (err instanceof multer.MulterError)
         {
             console.log('failed upload kanban imgs', 'File Upload Max. 4')
+            console.log('failed upload kanban imgs', err)
             return response.failed(res, 'File Upload Max. 4')
         } else if (err)
         {
