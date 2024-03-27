@@ -1,5 +1,5 @@
 const table = require("../../config/table")
-const { queryPUT, queryGET, queryCustom, queryPOST } = require("../../helpers/query")
+const { queryPUT, queryGET, queryCustom, queryPOST, queryTransaction, queryPostTransaction, queryPutTransaction } = require("../../helpers/query")
 
 const response = require("../../helpers/response")
 const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData")
@@ -13,7 +13,7 @@ module.exports = {
     get4sFindingList: async (req, res) => {
         try
         {
-            let { id, line_id, limit, current_page, zone_nm } = req.query
+            let { id, line_id, freq_id, zone_id, kanban_id, limit, current_page } = req.query
             const fromCondition = `  
                 ${table.v_4s_finding_list} vfl 
             `
@@ -22,16 +22,16 @@ module.exports = {
             limit = parseInt(limit ?? 10)
 
             let filterCondition = [
-                ' and vfl.deleted_dt is null '
+                'vfl.deleted_dt is null'
             ]
 
-            let kanbanSql = `
+            let findingSql = `
                     select
                         *
                     from
                        ${fromCondition}
                     where
-                        1 = 1
+                        
                 `
             //#region filter
             if (id)
@@ -42,46 +42,41 @@ module.exports = {
             {
                 filterCondition.push(` vfl.line_id = '${line_id}' `)
             }
-            if (zone_nm)
+            if (zone_id)
             {
-                filterCondition.push(` vfl.zone_nm = '${zone_nm}' `)
+                filterCondition.push(` vfl.zone_id = '${zone_id}' `)
             }
+            if (kanban_id)
+            {
+                filterCondition.push(` vfl.kanban_id = '${kanban_id}' `)
+            }
+
 
             const qOffset = (limit != -1 && limit) && current_page > 1 ? `OFFSET ${limit * (current_page - 1)}` : ``
             const qLimit = (limit != -1 && limit) ? `LIMIT ${limit}` : ``
 
+            
             filterCondition = filterCondition.join(' and ')
-            kanbanSql.concat(` ${filterCondition} `)
-            kanbanSql.concat(` order by vfl.created_dt ${qLimit} ${qOffset} `)
+            findingSql = findingSql.concat(` ${filterCondition} `)
+            findingSql = findingSql.concat(` order by vfl.created_dt ${qLimit} ${qOffset} `)
             //#endregion
 
-            let kanbanQuery = await queryCustom(kanbanSql)
+            let findingQuery = await queryCustom(findingSql)
             const nullId = id == null || id == -1 || id == ''
-            let result = kanbanQuery.rows
+            let result = findingQuery.rows
 
-            if (kanbanQuery.rows.length > 0)
+            if (result.length > 0)
             {
-                kanbanQuery.rows.map((item) => {
-                    if (item.kanban_imgs)
-                    {
-                        item.kanban_imgs = item.kanban_imgs.split('; ').map((img, index) => ({
-                            index: index,
-                            img: img
-                        }))
-                    }
-
-                    return item
-                })
-
                 if (nullId)
                 {
-                    const count = await queryCustom(`select count(*) as count from ${fromCondition} where 1 = 1 ${filterCondition}`)
+                    const count = await queryCustom(`select count(*) as count from ${fromCondition} where ${filterCondition}`)
                     const countRows = count.rows[0]
                     result = {
                         current_page: current_page,
                         total_page: +countRows.count > 0 ? Math.ceil(countRows.count / +limit) : 0,
+                        total_data: countRows.count,
                         limit: limit,
-                        list: kanbanQuery.rows,
+                        list: findingQuery.rows,
                     }
                 }
                 else
@@ -90,7 +85,7 @@ module.exports = {
                 }
             }
 
-            response.success(res, 'Success to get 4s finding list', freqs)
+            response.success(res, 'Success to get 4s finding list', result)
         } catch (error)
         {
             console.log(error);
@@ -103,11 +98,19 @@ module.exports = {
             const insertBody = {
                 ...req.body,
                 uuid: uuid(),
+                freq_id: ` (select freq_id from ${table.tb_m_freqs} where uuid = '${req.body.freq_id}') `,
+                zone_id: ` (select zone_id from ${table.tb_m_zones} where uuid = '${req.body.zone_id}') `,
+                kanban_id: ` (select kanban_id from ${table.tb_m_kanbans} where uuid = '${req.body.kanban_id}') `,
+                finding_pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.finding_pic_id}') `,
             }
 
-            const attrsInsert = await attrsUserInsertData(req, insertBody)
-            const result = await queryPOST(table.tb_m_freqs, attrsInsert)
-            response.success(res, "Success to add freq", result)
+            const transaction = await queryTransaction(async (db) => {
+                const attrsInsert = await attrsUserInsertData(req, insertBody)
+                return await queryPostTransaction(db, table.tb_r_4s_findings, attrsInsert)
+            })
+
+          
+            response.success(res, "Success to add 4s finding", transaction)
         } catch (error)
         {
             console.log(error)
@@ -119,16 +122,19 @@ module.exports = {
         {
             const updateBody = {
                 ...req.body,
+                actual_pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.actual_pic_id}') `
             }
 
-            const attrsUserUpdate = await attrsUserUpdateData(req, updateBody)
-            const result = await queryPUT(
-                table.tb_m_freqs,
-                attrsUserUpdate,
-                `WHERE uuid = '${req.params.id}'`
-            )
+            const transaction = await queryTransaction(async (db) => {
+                const attrsUserUpdate = await attrsUserUpdateData(req, updateBody)
+                return await queryPutTransaction(
+                    table.tb_m_freqs,
+                    attrsUserUpdate,
+                    `WHERE uuid = '${req.params.id}'`
+                )
+            })
 
-            response.success(res, "Success to edit freq", result)
+            response.success(res, "Success to edit 4s finding", transaction)
         } catch (error)
         {
             console.log(error)
@@ -171,7 +177,7 @@ module.exports = {
 
             let attrsUserUpdate = await attrsUserUpdateData(req, obj)
             const result = await queryPUT(
-                table.tb_m_freqs,
+                table.tb_r_4s_findings,
                 attrsUserUpdate,
                 `WHERE uuid = '${req.params.id}'`
             )

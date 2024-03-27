@@ -10,13 +10,13 @@ const {
 const auth = require("../../../helpers/auth")
 const upload = require('../../../helpers/upload')
 
-router.put("/edit/:id", auth.verifyToken, edit4sFinding)
-router.delete("/delete/:id", auth.verifyToken, delete4sFinding)
+router.get("/get", auth.verifyToken, get4sFindingList)
 
-router.post("/", auth.verifyToken, post4sFinding)
+router.post("/add", auth.verifyToken, post4sFinding)
 router.post('/upload-image', auth.verifyToken, upload.single('attachment'), upload4sImageFinding);
 
-router.get("/", auth.verifyToken, get4sFindingList)
+router.put("/edit/:id", auth.verifyToken, edit4sFinding)
+router.delete("/delete/:id", auth.verifyToken, delete4sFinding)
 
 
 

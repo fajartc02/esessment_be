@@ -6,47 +6,116 @@ const {
     queryGET,
     queryPUT,
     queryTransaction,
-    queryPutTransaction
+    queryPutTransaction,
+    queryPostTransaction
 } = require("../../helpers/query")
 
 const response = require("../../helpers/response")
 const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData")
 const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData")
+const { uuid } = require("uuidv4")
 
 module.exports = {
-    getItemCheckKanban4sByMainScheduleId: async (req, res) => {
+    getItemCheckKanban4s: async (req, res) => {
         try
         {
-            const { main_schedule_id } = req.query
+            const { main_schedule_id, kanban_id } = req.query
 
-            const itemCheckSql = `
-            select distinct
-              on (
-                  tbrcs.freq_id,
-                  tbrcs.zone_id,
-                  tbrcs.kanban_id,
-                  tmic.item_check_kanban_id
-              )
-              tmk.uuid as kanban_uuid,
-              tmic.uuid as item_check_kanban_uuid,
-              tmf.uuid as freq_uuid,
-              tbrcs.main_schedule_id,
-              tmic.item_check_kanban_id,
-              tmk.kanban_id,
-              tbrcs.freq_id,
-              tbrcs.zone_id,
-              tmic.item_check_nm,
-              tmk.kanban_no,
-              tmic.standart_time,
-              tmf.freq_nm
-          from
-              ${table.tb_r_4s_sub_schedules} tbrcs
-              join ${table.tb_m_4s_item_check_kanbans} tmic on tbrcs.kanban_id = tmic.kanban_id
-              join ${table.tb_m_kanbans} tmk on tmic.kanban_id = tmk.kanban_id
-              join ${table.tb_m_freqs} tmf on tbrcs.freq_id = tmf.freq_id
-          where
-              tbrcs.main_schedule_id = (select main_schedule_id from ${table.tb_r_4s_main_schedules} where uuid = '${main_schedule_id}')
-        `
+            let scheduleItemCheckKanbanSql =
+                `
+                select
+                    tml.uuid as line_id,
+                    tmg.uuid as group_id,
+                    tmf.uuid as freq_id,
+                    trmsc.uuid as main_schedule_id,
+                    tmk.uuid as kanban_id,
+                    tmick.uuid as item_check_kanban_id,
+                    trsic.uuid as schedule_item_check_kanban_id,
+                    tml.line_nm,
+                    tmg.group_nm,
+                    tmk.kanban_no,
+                    tmf.freq_nm,
+                    tmick.item_check_nm,
+                    trsic.actual_time,
+                    trsic.judgement,
+                    trsic.checked_date,
+                    date_part('week', trsic.changed_dt) as checked_week,
+                    date_part('month', trsic.changed_dt) as checked_month
+                from
+                    ${table.tb_r_4s_schedule_item_check_kanbans} trsic
+                    join ${table.tb_r_4s_main_schedules} trmsc on trsic.main_schedule_id = trmsc.main_schedule_id
+                    join ${table.tb_m_lines} tml on trmsc.line_id = tml.line_id
+                    join ${table.tb_m_groups} tmg on trmsc.group_id = tmg.group_id
+                    join ${table.tb_m_4s_item_check_kanbans} tmick on trsic.item_check_kanban_id = tmick.item_check_kanban_id
+                    join ${table.tb_m_kanbans} tmk on tmick.kanban_id = tmk.kanban_id
+                    join ${table.tb_m_freqs} tmf on tmk.freq_id = tmf.freq_id
+                where
+                    1 = 1
+            `
+
+            let filterCondition = []
+            if (main_schedule_id)
+            {
+                filterCondition.push(` trmsc.uuid = '${main_schedule_id}' `)
+            }
+
+            if (kanban_id)
+            {
+                filterCondition.push(` tmk.uuid = '${kanban_id}' `)
+            }
+
+            if (filterCondition.length > 0)
+            {
+                filterCondition = filterCondition.join(' and ')
+                scheduleItemCheckKanbanSql = scheduleItemCheckKanbanSql.concat(` and ${filterCondition} `)
+            }
+
+
+            const scheduleItemCheckKanbanQuery = await queryCustom(scheduleItemCheckKanbanSql)
+            const result = scheduleItemCheckKanbanQuery.rows
+
+            response.success(res, "Success to get 4s schedule item check kanban", result)
+        } catch (e)
+        {
+            console.log(error)
+            response.failed(res, "Error to get 4s schedule item check kanban")
+        }
+    },
+    getAllItemCheckKanban4s: async (req, res) => {
+        try
+        {
+            const { main_schedule_id, kanban_id } = req.query
+
+            const itemCheckSql =
+                `
+                select distinct
+                    on (
+                        tbrcs.freq_id,
+                        tbrcs.zone_id,
+                        tbrcs.kanban_id,
+                        tmic.item_check_kanban_id
+                    )
+                    tmk.uuid as kanban_uuid,
+                    tmic.uuid as item_check_kanban_uuid,
+                    tmf.uuid as freq_uuid,
+                    tbrcs.main_schedule_id,
+                    tmic.item_check_kanban_id,
+                    tmk.kanban_id,
+                    tbrcs.freq_id,
+                    tbrcs.zone_id,
+                    tmic.item_check_nm,
+                    tmk.kanban_no,
+                    tmic.standart_time,
+                    tmf.freq_nm
+                from
+                    ${table.tb_r_4s_sub_schedules} tbrcs
+                    join ${table.tb_m_4s_item_check_kanbans} tmic on tbrcs.kanban_id = tmic.kanban_id
+                    join ${table.tb_m_kanbans} tmk on tmic.kanban_id = tmk.kanban_id
+                    join ${table.tb_m_freqs} tmf on tbrcs.freq_id = tmf.freq_id
+                where
+                    1 = 1
+                    tbrcs.main_schedule_id = (select main_schedule_id from ${table.tb_r_4s_main_schedules} where uuid = '${main_schedule_id}')
+            `
 
             const itemCheckQuery = await queryCustom(itemCheckSql)
             let result = []
@@ -165,39 +234,74 @@ module.exports = {
             response.failed(res, "Error to get 4s item check kanban")
         }
     },
-    getItemCheckKanban4sByKanbanId: async (req, res) => {
+    postItemCheckKanban4s: async (req, res) => {
         try
         {
+            const transaction = await queryTransaction(async (db) => {
+                const body = {
+                    ...req.body,
+                    uuid: uuid(),
+                    main_schedule_id: ` (select main_schedule_id from ${table.tb_r_4s_main_schedules} where uuid = '${req.body.main_schedule_id}') `,
+                    item_check_kanban_id: ` (select item_check_kanban_id from ${table.tb_m_4s_item_check_kanbans} where uuid = '${req.body.item_check_kanban_id}') `,
+                }
 
-            response.success(res, "Success to edit 4s item check kanban", [])
-        } catch (error)
+                const attrInsert = attrsUserInsertData(req, body)
+                return await queryPostTransaction(db, table.tb_r_4s_schedule_item_check_kanbans, attrInsert)
+            })
+
+            response.success(res, "Success to add 4s schedule item check kanban", transaction)
+        } catch (e)
         {
-            console.log(error)
-            response.failed(res, "Error to get 4s item check kanban by kanban id")
+            console.log(e)
+            response.failed(res, "Error to add 4s schedule item check kanban")
         }
     },
     editItemCheckKanban4s: async (req, res) => {
         try
         {
             const itemCheckKanbanUuid = req.params.id
-            const { actual_time, judgement } = req.body
+            //const { actual_time, judgement } = req.body
 
-            const updateBody = {
-                ...req.body,
-            }
+            const transaction = await queryTransaction(async (db) => {
+                const updateBody = {
+                    ...req.body,
+                }
 
-            const attrsUserUpdate = await attrsUserUpdateData(req, updateBody)
-            const result = await queryPUT(
-                table.tb_r_4s_schedule_item_check_kanbans,
-                attrsUserUpdate,
-                `WHERE uuid = '${itemCheckKanbanUuid}'`
-            )
+                const attrsUserUpdate = await attrsUserUpdateData(req, updateBody)
+                return await queryPutTransaction(
+                    db,
+                    table.tb_r_4s_schedule_item_check_kanbans,
+                    attrsUserUpdate,
+                    `WHERE uuid = '${itemCheckKanbanUuid}'`
+                )
+            })
 
-            response.success(res, "Success to edit 4s item check kanban", result)
+            response.success(res, "Success to edit 4s schedule item check kanban", transaction)
         } catch (error)
         {
             console.log(error)
-            response.failed(res, "Error to edit 4s item check kanban")
+            response.failed(res, "Error to edit 4s schedule item check kanban")
         }
-    }
+    },
+    deleteItemCheckKanban4s: async (req, res) => {
+        try
+        {
+            let obj = {
+                deleted_dt: moment().format().split("+")[0].split("T").join(" "),
+                deleted_by: req.user.fullname,
+            }
+
+            let attrsUserUpdate = await attrsUserUpdateData(req, obj)
+            const result = await queryPUT(
+                table.tb_r_4s_schedule_item_check_kanbans,
+                attrsUserUpdate,
+                `WHERE uuid = '${req.params.id}'`
+            )
+            response.success(res, "Success to soft delete 4s schedule item check kanban", result)
+        } catch (error)
+        {
+            console.log(error)
+            response.failed(res, error)
+        }
+    },
 }

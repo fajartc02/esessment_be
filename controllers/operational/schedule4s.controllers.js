@@ -596,8 +596,6 @@ module.exports = {
         false
       )
 
-     
-
       const morningShiftDates = await queryCustom(
         `
           select
@@ -614,8 +612,6 @@ module.exports = {
         `,
         false
       )
-
-      
 
       const nightShiftDates = await queryCustom(
         `
@@ -634,6 +630,23 @@ module.exports = {
         false
       )
 
+      const itemCheckKanbans = await queryCustom(
+        `
+          select
+              tmic.uuid as item_check_kanban_id,
+              tmk.uuid as kanban_id,
+              tmk.kanban_no,
+              tmic.item_check_nm,
+              tmic.standart_time
+          from
+              ${table.tb_m_4s_item_check_kanbans} tmic
+              join ${table.tb_m_kanbans} tmk on tmic.kanban_id = tmk.kanban_id 
+          where
+              tmk.kanban_id = '${subScheduleQuery.kanban_real_id}'
+        `
+      )
+
+      subScheduleQuery.item_check_kanbans = itemCheckKanbans.rows
       subScheduleQuery.planning_dates = planningDates.rows.map((item) => moment(item.date).format('YYYY-MM-DD'))
       subScheduleQuery.morning_shift_dates = morningShiftDates.rows.map((item) => moment(item.date).format('YYYY-MM-DD'))
       subScheduleQuery.night_shift_dates = nightShiftDates.rows.map((item) => moment(item.date).format('YYYY-MM-DD'))
@@ -650,7 +663,7 @@ module.exports = {
     catch (error)
     {
       console.log(error)
-      response.failed(res, "Error to get 4s sub schedule detail")
+      response.failed(res, error)
     }
   },
   edi4sSubSchedule: async (req, res) => {

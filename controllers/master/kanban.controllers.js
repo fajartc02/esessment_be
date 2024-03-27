@@ -100,14 +100,12 @@ module.exports = {
 
             if (kanbanQuery.rows.length > 0)
             {
-                const envUrl = "http://mt-system.id:8100/api/v1"
-                
                 kanbanQuery.rows.map((item) => {
                     if (item.kanban_imgs)
                     {
                         item.kanban_imgs = item.kanban_imgs.split('; ').map((img, index) => ({
                             index: index,
-                            img: `${envUrl}/file?path=${img}`
+                            img: `${process.env.IMAGE_URL}/file?path=${img}`
                         }))
                     }
 

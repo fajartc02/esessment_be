@@ -193,7 +193,7 @@ module.exports = {
         }
         catch (error)
         {
-            console.log('error transaction', error)
+            //console.log('error transaction', error)
             await db.query('ROLLBACK')
             await finish()
             throw error
