@@ -138,39 +138,59 @@ module.exports = {
         }
     },
     postKanbans: async (req, res) => {
-        const uploadPath = uploadDest(`${req.body.dest}/`)
         try
         {
+            const uploadPath = uploadDest(`${req.body.dest}/`)
             const files = req.files
-            const kanban_imgs = files.map((file) => {
-                return uploadDest(`${req.body.dest}/${file.filename}`)
-            })
+            let kanban_imgs = []
 
-            delete req.body.dest
+            if (files && files.length > 0)
+            {
+                kanban_imgs = files.map((file) => {
+                    return uploadDest(`${req.body.dest}/${file.filename}`)
+                })
+            }
 
-            const transaction = await queryTransaction(async (db) => {
-                const insertBody = {
-                    ...req.body,
-                    uuid: uuid(),
-                    freq_id: ` (select freq_id from ${table.tb_m_freqs} where uuid = '${req.body.freq_id}') `,
-                    zone_id: ` (select zone_id from ${table.tb_m_zones} where uuid = '${req.body.zone_id}') `,
-                    kanban_imgs: kanban_imgs.join('; ')
+            try
+            {
+                const transaction = await queryTransaction(async (db) => {
+                    delete req.body.dest
+
+                    const insertBody = {
+                        ...req.body,
+                        uuid: uuid(),
+                        freq_id: ` (select freq_id from ${table.tb_m_freqs} where uuid = '${req.body.freq_id}') `,
+                        zone_id: ` (select zone_id from ${table.tb_m_zones} where uuid = '${req.body.zone_id}') `,
+                    }
+
+                    if (kanban_imgs.length > 0)
+                    {
+                        insertBody.kanban_imgs = kanban_imgs.join('; ')
+                    }
+
+                    const attrsInsert = await attrsUserInsertData(req, insertBody)
+                    return await queryPostTransaction(db, table.tb_m_kanbans, attrsInsert)
+                })
+
+                response.success(res, "Success to add kanban", transaction)
+            }
+            catch (error)
+            {
+                if (kanban_imgs.length > 0)
+                {
+                    if (fs.existsSync(uploadPath))
+                    {
+                        fs.rmdirSync(uploadPath, { recursive: true })
+                    }
                 }
 
-                const attrsInsert = await attrsUserInsertData(req, insertBody)
-                return await queryPostTransaction(db, table.tb_m_kanbans, attrsInsert)
-            })
-
-            response.success(res, "Success to add kanban", transaction)
+                console.log('postKanbans', error)
+                response.failed(res, error)
+            }
         }
         catch (error)
         {
-            if (fs.existsSync(uploadPath))
-            {
-                fs.rmdirSync(uploadPath, { recursive: true })
-            }
-
-            console.log('postKanbans', error)
+            console.log(error)
             response.failed(res, error)
         }
     },
@@ -180,7 +200,7 @@ module.exports = {
             const files = req.files
             let newKanbanImgs = []
 
-            if (files.length > 0)
+            if (files && files.length > 0)
             {
                 newKanbanImgs = files.map((file) => {
                     return uploadDest(`${req.body.dest}/${file.filename}`)
@@ -291,8 +311,6 @@ module.exports = {
             console.log(error)
             response.failed(res, error)
         }
-
-
     },
     deleteKanbans: async (req, res) => {
         try

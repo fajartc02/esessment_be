@@ -124,60 +124,82 @@ module.exports = {
         }
     },
     postItemCheck: async (req, res) => {
-        const uploadPath = uploadDest(`${req.body.dest}/`)
-        const existing = await queryGET(
-            table.tb_m_4s_item_check_kanbans,
-            `where kanban_id = (select kanban_id from ${table.tb_m_kanbans} where uuid = '${req.body.kanban_id}') and item_check_nm = '${req.body.item_check_nm}'`,
-            [
-                'item_check_kanban_id'
-            ]
-        )
-
         try
         {
+            const uploadPath = uploadDest(`${req.body.dest}/`)
+            const existing = await queryGET(
+                table.tb_m_4s_item_check_kanbans,
+                `where kanban_id = (select kanban_id from ${table.tb_m_kanbans} where uuid = '${req.body.kanban_id}') and item_check_nm = '${req.body.item_check_nm}'`,
+                [
+                    'item_check_kanban_id'
+                ]
+            )
+
             const files = req.files
-            const ilustration_imgs = files.map((file) => {
-                return uploadDest(`${req.body.dest}/${file.filename}`)
-            })
+            let ilustration_imgs = []
+            if (files && files.length > 0)
+            {
+                ilustration_imgs = files.map((file) => {
+                    return uploadDest(`${req.body.dest}/${file.filename}`)
+                })
+            }
 
-            const transaction = await queryTransaction(async (db) => {
-                delete req.body.dest
+            try
+            {
+                const transaction = await queryTransaction(async (db) => {
+                    delete req.body.dest
 
-                const insertBody = {
-                    ...req.body,
-                    uuid: uuid(),
-                    kanban_id: ` (select kanban_id from ${table.tb_m_kanbans} where uuid = '${req.body.kanban_id}') `,
-                    ilustration_imgs: ilustration_imgs.join('; ')
+                    const insertBody = {
+                        ...req.body,
+                        uuid: uuid(),
+                        kanban_id: ` (select kanban_id from ${table.tb_m_kanbans} where uuid = '${req.body.kanban_id}') `,
+                    }
+
+                    if (ilustration_imgs.length > 0)
+                    {
+                        insertBody.ilustration_imgs = ilustration_imgs.join('; ')
+                    }
+
+                    console.log('postItemCheck insertBody', insertBody)
+
+                    const attrsInsert = await attrsUserInsertData(req, insertBody)
+
+                    return await queryPostTransaction(db, table.tb_m_4s_item_check_kanbans, attrsInsert)
+                })
+
+                response.success(res, "Success to add item check kanban", transaction)
+            }
+            catch (error)
+            {
+                console.log('postItemCheck', error)
+
+                if (ilustration_imgs.length > 0)
+                {
+                    //determine not deleting existing path when exists
+                    if (existing.length == 0)
+                    {
+                        if (fs.existsSync(uploadPath))
+                        {
+                            fs.rmdirSync(uploadPath, { recursive: true })
+                        }
+                    }
+
                 }
 
-                const attrsInsert = await attrsUserInsertData(req, insertBody)
-
-                return await queryPostTransaction(db, table.tb_m_4s_item_check_kanbans, attrsInsert)
-            })
-
-            response.success(res, "Success to add item check kanban", transaction)
+                if (error.code == '23505')
+                {
+                    response.failed(res, 'Duplicate! Item check kanban name within kanban_id already exists')
+                }
+                else
+                {
+                    response.failed(res, error)
+                }
+            }
         }
         catch (error)
         {
-            console.log('postItemCheck', error)
-
-            //determine not deleting existing path when exists
-            if (existing.length == 0)
-            {
-                if (fs.existsSync(uploadPath))
-                {
-                    fs.rmdirSync(uploadPath, { recursive: true })
-                }
-            }
-
-            if (error.code == '23505')
-            {
-                response.failed(res, 'Duplicate! Item check kanban name within kanban_id already exists')
-            }
-            else
-            {
-                response.failed(res, error)
-            }
+            console.log(error)
+            response.failed(res, error)
         }
     },
     editItemCheck: async (req, res) => {
@@ -197,9 +219,14 @@ module.exports = {
             existing = existing[0]
 
             const files = req.files
-            const newIlustrationImgs = files.map((file) => {
-                return uploadDest(`${req.body.dest}/${file.filename}`)
-            })
+            let newIlustrationImgs = []
+
+            if (files && files.length > 0)
+            {
+                newIlustrationImgs = files.map((file) => {
+                    return uploadDest(`${req.body.dest}/${file.filename}`)
+                })
+            }
 
             // getter the old path within split the forward slash
             const oldDest = existing.ilustration_imgs ? existing.ilustration_imgs.split('; ')[0].split('/')[2] : ''
@@ -241,20 +268,23 @@ module.exports = {
             }
             catch (error)
             {
-                if (oldDest == newDest)
+                if (newIlustrationImgs.length > 0)
                 {
-                    newIlustrationImgs.forEach((item) => {
-                        if (fs.existsSync(item))
-                        {
-                            fs.unlinkSync(item)
-                        }
-                    })
-                }
-                else
-                {
-                    if (fs.existsSync(uploadDest(`${newDest}/`)))
+                    if (oldDest == newDest)
                     {
-                        fs.rmdirSync(uploadDest(`${newDest}/`), { recursive: true })
+                        newIlustrationImgs.forEach((item) => {
+                            if (fs.existsSync(item))
+                            {
+                                fs.unlinkSync(item)
+                            }
+                        })
+                    }
+                    else
+                    {
+                        if (fs.existsSync(uploadDest(`${newDest}/`)))
+                        {
+                            fs.rmdirSync(uploadDest(`${newDest}/`), { recursive: true })
+                        }
                     }
                 }
 
