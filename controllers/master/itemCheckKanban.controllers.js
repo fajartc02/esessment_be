@@ -274,8 +274,8 @@ module.exports = {
 
                     if (newIlustrationImgs.length > 0)
                     {
-                        console.log('newIlustrationImgs', newIlustrationImgs)
-                        if (existing.ilustration_imgs && existing.ilustration_imgs.split('; ').length > 0)
+                        console.info('newIlustrationImgs', newIlustrationImgs)
+                        /* if (existing.ilustration_imgs && existing.ilustration_imgs.split('; ').length > 0)
                         {
                             if (oldDest == newDest)
                             {
@@ -293,7 +293,7 @@ module.exports = {
                                     fs.rmdirSync(uploadDest(`${oldDest}/`), { recursive: true })
                                 }
                             }
-                        }
+                        } */
 
                         newIlustrationImgs.forEach((n) => {
                             ilustration_imgs.push(n)
