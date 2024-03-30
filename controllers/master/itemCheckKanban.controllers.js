@@ -92,6 +92,7 @@ module.exports = {
                             index: index,
                             img: `${process.env.IMAGE_URL}/file?path=${img}`,
                             path: img,
+                            is_deleted: false
                         }))
                     }
 
