@@ -149,8 +149,6 @@ module.exports = {
             delete req.body.dest
 
             const transaction = await queryTransaction(async (db) => {
-                console.log('upload proccessing')
-
                 const insertBody = {
                     ...req.body,
                     uuid: uuid(),
@@ -158,8 +156,6 @@ module.exports = {
                     zone_id: ` (select zone_id from ${table.tb_m_zones} where uuid = '${req.body.zone_id}') `,
                     kanban_imgs: kanban_imgs.join('; ')
                 }
-
-                console.log('attrsInsert postKanbans', insertBody)
 
                 const attrsInsert = await attrsUserInsertData(req, insertBody)
                 return await queryPostTransaction(db, table.tb_m_kanbans, attrsInsert)
@@ -222,6 +218,27 @@ module.exports = {
                         kanban_imgs: newKanbanImgs.join('; ')
                     }
 
+
+                    // only delete when transaction done and successfully
+                    // deleting an file where kanban_no is equal existing kanban
+                    if (existingKanbans.kanban_no == req.body.kanban_no)
+                    {
+                        existingKanbans.kanban_imgs.split('; ').forEach((item) => {
+                            if (fs.existsSync(item))
+                            {
+                                fs.unlinkSync(item)
+                            }
+                        })
+                    }
+                    else
+                    {
+                        // delete older path includes file
+                        if (fs.existsSync(oldPath))
+                        {
+                            fs.rmdirSync(oldPath, { recursive: true })
+                        }
+                    }
+
                     const attrsUserUpdate = await attrsUserUpdateData(req, updateBody)
                     return await queryPutTransaction(
                         dbPool,
@@ -230,26 +247,6 @@ module.exports = {
                         `WHERE kanban_id = '${kanban_id}'`
                     )
                 })
-
-                // only delete when transaction done and successfully
-                // deleting an file where kanban_no is equal existing kanban
-                if (existingKanbans.kanban_no == req.body.kanban_no)
-                {
-                    existingKanbans.kanban_imgs.split('; ').forEach((item) => {
-                        if (fs.existsSync(item))
-                        {
-                            fs.unlinkSync(item)
-                        }
-                    })
-                }
-                else
-                {
-                    // delete older path includes file
-                    if (fs.existsSync(oldPath))
-                    {
-                        fs.rmdirSync(oldPath, { recursive: true })
-                    }
-                }
 
                 response.success(res, "Success to edit kanban", transaction)
             }

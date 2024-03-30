@@ -25,6 +25,7 @@ const table = {
     tb_r_henkaten: 'tb_r_henkaten',
     tb_r_findings: 'tb_r_findings',
     tb_m_system: 'tb_m_system',
+    tb_m_shifts: 'tb_m_shifts',
     //#region 4s
     //#region master 4s
     tb_m_kanbans: 'tb_m_kanbans',

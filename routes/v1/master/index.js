@@ -20,6 +20,7 @@ const zones = require('./zones')
 const kanbans = require('./kanbans')
 const itemCheckKanbans = require('./itemCheckKanban')
 const freqs = require('./freqs')
+const shifts = require('./shifts')
 
 router.use('/companies', companies)
 router.use('/plants', plants)
@@ -41,6 +42,7 @@ router.use("/zones", zones)
 router.use("/kanbans", kanbans)
 router.use('/item-check-kanbans', itemCheckKanbans)
 router.use('/freqs', freqs)
+router.use('/shifts', shifts)
 
 
 module.exports = router
