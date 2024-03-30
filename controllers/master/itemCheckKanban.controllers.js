@@ -221,7 +221,7 @@ module.exports = {
             const files = req.files
             let newIlustrationImgs = []
 
-            if (files && files.length > 0)
+            if (files && files != null && files != 'null' && files.length > 0)
             {
                 newIlustrationImgs = files.map((file) => {
                     return uploadDest(`${req.body.dest}/${file.filename}`)
@@ -236,8 +236,6 @@ module.exports = {
              * @type {Array<String>}
              */
             const previousImgPath = req.body.previous_img_paths
-            console.log('previousImgPath', typeof previousImgPath)
-            console.log('previousImgPath', previousImgPath)
             try
             {
                 const transaction = await queryTransaction(async (db) => {
@@ -276,6 +274,7 @@ module.exports = {
 
                     if (newIlustrationImgs.length > 0)
                     {
+                        console.log('newIlustrationImgs', newIlustrationImgs)
                         if (existing.ilustration_imgs && existing.ilustration_imgs.split('; ').length > 0)
                         {
                             if (oldDest == newDest)
