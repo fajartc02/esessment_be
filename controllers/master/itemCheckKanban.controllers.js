@@ -236,6 +236,7 @@ module.exports = {
              * @type {Array<String>}
              */
             const previousImgPath = req.body.previous_img_paths
+            console.log('previousImgPath', typeof previousImgPath)
             console.log('previousImgPath', previousImgPath)
             try
             {
@@ -248,7 +249,7 @@ module.exports = {
                     }
 
                     let ilustration_imgs = []
-                    if (previousImgPath && previousImgPath != null && previousImgPath.length > 0)
+                    if (previousImgPath && previousImgPath != null && previousImgPath != 'null' && previousImgPath.length > 0)
                     {
                         const deleteds = previousImgPath.filter((path) => {
                             return path.is_deleted
