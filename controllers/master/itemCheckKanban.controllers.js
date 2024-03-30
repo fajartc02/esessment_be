@@ -231,6 +231,11 @@ module.exports = {
             // getter the old path within split the forward slash
             const oldDest = existing.ilustration_imgs ? existing.ilustration_imgs.split('; ')[0].split('/')[2] : ''
             const newDest = req.body.dest
+
+            /**
+             * @type {Array<String>}
+             */
+            const previousImgPath = req.body.previous_img_paths
             try
             {
                 const transaction = await queryTransaction(async (db) => {
@@ -241,21 +246,66 @@ module.exports = {
                         kanban_id: ` (select kanban_id from ${table.tb_m_kanbans} where uuid = '${req.body.kanban_id}') `,
                     }
 
-                    if (newIlustrationImgs.length > 0)
+                    let ilustration_imgs = []
+                    if (previousImgPath && previousImgPath.length > 0)
                     {
-                        updateBody.ilustration_imgs = newIlustrationImgs.join('; ')
-                        if (existing.ilustration_imgs && existing.ilustration_imgs.split('; ').length > 0)
+                        const deleteds = previousImgPath.filter((path) => {
+                            return path.is_deleted
+                        })
+
+                        if (deleteds.length > 0)
                         {
-                            existing.ilustration_imgs.split('; ').forEach((item) => {
-                                if (fs.existsSync(item))
+                            deleteds.forEach((d) => {
+                                if (fs.existsSync(d))
                                 {
-                                    fs.unlinkSync(item)
+                                    fs.unlinkSync(d)
                                 }
                             })
                         }
+
+                        ilustration_imgs = previousImgPath
+                            .filter((path) => {
+                                return !path.is_deleted
+                            })
+                            .map((path) => {
+                                return path
+                            })
+                    }
+
+                    if (newIlustrationImgs.length > 0)
+                    {
+                        if (existing.ilustration_imgs && existing.ilustration_imgs.split('; ').length > 0)
+                        {
+                            if (oldDest == newDest)
+                            {
+                                existing.ilustration_imgs.split('; ').forEach((item) => {
+                                    if (fs.existsSync(item))
+                                    {
+                                        fs.unlinkSync(item)
+                                    }
+                                })
+                            }
+                            else
+                            {
+                                if (fs.existsSync(uploadDest(`${oldDest}/`)))
+                                {
+                                    fs.rmdirSync(uploadDest(`${oldDest}/`), { recursive: true })
+                                }
+                            }
+                        }
+
+                        newIlustrationImgs.forEach((n) => {
+                            ilustration_imgs.push(n)
+                        })
+                    }
+
+                    if (ilustration_imgs.length > 0)
+                    {
+                        updateBody.ilustration_imgs = ilustration_imgs.join('; ')
                     }
 
                     const attrsUserUpdate = await attrsUserUpdateData(req, updateBody)
+                    
                     return await queryPutTransaction(
                         db,
                         table.tb_m_4s_item_check_kanbans,

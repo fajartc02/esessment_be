@@ -5,7 +5,7 @@ const response = require("../../helpers/response");
 const condDataNotDeleted = `deleted_dt IS NULL`;
 
 module.exports = {
-    graphFindingSTW: async (req, res) => {
+    graphFinding4s: async (req, res) => {
         try
         {
             let { start_date, end_date, line_id, group_id } = req.query;
@@ -25,7 +25,7 @@ module.exports = {
                 group_id != "-1/"
                 ? (isGroup = true)
                 : (isGroup = false);
-            const q = `SELECT uuid as line_id, line_nm, line_snm FROM tb_m_lines WHERE ${condDataNotDeleted} ${isLine ? ` AND uuid = '${line_id}'` : ""
+            const q = `SELECT uuid as line_id, line_nm, line_snm FROM ${table.tb_m_lines} WHERE ${condDataNotDeleted} ${isLine ? ` AND uuid = '${line_id}'` : ""
                 } `;
 
             const rawLines = await queryCustom(q);
@@ -369,7 +369,7 @@ module.exports = {
             response.failed(res, "Error to get graph finding STW");
         }
     },
-    graphOverallSTW: async (req, res) => {
+    graphOverall4s: async (req, res) => {
         try
         {
             // Problem yang belum slesai terhadap close
