@@ -6,9 +6,9 @@
         "start": "node ./bin/www",
         "dev": "SET NODE_ENV=local && nodemon ./bin/www",
         "dev-vps": "SET NODE_ENV=dev && pm2 start ./bin/www --name=eas-dev",
-        "seeder-4s": "SET NODE_ENV=local && node ./design/seeders/4s.seeder.js",
-        "mst-seeder-4s": "SET NODE_ENV=local && node ./design/seeders/4sMst.seeder.js",
-        "4s-scheduler": "SET NODE_ENV=local && node ./schedulers/4s.scheduler.js",
+        "seeder-4s": "SET NODE_ENV=dev && node ./design/seeders/4s.seeder.js",
+        "mst-seeder-4s": "SET NODE_ENV=dev && node ./design/seeders/4sMst.seeder.js",
+        "4s-scheduler": "SET NODE_ENV=dev && node ./schedulers/4s.scheduler.js",
         "mstFinding-seeder-4s": "SET NODE_ENV=local && node ./design/seeders/finding4sMst.seeder.js",
         "finding-seeder-4s": "SET NODE_ENV=local && node ./design/seeders/finding4s.seeder.js"
     },

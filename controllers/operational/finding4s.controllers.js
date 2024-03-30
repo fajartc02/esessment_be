@@ -98,6 +98,7 @@ module.exports = {
             const insertBody = {
                 ...req.body,
                 uuid: uuid(),
+                line_id: ` (select line_id from ${table.tb_m_lines} where uuid = '${req.body.line_id}') `,
                 freq_id: ` (select freq_id from ${table.tb_m_freqs} where uuid = '${req.body.freq_id}') `,
                 zone_id: ` (select zone_id from ${table.tb_m_zones} where uuid = '${req.body.zone_id}') `,
                 kanban_id: ` (select kanban_id from ${table.tb_m_kanbans} where uuid = '${req.body.kanban_id}') `,
@@ -110,7 +111,7 @@ module.exports = {
             })
 
           
-            response.success(res, "Success to add 4s finding", transaction)
+            response.success(res, "Success to add 4s finding", transaction.rows)
         } catch (error)
         {
             console.log(error)

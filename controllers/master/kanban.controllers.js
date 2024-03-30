@@ -178,9 +178,14 @@ module.exports = {
         try
         {
             const files = req.files
-            const newKanbanImgs = files.map((file) => {
-                return uploadDest(`${req.body.dest}/${file.filename}`)
-            })
+            let newKanbanImgs = []
+
+            if (files.length > 0)
+            {
+                newKanbanImgs = files.map((file) => {
+                    return uploadDest(`${req.body.dest}/${file.filename}`)
+                })
+            }
 
             let existingKanbans = await queryGET(table.tb_m_kanbans, `WHERE uuid = '${req.params.id}'`, ['kanban_imgs', 'kanban_no'])
             existingKanbans = existingKanbans[0]
@@ -214,28 +219,31 @@ module.exports = {
                     const updateBody = {
                         ...req.body,
                         zone_id: zone_id,
-                        freq_id: freq_id,
-                        kanban_imgs: newKanbanImgs.join('; ')
+                        freq_id: freq_id
                     }
 
+                    if (newKanbanImgs.length > 0)
+                    {
+                        updateBody.kanban_imgs = newKanbanImgs.join('; ')
 
-                    // only delete when transaction done and successfully
-                    // deleting an file where kanban_no is equal existing kanban
-                    if (existingKanbans.kanban_no == req.body.kanban_no)
-                    {
-                        existingKanbans.kanban_imgs.split('; ').forEach((item) => {
-                            if (fs.existsSync(item))
-                            {
-                                fs.unlinkSync(item)
-                            }
-                        })
-                    }
-                    else
-                    {
-                        // delete older path includes file
-                        if (fs.existsSync(oldPath))
+                        // only delete when transaction done and successfully
+                        // deleting an file where kanban_no is equal existing kanban
+                        if (existingKanbans.kanban_no == req.body.kanban_no)
                         {
-                            fs.rmdirSync(oldPath, { recursive: true })
+                            existingKanbans.kanban_imgs.split('; ').forEach((item) => {
+                                if (fs.existsSync(item))
+                                {
+                                    fs.unlinkSync(item)
+                                }
+                            })
+                        }
+                        else
+                        {
+                            // delete older path includes file
+                            if (fs.existsSync(oldPath))
+                            {
+                                fs.rmdirSync(oldPath, { recursive: true })
+                            }
                         }
                     }
 
@@ -252,27 +260,25 @@ module.exports = {
             }
             catch (error)
             {
-                console.log('existing vs new', {
-                    exist: existingKanbans.kanban_no,
-                    new: req.body.kanban_no
-                })
-
-                if (existingKanbans.kanban_no == req.body.kanban_no)
+                if (newKanbanImgs.length > 0)
                 {
-                    newKanbanImgs.forEach((item) => {
-                        if (fs.existsSync(item))
-                        {
-                            fs.unlinkSync(item)
-                        }
-                    })
-                }
-                else
-                {
-                    console.log('new path exists', newPath)
-                    if (fs.existsSync(newPath))
+                    if (existingKanbans.kanban_no == req.body.kanban_no)
                     {
-                        console.log('new path exists')
-                        fs.rmdirSync(newPath, { recursive: true })
+                        newKanbanImgs.forEach((item) => {
+                            if (fs.existsSync(item))
+                            {
+                                fs.unlinkSync(item)
+                            }
+                        })
+                    }
+                    else
+                    {
+                        console.log('new path exists', newPath)
+                        if (fs.existsSync(newPath))
+                        {
+                            console.log('new path exists')
+                            fs.rmdirSync(newPath, { recursive: true })
+                        }
                     }
                 }
 
