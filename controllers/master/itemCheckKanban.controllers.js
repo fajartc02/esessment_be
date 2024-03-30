@@ -233,10 +233,18 @@ module.exports = {
             const oldDest = existing.ilustration_imgs ? existing.ilustration_imgs.split('; ')[0].split('/')[2] : ''
             const newDest = req.body.dest
 
+            console.info('req.body.previous_img_paths', typeof req.body.previous_img_paths)
+
             /**
              * @type {Array<String>}
              */
-            const previousImgPath = req.body.previous_img_paths
+            let previousImgPath = req.body.previous_img_paths
+                && req.body.previous_img_paths != null
+                && req.body.previous_img_paths != 'null'
+                && req.body.previous_img_paths != ''
+                ? JSON.parse(req.body.previous_img_paths) ?? []
+                : []
+
             try
             {
                 const transaction = await queryTransaction(async (db) => {
@@ -248,7 +256,7 @@ module.exports = {
                     }
 
                     let ilustration_imgs = []
-                    if (previousImgPath && previousImgPath != null && previousImgPath != 'null' && previousImgPath.length > 0)
+                    if (previousImgPath && previousImgPath.length > 0)
                     {
                         const deleteds = previousImgPath.filter((path) => {
                             return path.is_deleted
@@ -257,9 +265,9 @@ module.exports = {
                         if (deleteds.length > 0)
                         {
                             deleteds.forEach((d) => {
-                                if (fs.existsSync(d))
+                                if (fs.existsSync(d.path))
                                 {
-                                    fs.unlinkSync(d)
+                                    fs.unlinkSync(d.path)
                                 }
                             })
                         }
@@ -268,8 +276,8 @@ module.exports = {
                             .filter((path) => {
                                 return !path.is_deleted
                             })
-                            .map((path) => {
-                                return path
+                            .map((img) => {
+                                return img.path
                             })
                     }
 
