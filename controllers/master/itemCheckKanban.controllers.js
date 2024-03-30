@@ -249,6 +249,7 @@ module.exports = {
             {
                 const transaction = await queryTransaction(async (db) => {
                     delete req.body.dest
+                    delete req.body.previous_img_paths
 
                     const updateBody = {
                         ...req.body,
