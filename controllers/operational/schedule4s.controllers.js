@@ -495,8 +495,16 @@ module.exports = {
         const signSh = await signCheckerQuery('sh')
 
         result.schedule = await Promise.all(scheduleRows)
-        result.sign_checker_gl = signGl.rows
-        result.sign_checker_sh = signSh.rows
+        result.sign_checker_gl = signGl.rows.map((item) => {
+          item.is_holiday = false
+
+          return item
+        })
+        result.sign_checker_sh = signSh.rows.map((item) => {
+          item.is_holiday = false
+
+          return item
+        })
       }
 
       response.success(res, "Success to get 4s sub schedule", result)
