@@ -247,7 +247,7 @@ module.exports = {
                     }
 
                     let ilustration_imgs = []
-                    if (previousImgPath && previousImgPath.length > 0)
+                    if (previousImgPath && previousImgPath !== null && previousImgPath.length > 0)
                     {
                         const deleteds = previousImgPath.filter((path) => {
                             return path.is_deleted
@@ -305,7 +305,7 @@ module.exports = {
                     }
 
                     const attrsUserUpdate = await attrsUserUpdateData(req, updateBody)
-                    
+
                     return await queryPutTransaction(
                         db,
                         table.tb_m_4s_item_check_kanbans,
