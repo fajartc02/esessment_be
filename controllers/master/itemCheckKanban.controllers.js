@@ -271,16 +271,18 @@ module.exports = {
                                     fs.unlinkSync(d.path)
                                 }
                             })
-
-                            ilustration_imgs = previousImgPath
-                                .filter((path) => {
-                                    return !path.is_deleted
-                                })
-                                .map((img) => {
-                                    return img.path
-                                })
                         }
+
+                        ilustration_imgs = previousImgPath
+                            .filter((path) => {
+                                return !path.is_deleted
+                            })
+                            .map((img) => {
+                                return img.path
+                            })
                     }
+
+
 
                     if (newIlustrationImgs.length > 0)
                     {
