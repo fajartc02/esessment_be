@@ -44,9 +44,6 @@ const storageEngine = multer.diskStorage({
 //initializing multer
 const upload = multer({
     storage: storageEngine,
-    onFileUploadStart: function (file) {
-        console.log(`file ${file.originalname} uploading ....`)
-    },
     //limits: { fileSize: 10000000 }, // 10 MB Max
     fileFilter: (req, file, cb) => { checkFileType(file, cb); },
 
