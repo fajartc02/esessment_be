@@ -47,7 +47,7 @@ module.exports = {
                         tms.shift_type,
                         tms.is_holiday,
                         tms.holiday_desc,
-                        tms.allday as allDay,
+                        tms.all_day as allDay,
                         tms.title,
                         tms.created_by,
                         tms.created_dt
