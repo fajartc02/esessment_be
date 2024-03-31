@@ -645,10 +645,14 @@ module.exports = {
               tmk.uuid as kanban_id,
               tmk.kanban_no,
               tmic.item_check_nm,
-              tmic.standart_time
+              tmic.standart_time,
+              trsic.actual_time,
+              trsic.judgement,
+              trsic.checked_date
           from
               ${table.tb_m_4s_item_check_kanbans} tmic
               join ${table.tb_m_kanbans} tmk on tmic.kanban_id = tmk.kanban_id 
+              left join ${table.tb_r_4s_schedule_item_check_kanbans} trsic on tmic.item_check_kanban_id = trsic.schedule_item_check_kanban_id 
           where
               tmk.kanban_id = '${subScheduleQuery.kanban_real_id}'
         `

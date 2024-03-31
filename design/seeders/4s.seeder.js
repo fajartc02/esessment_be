@@ -29,10 +29,12 @@ const migrate = async () => {
             db.query(`DELETE FROM ${table.tb_r_4s_main_schedules} CASCADE`),
             db.query(`DELETE FROM ${table.tb_r_4s_sub_schedules} CASCADE`),
             db.query(`DELETE FROM ${table.tb_r_4s_schedule_sign_checkers} CASCADE`),
+            db.query(`DELETE FROM ${table.tb_r_4s_schedule_item_check_kanbans} CASCADE`),
 
             db.query(`ALTER TABLE ${table.tb_r_4s_main_schedules} ALTER COLUMN main_schedule_id RESTART WITH 1`),
             db.query(`ALTER TABLE ${table.tb_r_4s_sub_schedules} ALTER COLUMN sub_schedule_id RESTART WITH 1`),
             db.query(`ALTER TABLE ${table.tb_r_4s_schedule_sign_checkers} ALTER COLUMN sign_checker_id RESTART WITH 1`),
+            db.query(`ALTER TABLE ${table.tb_r_4s_schedule_item_check_kanbans} ALTER COLUMN schedule_item_check_kanban_id RESTART WITH 1`),
         ]).then((res) => {
             console.log('delete and reset count complete')
         })
@@ -49,7 +51,7 @@ const migrate = async () => {
         /* kanban_id: kanbanRows[5].kanban_id,
             zone_id: zoneRows[2].zone_id,
                 freq_id: freqRows[0].freq_id, */
-        
+
         const kanbanQuery = await db.query(`select * from ${table.tb_m_kanbans}`)
         const kanbanRows = kanbanQuery.rows
 
@@ -261,9 +263,27 @@ const migrate = async () => {
             console.log('schedules 6', `inserted ${countSch6}`)
             console.log('schedules 7', `inserted ${countSch7}`)
             console.log('schedules 8', `inserted ${countSch8}`)
-            console.log('total schedule inserted', countSch1 + countSch2 + countSch3
-                + countSch4 + countSch5 + countSch6 + countSch7 + countSch8)
+            console.log('total schedule inserted', countSch1
+                + countSch2
+                + countSch3
+                + countSch4
+                + countSch5
+                + countSch6
+                + countSch7
+                + countSch8
+            )
             //#endregion
+
+            const itemCheckKanbans = await bulkToSchema([
+                {
+                    uuid: uuid(),
+                    main_schedule_id: mainScheduleRows[0].main_schedule_id,
+                    item_check_kanban_id: '',
+                    actual_time: 5,
+                    judgement: 'OK',
+                    checked_date: '2024-03-01',
+                }
+            ])
         }
 
         console.log('Seeder Completed!!!')

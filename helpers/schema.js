@@ -14,7 +14,7 @@ module.exports = {
             {
                 if (item[key])
                 {
-                    if (typeof item[key] == 'string' && item[key].startsWith('func '))
+                    if (typeof item[key] == 'string' && (item[key].startsWith('func ') || item[key].includes('select')))
                     {
                         const r = item[key].replace('func ', '')
                         containerValues.push(`${r}`)
@@ -23,7 +23,6 @@ module.exports = {
                     {
                         containerValues.push(`'${item[key]}'`)
                     }
-
                 } else
                 {
                     containerValues.push(`NULL`)

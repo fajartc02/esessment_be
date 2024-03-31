@@ -23,35 +23,35 @@ module.exports = {
 
             let scheduleItemCheckKanbanSql =
                 `
-                select
-                    tml.uuid as line_id,
-                    tmg.uuid as group_id,
-                    tmf.uuid as freq_id,
-                    trmsc.uuid as main_schedule_id,
-                    tmk.uuid as kanban_id,
-                    tmick.uuid as item_check_kanban_id,
-                    trsic.uuid as schedule_item_check_kanban_id,
-                    tml.line_nm,
-                    tmg.group_nm,
-                    tmk.kanban_no,
-                    tmf.freq_nm,
-                    tmick.item_check_nm,
-                    trsic.actual_time,
-                    trsic.judgement,
-                    trsic.checked_date,
-                    date_part('week', trsic.changed_dt) as checked_week,
-                    date_part('month', trsic.changed_dt) as checked_month
-                from
-                    ${table.tb_r_4s_schedule_item_check_kanbans} trsic
-                    join ${table.tb_r_4s_main_schedules} trmsc on trsic.main_schedule_id = trmsc.main_schedule_id
-                    join ${table.tb_m_lines} tml on trmsc.line_id = tml.line_id
-                    join ${table.tb_m_groups} tmg on trmsc.group_id = tmg.group_id
-                    join ${table.tb_m_4s_item_check_kanbans} tmick on trsic.item_check_kanban_id = tmick.item_check_kanban_id
-                    join ${table.tb_m_kanbans} tmk on tmick.kanban_id = tmk.kanban_id
-                    join ${table.tb_m_freqs} tmf on tmk.freq_id = tmf.freq_id
-                where
-                    1 = 1
-            `
+                    select
+                        tml.uuid as line_id,
+                        tmg.uuid as group_id,
+                        tmf.uuid as freq_id,
+                        trmsc.uuid as main_schedule_id,
+                        tmk.uuid as kanban_id,
+                        tmick.uuid as item_check_kanban_id,
+                        trsic.uuid as schedule_item_check_kanban_id,
+                        tml.line_nm,
+                        tmg.group_nm,
+                        tmk.kanban_no,
+                        tmf.freq_nm,
+                        tmick.item_check_nm,
+                        trsic.actual_time,
+                        trsic.judgement,
+                        trsic.checked_date,
+                        date_part('week', trsic.changed_dt) as checked_week,
+                        date_part('month', trsic.changed_dt) as checked_month
+                    from
+                        ${table.tb_r_4s_schedule_item_check_kanbans} trsic
+                        join ${table.tb_r_4s_main_schedules} trmsc on trsic.main_schedule_id = trmsc.main_schedule_id
+                        join ${table.tb_m_lines} tml on trmsc.line_id = tml.line_id
+                        join ${table.tb_m_groups} tmg on trmsc.group_id = tmg.group_id
+                        join ${table.tb_m_4s_item_check_kanbans} tmick on trsic.item_check_kanban_id = tmick.item_check_kanban_id
+                        join ${table.tb_m_kanbans} tmk on tmick.kanban_id = tmk.kanban_id
+                        join ${table.tb_m_freqs} tmf on tmk.freq_id = tmf.freq_id
+                    where
+                        1 = 1
+                `
 
             let filterCondition = []
             if (main_schedule_id)

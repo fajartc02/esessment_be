@@ -1,10 +1,11 @@
 const table = require("../../config/table")
-const { queryPUT, queryCustom, queryPOST } = require("../../helpers/query")
+const { queryPUT, queryCustom, queryPOST, queryTransaction, queryPostTransaction } = require("../../helpers/query")
 
 const response = require("../../helpers/response")
 const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData")
 const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData")
 const multipleUUidToIds = require("../../helpers/multipleUuidToId")
+const { bulkToSchema } = require("../../helpers/schema")
 
 const moment = require("moment")
 const { uuid } = require("uuidv4")
@@ -116,15 +117,31 @@ module.exports = {
     postShift: async (req, res) => {
         try
         {
-            const insertBody = {
-                ...req.body,
-                uuid: uuid(),
-                group_id: ` (select group_id from ${table.tb_m_groups} where uuid = '${req.body.group_id}') `,
+            const shifts = req.body.shifts
+            const insertBodys = []
+            if (Array.isArray(shifts))
+            {
+                shifts.forEach((shift) => {
+                    insertBodys.push(
+                        attrsUserInsertData(req, {
+                            uuid: uuid(),
+                            group_id: `(select group_id from ${table.tb_m_groups} where uuid = '${shift.group_id}') `,
+                            start_date: shift.start_date,
+                            end_date: shift.end_date,
+                            shift_type: shift.shift_type,
+                            is_holiday: shift.is_holiday,
+                            holiday_desc: shift.holiday_desc,
+                        })
+                    )
+                })
             }
 
-            const attrsInsert = await attrsUserInsertData(req, insertBody)
-            const result = await queryPOST(table.tb_m_shifts, attrsInsert)
-            response.success(res, "Success to add shift", result.rows)
+            const transaction = await queryTransaction(async (db) => {
+                const schema = await bulkToSchema(insertBodys)
+                return await db.query(` insert into ${table.tb_m_shifts} (${schema.columns}) VALUES ${schema.values} returning *`)
+            })
+
+            response.success(res, "Success to add shift", transaction.rows)
         } catch (error)
         {
             console.log('postShift', error)
