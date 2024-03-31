@@ -126,8 +126,8 @@ module.exports = {
                         attrsUserInsertData(req, {
                             uuid: uuid(),
                             group_id: `(select group_id from ${table.tb_m_groups} where uuid = '${shift.group_id}') `,
-                            start_date: shift.start_date,
-                            end_date: shift.end_date,
+                            start_date: shift.start,
+                            end_date: shift.end,
                             shift_type: shift.shift_type,
                             is_holiday: shift.is_holiday,
                             holiday_desc: shift.holiday_desc,
