@@ -117,6 +117,7 @@ module.exports = {
     postShift: async (req, res) => {
         try
         {
+            /* 
             const shifts = req.body.shifts
             const insertBodys = []
             if (Array.isArray(shifts))
@@ -125,6 +126,8 @@ module.exports = {
                     insertBodys.push(
                         attrsUserInsertData(req, {
                             uuid: uuid(),
+                            title: shift.title,
+                            allday: shift.allday,
                             group_id: `(select group_id from ${table.tb_m_groups} where uuid = '${shift.group_id}') `,
                             start_date: shift.start,
                             end_date: shift.end,
@@ -134,11 +137,24 @@ module.exports = {
                         })
                     )
                 })
-            }
+            } */
 
             const transaction = await queryTransaction(async (db) => {
-                const schema = await bulkToSchema(insertBodys)
-                return await db.query(` insert into ${table.tb_m_shifts} (${schema.columns}) VALUES ${schema.values} returning *`)
+                const shift = req.body
+                const schema = await attrsUserInsertData(req, {
+                    uuid: uuid(),
+                    title: shift.title,
+                    allday: shift.allday,
+                    group_id: `(select group_id from ${table.tb_m_groups} where uuid = '${shift.group_id}') `,
+                    start_date: shift.start,
+                    end_date: shift.end,
+                    shift_type: shift.shift_type,
+                    is_holiday: shift.is_holiday,
+                    holiday_desc: shift.holiday_desc,
+                })
+
+                return await queryPostTransaction(db, table.tb_m_shifts, schema)
+                //return await db.query(` insert into ${table.tb_m_shifts} (${schema.columns}) VALUES ${schema.values} returning *`)
             })
 
             response.success(res, "Success to add shift", transaction.rows)
@@ -151,9 +167,17 @@ module.exports = {
     editShift: async (req, res) => {
         try
         {
+            const shift = req.body
+
             const updateBody = {
-                ...req.body,
-                group_id: ` (select group_id from ${table.tb_m_groups} where uuid = '${req.body.group_id}') `,
+                title: shift.title,
+                allday: shift.allday,
+                group_id: `(select group_id from ${table.tb_m_groups} where uuid = '${shift.group_id}') `,
+                start_date: shift.start,
+                end_date: shift.end,
+                shift_type: shift.shift_type,
+                is_holiday: shift.is_holiday,
+                holiday_desc: shift.holiday_desc,
             }
 
             const attrsUserUpdate = await attrsUserUpdateData(req, updateBody)
