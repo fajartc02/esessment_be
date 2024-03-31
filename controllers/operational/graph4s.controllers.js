@@ -159,6 +159,15 @@ module.exports = {
         try
         {
             // Problem yang belum slesai terhadap close
+            if (!req.start_date)
+            {
+                req.start_date = moment().format('YYYY-MM-DD')
+            }
+            if (!req.end_date)
+            {
+                req.end_date = moment().format('YYYY-MM-DD')
+            }
+
             let conditions = queryCondExacOpAnd(req.query, "finding_date");
             let q = `SELECT 
                 count(finding_id)::int as total,

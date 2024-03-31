@@ -47,7 +47,7 @@ module.exports = {
                         tms.shift_type,
                         tms.is_holiday,
                         tms.holiday_desc,
-                        tms.allday,
+                        tms.allday as allDay,
                         tms.title,
                         tms.created_by,
                         tms.created_dt
@@ -146,7 +146,7 @@ module.exports = {
                 const schema = await attrsUserInsertData(req, {
                     uuid: uuid(),
                     title: shift.title,
-                    allday: shift.allday,
+                    all_day: shift.allDay,
                     group_id: `(select group_id from ${table.tb_m_groups} where uuid = '${shift.group_id}') `,
                     start_date: shift.start,
                     end_date: shift.end,
@@ -173,7 +173,7 @@ module.exports = {
 
             const updateBody = {
                 title: shift.title,
-                allday: shift.allday,
+                all_day: shift.allDay,
                 group_id: `(select group_id from ${table.tb_m_groups} where uuid = '${shift.group_id}') `,
                 start_date: shift.start,
                 end_date: shift.end,
