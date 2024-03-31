@@ -34,26 +34,28 @@ module.exports = {
 
             let shiftSql =
                 `
-                select
-                    row_number () over (
-                        order by
+                    select
+                        row_number () over (
+                            order by
+                            tms.created_dt
+                        )::text as id,
+                        tmg.uuid as group_id,
+                        tms.uuid as shift_id,
+                        tmg.group_nm,
+                        tms.start_date,
+                        tms.end_date,
+                        tms.shift_type,
+                        tms.is_holiday,
+                        tms.holiday_desc,
+                        tms.allday,
+                        tms.title,
+                        tms.created_by,
                         tms.created_dt
-                    )::integer as no,
-                    tmg.uuid as group_id,
-                    tms.uuid as shift_id,
-                    tmg.group_nm,
-                    tms.start_date,
-                    tms.end_date,
-                    tms.shift_type,
-                    tms.is_holiday,
-                    tms.holiday_desc,
-                    tms.created_by,
-                    tms.created_dt
-                from
-                    ${fromCondition}
-                where
-                    1 = 1
-            `
+                    from
+                        ${fromCondition}
+                    where
+                        1 = 1
+                `
             //#region filter
             if (id)
             {

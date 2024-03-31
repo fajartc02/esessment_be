@@ -2,6 +2,7 @@ const table = require("../../config/table");
 const queryCondExacOpAnd = require("../../helpers/conditionsQuery");
 const { queryCustom, queryGET } = require("../../helpers/query");
 const response = require("../../helpers/response");
+const moment = require('moment')
 const condDataNotDeleted = `deleted_dt IS NULL`;
 
 module.exports = {
@@ -9,6 +10,15 @@ module.exports = {
         try
         {
             let { start_date, end_date, line_id, group_id } = req.query;
+            if (!start_date)
+            {
+                start_date = moment().format('YYYY-MM-DD')
+            }
+            if (!end_date)
+            {
+                end_date = moment().format('YYYY-MM-DD')
+            }
+
             let isLine = false;
             let isGroup = false;
             // end_date To fixing / handler from FE

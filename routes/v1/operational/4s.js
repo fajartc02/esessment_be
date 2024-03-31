@@ -14,6 +14,7 @@ const {
 const auth = require("../../../helpers/auth")
 const finding4s = require('./finding4s')
 const scheduleItemCheckKanban4s = require('./scheduleItemCheckKanban4s')
+const graph4s = require('./graph4s')
 
 //#region schedule
 router.get("/main-schedule", auth.verifyToken, get4sMainSchedule)
@@ -35,6 +36,10 @@ router.use("/finding", finding4s)
 
 //#region item-check-kanban
 router.use("/schedule-item-check-kanban", scheduleItemCheckKanban4s)
+//#endregion
+
+//#region graph
+router.use("/", graph4s)
 //#endregion
 
 module.exports = router
