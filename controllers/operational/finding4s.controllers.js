@@ -55,7 +55,7 @@ module.exports = {
             const qOffset = (limit != -1 && limit) && current_page > 1 ? `OFFSET ${limit * (current_page - 1)}` : ``
             const qLimit = (limit != -1 && limit) ? `LIMIT ${limit}` : ``
 
-            
+
             filterCondition = filterCondition.join(' and ')
             findingSql = findingSql.concat(` ${filterCondition} `)
             findingSql = findingSql.concat(` order by vfl.created_dt ${qLimit} ${qOffset} `)
@@ -106,12 +106,17 @@ module.exports = {
                 finding_pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.finding_pic_id}') `,
             }
 
+            if (req.body.actual_pic_id)
+            {
+                insertBody.actual_pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.actual_pic_id}') `
+            }
+
             const transaction = await queryTransaction(async (db) => {
                 const attrsInsert = await attrsUserInsertData(req, insertBody)
                 return await queryPostTransaction(db, table.tb_r_4s_findings, attrsInsert)
             })
 
-          
+
             response.success(res, "Success to add 4s finding", transaction.rows)
         } catch (error)
         {

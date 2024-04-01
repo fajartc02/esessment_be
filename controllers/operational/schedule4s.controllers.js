@@ -644,6 +644,7 @@ module.exports = {
               tmic.uuid as item_check_kanban_id,
               tmk.uuid as kanban_id,
               tmju.uuid as judgment_id,
+              trsic.uuid as schedule_item_check_kanban_id,
               tmk.kanban_no,
               tmic.item_check_nm,
               tmic.standart_time,
