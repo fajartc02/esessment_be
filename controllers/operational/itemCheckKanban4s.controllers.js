@@ -252,7 +252,11 @@ module.exports = {
                 return await queryPostTransaction(db, table.tb_r_4s_schedule_item_check_kanbans, attrInsert)
             })
 
-            response.success(res, "Success to add 4s schedule item check kanban", transaction.rows)
+            const result = {
+                schedule_item_check_kanban_id: transaction.rows[0].uuid
+            }
+
+            response.success(res, "Success to add 4s schedule item check kanban", result)
         } catch (e)
         {
             console.log(e)
@@ -280,7 +284,11 @@ module.exports = {
                 )
             })
 
-            response.success(res, "Success to edit 4s schedule item check kanban", transaction)
+            const result = {
+                schedule_item_check_kanban_id: transaction.rows[0].uuid
+            }
+
+            response.success(res, "Success to edit 4s schedule item check kanban", result)
         } catch (error)
         {
             console.log(error)
