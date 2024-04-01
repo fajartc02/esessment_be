@@ -19,12 +19,12 @@ const database = new pg.Client(config);
  */
 const databasePool = new pg.Pool(config)
 
-var types = pg.types;
+const types = pg.types;
 types.setTypeParser(1114, (stringValue) => {
     return stringValue; //1114 for time without timezone type
 });
 
-types.setTypeParser(1082, function (stringValue) {
+types.setTypeParser(1082, (stringValue) => {
     return stringValue;  //1082 for date type
 });
 
