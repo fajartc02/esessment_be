@@ -149,7 +149,8 @@ module.exports = {
             const transaction = await queryTransaction(async (db) => {
                 const attrsUserUpdate = await attrsUserUpdateData(req, updateBody)
                 return await queryPutTransaction(
-                    table.tb_m_freqs,
+                    db,
+                    table.tb_r_4s_findings,
                     attrsUserUpdate,
                     `WHERE uuid = '${req.params.id}'`
                 )
