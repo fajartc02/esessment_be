@@ -92,7 +92,7 @@ const childrenSubSchedule = async (
                     EXTRACT('Day' FROM tmsc.date)::INTEGER as date_num,
                     tmsc.is_holiday,
                     case
-                      when tbrcs.shift = 'night_shift' then
+                      when tbrcs.shift_type = 'night_shift' then
                         'NightShift'
                       when tbrcs.plan_time is not null and tbrcs.actual_time is null then
                         'PLANNING'
@@ -341,7 +341,7 @@ module.exports = {
           `
       )
 
-      //console.log('scheduleSql', scheduleSql)
+      console.log('scheduleSql', scheduleSql)
       const scheduleQuery = await queryCustom(scheduleSql, false)
 
       if (scheduleQuery.rows && scheduleQuery.rows.length > 0)
@@ -612,7 +612,7 @@ module.exports = {
             ${table.tb_r_4s_sub_schedules} trss
             join ${table.tb_m_schedules} tms on trss.schedule_id = tms.schedule_id
           where
-            trss.shift = 'morning_shift'
+            trss.shift_type = 'morning_shift'
             and trss.main_schedule_id = '${subScheduleQuery.main_schedule_id}'
             and trss.freq_id = '${subScheduleQuery.freq_real_id}'
             and trss.zone_id = '${subScheduleQuery.zone_real_id}'
@@ -629,7 +629,7 @@ module.exports = {
             ${table.tb_r_4s_sub_schedules} trss
             join ${table.tb_m_schedules} tms on trss.schedule_id = tms.schedule_id
           where
-            trss.shift = 'night_shift'
+            trss.shift_type = 'night_shift'
             and trss.main_schedule_id = '${subScheduleQuery.main_schedule_id}'
             and trss.freq_id = '${subScheduleQuery.freq_real_id}'
             and trss.zone_id = '${subScheduleQuery.zone_real_id}'
@@ -664,7 +664,7 @@ module.exports = {
       itemCheckKanbans.rows = await Promise.all(itemCheckKanbans.rows.map(async (item) => {
         const findings = await queryGET(
           table.v_4s_finding_list,
-          `where deleted_dt is null and schedule_item_check_kanban_id = ${item.schedule_item_check_kanban_id}`
+          `where deleted_dt is null and schedule_item_check_kanban_id = '${item.schedule_item_check_kanban_id}'`
         )
         if (findings.length > 0)
         {
@@ -779,12 +779,12 @@ module.exports = {
 
         for (let i = 0; i < morningShiftMapped.length; i++)
         {
-          temp.push(updateDatesSql(morningShiftMapped[i], `trss.shift = 'morning_shift'`, `trss.main_schedule_id = '${schedulRow.main_schedule_id}'`))
+          temp.push(updateDatesSql(morningShiftMapped[i], `trss.shift_type = 'morning_shift'`, `trss.main_schedule_id = '${schedulRow.main_schedule_id}'`))
         }
 
         for (let i = 0; i < nightShiftMapped.length; i++)
         {
-          temp.push(updateDatesSql(nightShiftMapped[i], `trss.shift = 'night_shift'`, `trss.main_schedule_id = '${schedulRow.main_schedule_id}'`))
+          temp.push(updateDatesSql(nightShiftMapped[i], `trss.shift_type = 'night_shift'`, `trss.main_schedule_id = '${schedulRow.main_schedule_id}'`))
         }
 
         await db.query(temp.join('; '))

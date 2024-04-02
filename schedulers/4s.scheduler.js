@@ -196,7 +196,8 @@ const genSubSchedule = async (shiftRows = []) => {
             {
                 countSame++
                 skip = false
-                if(countSame > 5){
+                if (countSame > 5)
+                {
                     countSame = 1
                 }
             }
@@ -312,7 +313,7 @@ const genSubSchedule = async (shiftRows = []) => {
                         zone_id: kanbanRows[kIndex].zone_id,
                         freq_id: kanbanRows[kIndex].freq_id,
                         schedule_id: shiftRows[sIndex].schedule_id,
-                        shift: shiftRows[sIndex].shift_type,
+                        shift_type: shiftRows[sIndex].shift_type,
                         plan_time: planTime == dateFormatted(shiftRows[sIndex].date) ? planTime : null, // validate if date plan is equal the date loop
                     })
                 }
@@ -409,7 +410,7 @@ const genSubSchedule = async (shiftRows = []) => {
                         zone_id: kanbanRows[kIndex].zone_id,
                         freq_id: kanbanRows[kIndex].freq_id,
                         schedule_id: shiftRows[sIndex].schedule_id,
-                        shift: shiftRows[sIndex].shift_type,
+                        shift_type: shiftRows[sIndex].shift_type,
                         plan_time: planTime == dateFormatted(shiftRows[sIndex].date) ? planTime : null, // validate if date plan is equal the date loop
                     })
                 }
@@ -598,11 +599,10 @@ const genSignCheckers = async (shiftRows = []) => {
 }
 //#endregion
 
-//#region scheduler generate item check kanban
-const genItemCheckKanbanTrans = async (shiftRows = []) => {
-
+const shiftByGroupId = async (groupId) => {
+    
 }
-//#region 
+
 
 //#region scheduler main 
 const main = async () => {
@@ -793,11 +793,11 @@ const main = async () => {
                     })
                 }
 
-               /*  for (let ikIndex = 0; ikIndex < itemCheckKanbanSchema.length; ikIndex++) {
-                    itemCheckKanbanTemp.push({
-
-                    })
-                } */
+                /*  for (let ikIndex = 0; ikIndex < itemCheckKanbanSchema.length; ikIndex++) {
+                     itemCheckKanbanTemp.push({
+ 
+                     })
+                 } */
                 //#endregion
             }
 
