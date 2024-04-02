@@ -661,6 +661,19 @@ module.exports = {
         `
       )
 
+      itemCheckKanbans.rows = await Promise.all(itemCheckKanbans.rows.map(async (item) => {
+        const findings = await queryGET(table.v_4s_finding_list, `where deleted_dt is null`)
+        if (findings.length > 0)
+        {
+          item.findings = findings
+        } else
+        {
+          item.findings = []
+        }
+
+        return item
+      }))
+
       subScheduleQuery.item_check_kanbans = itemCheckKanbans.rows
       subScheduleQuery.planning_dates = planningDates.rows.map((item) => moment(item.date).format('YYYY-MM-DD'))
       subScheduleQuery.morning_shift_dates = morningShiftDates.rows.map((item) => moment(item.date).format('YYYY-MM-DD'))
