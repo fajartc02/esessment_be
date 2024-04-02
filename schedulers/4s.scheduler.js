@@ -92,8 +92,8 @@ const clear4sRows = async () => {
         console.log('clearing start')
         await databasePool.query(`SET session_replication_role = 'replica'`)
 
-        await databasePool.query(`DELETE FROM ${table.tb_m_schedules} CASCADE`)
-        await databasePool.query(`ALTER TABLE ${table.tb_m_schedules} ALTER COLUMN schedule_id RESTART WITH 1`)
+        // await databasePool.query(`DELETE FROM ${table.tb_m_schedules} CASCADE`)
+        // await databasePool.query(`ALTER TABLE ${table.tb_m_schedules} ALTER COLUMN schedule_id RESTART WITH 1`)
 
         await databasePool.query(`DELETE FROM ${table.tb_r_4s_main_schedules} CASCADE`)
         await databasePool.query(`ALTER TABLE ${table.tb_r_4s_main_schedules} ALTER COLUMN main_schedule_id RESTART WITH 1`)
@@ -131,7 +131,7 @@ const genMainSchedule = async () => {
                 from 
                     (select * from tb_m_lines order by line_id asc limit 1) tml,
                     (select * from tb_m_groups where group_nm in ('WHITE', 'RED')) tmg,
-                    (select date_part('month', date) as month_num from tb_m_schedules group by month_num) tmsm
+                    (select date_part('month', date) as month_num from tb_m_schedules where date_part('month', date) = '${currentMonth}' group by month_num) tmsm
             `)
 
     for (let lnIndex = 0; lnIndex < lgQuery.rows.length; lnIndex++)
@@ -529,13 +529,15 @@ const genSignCheckers = async (shiftRows = []) => {
                             where 
                                 date_part('week', "date"::date) = res.week_num
                                 and (is_holiday = false or is_holiday is null)
+                                and date_part('month', "date") = '${currentMonth}'
+                                and date_part('year', "date") = '${currentYear}'
                             order by
                                 date desc
                             limit 1
                         ) ended on true
                 `
 
-            //console.log('glSignSql', glSignSql)
+            console.log('glSignSql', glSignSql)
             const glSignQuery = await databasePool.query(glSignSql)
 
             for (let glIndex = 0; glIndex < glSignQuery.rows.length; glIndex++)
@@ -549,7 +551,7 @@ const genSignCheckers = async (shiftRows = []) => {
                 })
             }
 
-            //console.log('signChckerGlBulkSchema', signChckerGlBulkSchema)
+            //console.log('result.gl', result.gl)
         } catch (error)
         {
             console.log('error glSignQuery', error)
@@ -565,35 +567,28 @@ const genSignCheckers = async (shiftRows = []) => {
 
         for (var i = 0; i < tempSh.length; ++i)
         {
-            if (tempSh[i].col_span > 1)
+            if (tempSh[i + 1])
             {
-                for (var j = i + 1; j < tempSh.length; ++j)
-                {
-                    tempSh[i].col_span = tempSh[i].col_span + tempSh[j].col_span
-                    tempSh[i].start_date = moment(tempSh[i].start_date, 'YYYY-MM-DD').format('YYYY-MM-DD')
-                    tempSh[i].end_date = moment(tempSh[j].end_date, 'YYYY-MM-DD').format('YYYY-MM-DD')
-                    tempSh[i].is_sh = true
-
-                    delete tempSh[i].is_gl
-
-                    tempSh.splice(j++, 1)
-                }
-
-                result.sh.push(tempSh[i])
-            }
-            else
-            {
+                tempSh[i].col_span = tempSh[i].col_span + tempSh[i + 1].col_span
                 tempSh[i].start_date = moment(tempSh[i].start_date, 'YYYY-MM-DD').format('YYYY-MM-DD')
-                tempSh[i].end_date = moment(tempSh[i].end_date, 'YYYY-MM-DD').format('YYYY-MM-DD')
+                tempSh[i].end_date = moment(tempSh[i + 1].end_date, 'YYYY-MM-DD').format('YYYY-MM-DD')
                 tempSh[i].is_sh = true
 
                 delete tempSh[i].is_gl
 
-                result.sh.push(tempSh)
+                result.sh.push(tempSh[i])
+                tempSh.splice(i + 1, 1)
+            } 
+            else
+            {
+                delete tempSh[i].is_gl
+                tempSh[i].is_sh = true
+
+                result.sh.push(tempSh[i])
             }
         }
 
-        console.log('result.sh', result.sh)
+        //console.log('result.sh', result.sh)
     }
     //#endregion
 
@@ -657,8 +652,10 @@ const shiftByGroupId = async (groupId) => {
                         TO_CHAR(tms."date"::date, 'dd' ) as date_num,
                         shift.shift_type,
                         case 
-                            when tmsh.is_holiday then tmsh.is_holiday
-                            else tms.is_holiday
+                            when tmsh_holiday.is_holiday then 
+                                tmsh.is_holiday
+                            else 
+                                tms.is_holiday
                         end as is_holiday,
                         shift.week_num,
                         tdw.total_day_of_week,
@@ -681,6 +678,7 @@ const shiftByGroupId = async (groupId) => {
                         ) shift on date_part('week', tms."date"::date) = shift.week_num and tms.is_holiday is null
                         left join total_day_weeks tdw on date_part('week', tms."date"::date) = tdw.week_num
                         left join tb_m_shifts tmsh on tms."date" between tmsh.start_date and tmsh.end_date - 1 and tmsh.group_id = ${groupId}
+                        left join tb_m_shifts tmsh_holiday on tms."date" between tmsh.start_date and tmsh.end_date - 1 and is_holiday = true
                     order by 
                         tms."date"
                 `
@@ -695,7 +693,7 @@ const shiftByGroupId = async (groupId) => {
 const main = async () => {
     try
     {
-        //await clear4sRows();
+        await clear4sRows();
         //await generateSchedules(databasePool)
 
         //#region scheduler shift generator
@@ -743,7 +741,7 @@ const main = async () => {
 							group by 
 								week_num
                         )
-                    select
+                    select distinct on (tms.date)
                         tms.schedule_id,
                         tms."date",
                         EXTRACT('DOW' FROM tms."date"::timestamp) AS day_of_week,
@@ -771,6 +769,9 @@ const main = async () => {
                                 shift_type
                         ) shift on date_part('week', tms."date"::date) = shift.week_num and tms.is_holiday is null
                         left join total_day_weeks tdw on date_part('week', tms."date"::date) = tdw.week_num
+                    where
+                        date_part('month', tms."date") = '${currentMonth}'
+                        and date_part('year', tms."date") = '${currentYear}'
                     order by 
                         tms."date"
                 `
@@ -788,7 +789,11 @@ const main = async () => {
         const signCheckerTl1BulkSchema = signCheckers.tl1
         const signCheckerTl2BulkSchema = signCheckers.tl2
         const signChckerGlBulkSchema = signCheckers.gl
-        const signChckerShBulkSchema = signCheckers.sh
+        let signChckerShBulkSchema = signCheckers.sh
+        if (signChckerShBulkSchema[0].constructor === Array)
+        {
+            signChckerShBulkSchema = signChckerShBulkSchema[0]
+        }
         //console.warn('signCheckers', signCheckers)
 
         //#endregion
@@ -807,7 +812,6 @@ const main = async () => {
 
             let subScheduleTemp = []
             let signCheckersTemp = []
-            let itemCheckKanbanTemp = []
 
             for (let mIndex = 0; mIndex < mainScheduleInserted.rows.length; mIndex++)
             {
@@ -865,13 +869,13 @@ const main = async () => {
                     })
                 }
 
-                for (let shIndex = 0; shIndex < signChckerShBulkSchema[0].length; shIndex++)
+                for (let shIndex = 0; shIndex < signChckerShBulkSchema.length; shIndex++)
                 {
                     signCheckersTemp.push({
                         main_schedule_id: mainScheduleInserted.rows[mIndex].main_schedule_id,
                         uuid: uuid(),
-                        start_date: signChckerShBulkSchema[0][shIndex].start_date,
-                        end_date: `func (select "date" from tb_m_schedules where "date" between '${signChckerShBulkSchema[0][shIndex].start_date}' and '${signChckerShBulkSchema[0][shIndex].end_date}' and (is_holiday is null or is_holiday = false) order by schedule_id desc limit 1)`,
+                        start_date: signChckerShBulkSchema[shIndex].start_date,
+                        end_date: `func (select "date" from tb_m_schedules where "date" between '${signChckerShBulkSchema[shIndex].start_date}' and '${signChckerShBulkSchema[shIndex].end_date}' and (is_holiday is null or is_holiday = false) order by schedule_id desc limit 1)`,
                         is_tl_1: null,
                         is_tl_2: null,
                         is_gl: null,

@@ -83,12 +83,33 @@ const generateSchedules = async (db) => {
 }
 //#endregion
 
+//#region scheduler delete all for testing purpose
+const clear4sRows = async () => {
+    if (process.env.NODE_ENV.trim() == 'dev' || process.env.NODE_ENV.trim() == 'local')
+    {
+        console.log('clearing start')
+        await databasePool.query(`SET session_replication_role = 'replica'`)
+
+        await databasePool.query(`DELETE FROM ${table.tb_m_schedules} CASCADE`)
+        await databasePool.query(`ALTER TABLE ${table.tb_m_schedules} ALTER COLUMN schedule_id RESTART WITH 1`)
+
+        console.log('clearing succeed')
+    }
+}
+//#endregion
 
 const main = async () => {
     await queryTransaction(async (db) => {
         await generateSchedules(db)
     })
 }
+
+/* clear4sRows()
+    .then((r) => process.exit())
+    .catch((error) => {
+        process.exit()
+    }) */
+
 
 main()
     .then((result) => {

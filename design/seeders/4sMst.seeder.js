@@ -27,83 +27,6 @@ console.log('env', {
 
 console.log(`Migration Running ...`)
 
-//#region generateSchedules
-const generateSchedules = async (db) => {
-    const currentMonthHoldayResp = await holidayRequest(currentDate.year(), currentDate.month() + 1)
-    const currentMonthDays = generateMonthlyDates(currentDate.year(), currentDate.month() + 1)
-
-    const nextMonthHolidayResp = await holidayRequest(currentDate.year(), currentDate.month() + 2)
-    const nextMonthDays = generateMonthlyDates(currentDate.year(), currentDate.month() + 2)
-
-    const currentMonthHolidayData = currentMonthHoldayResp.data
-    const nextMonthHolidayData = nextMonthHolidayResp.data
-    const result = []
-
-    for (let i = 0; i < currentMonthDays.length; i++)
-    {
-        const currentMonthDay = currentMonthDays[i];
-
-        for (let j = 0; j < currentMonthHolidayData.length; j++)
-        {
-            const holiday = currentMonthHolidayData[j];
-            if (currentMonthDay.date == holiday.holiday_date)
-            {
-                currentMonthDay.is_holiday = true
-                currentMonthDay.holiday_nm = holiday.holiday_name
-                break
-            }
-        }
-
-        if (!currentMonthDay.is_holiday)
-        {
-            currentMonthDay.is_holiday = false
-        }
-        if (!currentMonthDay.holiday_nm)
-        {
-            currentMonthDay.holiday_nm = null
-        }
-
-        currentMonthDay.uuid = uuid()
-        result.push(currentMonthDay)
-    }
-
-    for (let i = 0; i < nextMonthDays.length; i++)
-    {
-        const nextMonthDay = nextMonthDays[i];
-
-        for (let j = 0; j < nextMonthHolidayData.length; j++)
-        {
-            const holiday = nextMonthHolidayData[j];
-            if (nextMonthDay.date == holiday.holiday_date)
-            {
-                nextMonthDay.is_holiday = true
-                nextMonthDay.holiday_nm = holiday.holiday_name
-                break
-            }
-        }
-
-        if (!nextMonthDay.is_holiday)
-        {
-            nextMonthDay.is_holiday = false
-        }
-        if (!nextMonthDay.holiday_nm)
-        {
-            nextMonthDay.holiday_nm = null
-        }
-
-        nextMonthDay.uuid = uuid()
-        result.push(nextMonthDay)
-    }
-
-    const scheduleSchema = await bulkToSchema(result)
-    //console.log('result', scheduleSchema)
-    const scheduleQuery = await db.query(`insert into ${table.tb_m_schedules} (${scheduleSchema.columns}) VALUES ${scheduleSchema.values} returning *`)
-    const scheduleRows = scheduleQuery.rows
-    console.log('schedules', 'inserted')
-
-    return scheduleRows
-}
-//#endregion
 
 const migrate = async () => {
     const clearRows = async (db) => {
@@ -111,13 +34,11 @@ const migrate = async () => {
             db.query(`DELETE FROM ${table.tb_m_kanbans} CASCADE`),
             db.query(`DELETE FROM ${table.tb_m_zones} CASCADE`),
             db.query(`DELETE FROM ${table.tb_m_freqs} CASCADE`),
-            db.query(`DELETE FROM ${table.tb_m_schedules} CASCADE`),
             db.query(`DELETE FROM ${table.tb_m_4s_item_check_kanbans} CASCADE`),
 
             db.query(`ALTER TABLE ${table.tb_m_kanbans} ALTER COLUMN kanban_id RESTART WITH 1`),
             db.query(`ALTER TABLE ${table.tb_m_zones} ALTER COLUMN zone_id RESTART WITH 1`),
             db.query(`ALTER TABLE ${table.tb_m_freqs} ALTER COLUMN freq_id RESTART WITH 1`),
-            db.query(`ALTER TABLE ${table.tb_m_schedules} ALTER COLUMN schedule_id RESTART WITH 1`),
             db.query(`ALTER TABLE ${table.tb_m_4s_item_check_kanbans} ALTER COLUMN item_check_kanban_id RESTART WITH 1`),
         ]).then((res) => {
             console.log('delete and reset count complete')
@@ -184,9 +105,6 @@ const migrate = async () => {
         console.log('freqs', 'inserted')
         //#endregion
 
-        //#region generate schedule
-        await generateSchedules(db)
-        //#endregion
 
         for (let index = 0; index < lineGroupRows.length; index++)
         {

@@ -26,7 +26,7 @@ console.log(`Migration Running ...`)
 const migrate = async () => {
     const clearRows = async (db) => {
         await Promise.all([
-            db.query(`DELETE FROM ${table.tb_m_system} WHERE system_type in ('OPT_CHANGE', 'OPT_DEPT', 'EVALUATION')  CASCADE`),
+            db.query(`DELETE FROM ${table.tb_m_system} WHERE system_type in ('OPT_CHANGE', 'OPT_DEPT', 'EVALUATION')`),
         ]).then((res) => {
             console.log('delete and reset count complete')
         })
@@ -103,6 +103,7 @@ const migrate = async () => {
     }).then((res) => {
         process.exit()
     }).catch((err) => {
+        console.log('err', err)
         process.exit()
     })
 }
