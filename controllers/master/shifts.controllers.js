@@ -147,13 +147,17 @@ module.exports = {
                     uuid: uuid(),
                     title: shift.title,
                     all_day: shift.allDay,
-                    group_id: `(select group_id from ${table.tb_m_groups} where uuid = '${shift.group_id}') `,
                     start_date: shift.start,
                     end_date: shift.end,
                     shift_type: shift.shift_type,
                     is_holiday: shift.is_holiday,
                     holiday_desc: shift.holiday_desc,
                 })
+
+                if (shift.group_id)
+                {
+                    schema.group_id = `(select group_id from ${table.tb_m_groups} where uuid = '${shift.group_id}') `
+                }
 
                 return await queryPostTransaction(db, table.tb_m_shifts, schema)
                 //return await db.query(` insert into ${table.tb_m_shifts} (${schema.columns}) VALUES ${schema.values} returning *`)
@@ -174,12 +178,16 @@ module.exports = {
             const updateBody = {
                 title: shift.title,
                 all_day: shift.allDay,
-                group_id: `(select group_id from ${table.tb_m_groups} where uuid = '${shift.group_id}') `,
                 start_date: shift.start,
                 end_date: shift.end,
                 shift_type: shift.shift_type,
                 is_holiday: shift.is_holiday,
                 holiday_desc: shift.holiday_desc,
+            }
+
+            if (shift.group_id)
+            {
+                schema.group_id = `(select group_id from ${table.tb_m_groups} where uuid = '${shift.group_id}') `
             }
 
             const attrsUserUpdate = await attrsUserUpdateData(req, updateBody)
