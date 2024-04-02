@@ -662,17 +662,26 @@ module.exports = {
       )
 
       itemCheckKanbans.rows = await Promise.all(itemCheckKanbans.rows.map(async (item) => {
-        const findings = await queryGET(
-          table.v_4s_finding_list,
-          `where deleted_dt is null and schedule_item_check_kanban_id = '${item.schedule_item_check_kanban_id}'`
-        )
-        if (findings.length > 0)
+        if (item.schedule_item_check_kanban_id)
         {
-          item.findings = findings
-        } else
+          const findings = await queryGET(
+            table.v_4s_finding_list,
+            `where deleted_dt is null and schedule_item_check_kanban_id = '${item.schedule_item_check_kanban_id}'`
+          )
+          if (findings.length > 0)
+          {
+            item.findings = findings
+          }
+          else
+          {
+            item.findings = []
+          }
+        }
+        else
         {
           item.findings = []
         }
+
 
         return item
       }))
