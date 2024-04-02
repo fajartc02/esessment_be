@@ -19,18 +19,14 @@ module.exports = {
     getShifts: async (req, res) => {
         try
         {
-            let { id, group_id, start_date, end_date, limit, current_page } = req.query
+            let { id, group_id, start_date, end_date, limit, current_page, month, year } = req.query
             const fromCondition = ` 
                 ${table.tb_m_shifts} tms 
                 left join ${table.tb_m_groups} tmg on tms.group_id = tmg.group_id 
-                left join ${table.tb_m_schedules} tmsc on 
-                    tmsc.date between tms.start_date and tms.end_date - 1
-                    and tmsc.is_holiday = true 
-                    and tmsc.holiday_nm is not null
             `
 
             current_page = parseInt(current_page ?? 1)
-            limit = parseInt(limit ?? 10)
+            limit = parseInt(limit ?? 100)
 
             let filterCondition = [
                 'tms.deleted_dt is null'
@@ -51,18 +47,8 @@ module.exports = {
                         tms.shift_type,
                         tms.holiday_desc,
                         tms.all_day as allDay,
-                        case
-                            when tmsc.schedule_id is not null then
-                                tmsc.holiday_nm
-                            else 
-                                tms.title
-                        end as title,
-                        case 
-                            when tmsc.schedule_id is not null then
-                                tmsc.is_holiday
-                            else 
-                                tms.is_holiday
-                        end as is_holiday,
+                        tms.title,
+                        tms.is_holiday,
                         tms.created_by,
                         tms.created_dt
                     from
@@ -87,6 +73,14 @@ module.exports = {
             {
                 filterCondition.push(`tms.end_date = '${end_date}'`)
             }
+            if (month)
+            {
+                filterCondition.push(`(date_part('month', tms.start_date) = '${month}' or date_part('month', tms.end_date) = '${month}')`)
+            }
+            if (year)
+            {
+                filterCondition.push(`(date_part('year', tms.start_date) = '${year}' or date_part('year', tms.end_date) = '${year}')`)
+            }
 
             const qOffset = (limit != -1 && limit) && current_page > 1 ? `OFFSET ${limit * (current_page - 1)}` : ``
             const qLimit = (limit != -1 && limit) ? `LIMIT ${limit}` : ``
@@ -105,10 +99,46 @@ module.exports = {
 
             if (result.length > 0)
             {
-                result = await Promise.all(result.map(async (item) => {
-                    
+                let nationalHolidaySql =
+                    `
+                        select
+                            row_number () over (
+                                order by
+                                created_dt
+                            )::text as id,
+                            null as group_id,
+                            null as shift_id,
+                            true as allDay,
+                            date as start,
+                            date as end,
+                            is_holiday,
+                            holiday_nm as title
+                        from 
+                            ${table.tb_m_schedules}
+                        where 
+                            is_holiday = true 
+                            and holiday_nm is not null
+                    `
+                let filterNational = []
+                if (month)
+                {
+                    filterNational.push(` date_part('month', date) = '${month}' `)
+                }
+                if (year)
+                {
+                    filterNational.push(` date_part('year', date) = '${year}' `)
+                }
+
+                if (filterNational.length > 0)
+                {
+                    nationalHolidaySql = nationalHolidaySql.concat(` and ${filterNational.join(' and ')} `)
+                }
+
+                const nationalHoliday = await queryCustom(nationalHolidaySql)
+                nationalHoliday.rows = nationalHoliday.rows.map((item) => {
+                    item.id = `${+item.id + result.length}`
                     return item
-                }))
+                })
 
                 if (nullId)
                 {
@@ -119,7 +149,7 @@ module.exports = {
                         total_page: +countRows.count > 0 ? Math.ceil(countRows.count / +limit) : 0,
                         total_data: countRows.count,
                         limit: limit,
-                        list: result,
+                        list: [...result, ...nationalHoliday.rows]
                     }
                 }
                 else
