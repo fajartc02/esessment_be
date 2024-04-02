@@ -682,7 +682,6 @@ module.exports = {
           item.findings = []
         }
 
-
         return item
       }))
 

@@ -578,6 +578,8 @@ const genSignCheckers = async (shiftRows = []) => {
 
                     tempSh.splice(j++, 1)
                 }
+
+                result.sh.push(tempSh[i])
             }
             else
             {
@@ -591,7 +593,7 @@ const genSignCheckers = async (shiftRows = []) => {
             }
         }
 
-        //console.log('signChckerShBulkSchema', signChckerShBulkSchema)
+        console.log('result.sh', result.sh)
     }
     //#endregion
 
@@ -599,9 +601,94 @@ const genSignCheckers = async (shiftRows = []) => {
 }
 //#endregion
 
+//#region shift by group id
 const shiftByGroupId = async (groupId) => {
-    
+    const shiftSql = `
+                    with
+                        weekly_shifts as (
+                            select
+                                date_part('week', "date"::date) as week_num,
+                                case
+                                    when tms2.shift_type = 'morning_shift' then 'night_shift'
+                                    when tms2.shift_type = 'night_shift' then 'morning_shift'
+                                    when tmsh.shift_type = 'morning_shift' then 'night_shift'
+                                    when tmsh.shift_type = 'night_shift' then 'morning_shift'
+                                    when date_part('week', "date"::date)::integer % 2 = 0 then 
+                                        'morning_shift'
+                                    else 'night_shift'
+                                end as shift_type
+                            from
+                                ${table.tb_m_schedules} tms1
+                                full outer join (
+                                    select date_part('week', "date"::date) as week_num,
+                                       case
+                                           when date_part('week', "date"::date)::integer % 2 = 0 then
+                                               'morning_shift'
+                                           else 'night_shift'
+                                           end                         as shift_type
+                                    from tb_m_schedules
+                                    where date_part('month', "date") = '${currentMonth - 1}'
+                                    and date_part('year', "date") = '${currentYear}'
+                                    group by week_num, shift_type
+                                    order by week_num desc
+                                    limit 1
+                                ) tms2 on true
+                                left join tb_m_shifts tmsh on tms1."date" between tmsh.start_date and tmsh.end_date - 1 and tmsh.group_id = ${groupId}
+                            where 
+                                date_part('month', "date") = '${currentMonth}'
+                                and date_part('year', "date") = '${currentYear}'
+                        ),
+                        total_day_weeks as (
+                            select 
+                                date_part('week', "date"::date) as week_num,
+                                count(*) as total_day_of_week
+                            from 
+                                ${table.tb_m_schedules} 
+                            where 
+								is_holiday = false or is_holiday is null
+							group by 
+								week_num
+                        )
+                    select
+                        tms.schedule_id,
+                        tms."date",
+                        EXTRACT('DOW' FROM tms."date"::timestamp) AS day_of_week,
+                        (EXTRACT(WEEK FROM "date"::date) % 2) <> 0 AS is_odd_week, -- determine an weekly should plan
+                        TO_CHAR(tms."date"::date, 'dd' ) as date_num,
+                        shift.shift_type,
+                        case 
+                            when tmsh.is_holiday then tmsh.is_holiday
+                            else tms.is_holiday
+                        end as is_holiday,
+                        shift.week_num,
+                        tdw.total_day_of_week,
+                        ceiling((date_part('day', tms."date") - date_part('dow', tms."date")) / 7) = 1 as is_first_week
+                    from
+                        ${table.tb_m_schedules} tms
+                        left join (
+                            select
+                                week_num,
+                                shift_type,
+                                count(*) as num_shifts
+                            from
+                                weekly_shifts
+                            group by
+                                week_num,
+                                shift_type
+                            order by
+                                week_num,
+                                shift_type
+                        ) shift on date_part('week', tms."date"::date) = shift.week_num and tms.is_holiday is null
+                        left join total_day_weeks tdw on date_part('week', tms."date"::date) = tdw.week_num
+                        left join tb_m_shifts tmsh on tms."date" between tmsh.start_date and tmsh.end_date - 1 and tmsh.group_id = ${groupId}
+                    order by 
+                        tms."date"
+                `
+    //console.log('shiftSql', shiftSql)
+    const shiftQuery = await databasePool.query(shiftSql)
+    const shiftRows = shiftQuery.rows
 }
+//#endregion
 
 
 //#region scheduler main 
@@ -704,7 +791,6 @@ const main = async () => {
         const signChckerShBulkSchema = signCheckers.sh
         //console.warn('signCheckers', signCheckers)
 
-        const itemCheckKanbanSchema = await genItemCheckKanbanTrans(shiftRows)
         //#endregion
 
 

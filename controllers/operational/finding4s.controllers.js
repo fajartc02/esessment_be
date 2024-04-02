@@ -50,6 +50,10 @@ module.exports = {
             {
                 filterCondition.push(` vfl.kanban_id = '${kanban_id}' `)
             }
+            if (freq_id)
+            {
+                filterCondition.push(` vfl.freq_id = '${freq_id}' `)
+            }
 
 
             const qOffset = (limit != -1 && limit) && current_page > 1 ? `OFFSET ${limit * (current_page - 1)}` : ``

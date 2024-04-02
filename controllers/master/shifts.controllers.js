@@ -22,7 +22,7 @@ module.exports = {
             let { id, group_id, start_date, end_date, limit, current_page } = req.query
             const fromCondition = ` 
                 ${table.tb_m_shifts} tms 
-                join ${table.tb_m_groups} tmg on tms.group_id = tmg.group_id 
+                left join ${table.tb_m_groups} tmg on tms.group_id = tmg.group_id 
             `
 
             current_page = parseInt(current_page ?? 1)
