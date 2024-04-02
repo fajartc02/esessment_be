@@ -23,6 +23,10 @@ module.exports = {
             const fromCondition = ` 
                 ${table.tb_m_shifts} tms 
                 left join ${table.tb_m_groups} tmg on tms.group_id = tmg.group_id 
+                left join ${table.tb_m_schedules} tmsc on 
+                    tmsc.date between tms.start_date and tms.end_date - 1
+                    and tmsc.is_holiday = true 
+                    and tmsc.holiday_nm is not null
             `
 
             current_page = parseInt(current_page ?? 1)
@@ -45,10 +49,20 @@ module.exports = {
                         tms.start_date as start,
                         tms.end_date as end,
                         tms.shift_type,
-                        tms.is_holiday,
                         tms.holiday_desc,
                         tms.all_day as allDay,
-                        tms.title,
+                        case
+                            when tmsc.schedule_id is not null then
+                                tmsc.holiday_nm
+                            else 
+                                tms.title
+                        end as title,
+                        case 
+                            when tmsc.schedule_id is not null then
+                                tmsc.is_holiday
+                            else 
+                                tms.is_holiday
+                        end as is_holiday,
                         tms.created_by,
                         tms.created_dt
                     from
@@ -91,6 +105,11 @@ module.exports = {
 
             if (result.length > 0)
             {
+                result = await Promise.all(result.map(async (item) => {
+                    
+                    return item
+                }))
+
                 if (nullId)
                 {
                     const count = await queryCustom(`select count(*)::integer as count from ${fromCondition} where ${filterCondition}`)

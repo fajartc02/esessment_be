@@ -133,7 +133,17 @@ module.exports = {
         {
             const updateBody = {
                 ...req.body,
-                actual_pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.actual_pic_id}') `
+                schedule_item_check_kanban_id: ` (select schedule_item_check_kanban_id from ${table.tb_r_4s_schedule_item_check_kanbans} where uuid = '${req.body.schedule_item_check_kanban_id}') `,
+                line_id: ` (select line_id from ${table.tb_m_lines} where uuid = '${req.body.line_id}') `,
+                freq_id: ` (select freq_id from ${table.tb_m_freqs} where uuid = '${req.body.freq_id}') `,
+                zone_id: ` (select zone_id from ${table.tb_m_zones} where uuid = '${req.body.zone_id}') `,
+                kanban_id: ` (select kanban_id from ${table.tb_m_kanbans} where uuid = '${req.body.kanban_id}') `,
+                finding_pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.finding_pic_id}') `,
+            }
+
+            if (req.body.actual_pic_id)
+            {
+                updateBody.actual_pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.actual_pic_id}') `
             }
 
             const transaction = await queryTransaction(async (db) => {
