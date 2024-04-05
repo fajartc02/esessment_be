@@ -404,7 +404,6 @@ module.exports = {
                     selectFindingData.uuid = req.uuid()
                     let findingObj = {
                         ...selectFindingData,
-                        cm_judg: selectFindingData.cm_judg,
                         obs_result_id,
                     }
                     let attrsUserFindingData = await attrsUserInsertData(req, findingObj)
@@ -435,6 +434,7 @@ module.exports = {
                         uuid: req.uuid(),
                         finding_id: lastFindingId,
                         finding_obs_id: obsFindingId,
+                        cm_judg: waitFindingsMap.cm_judg,
                         ...findingData
                     }
                     await queryPOST(table.tb_r_findings, dataFinding)
