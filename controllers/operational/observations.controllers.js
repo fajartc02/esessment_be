@@ -400,9 +400,11 @@ module.exports = {
                     selectFindingData.cm_pic_id = await uuidToId(table.tb_m_users, 'user_id', selectFindingData.cm_pic_id.pic_id) ?? null
                     selectFindingData.factor_id = await uuidToId(table.tb_m_factors, 'factor_id', selectFindingData.factor_id) ?? null
                     selectFindingData.cm_result_factor_id = await uuidToId(table.tb_m_factors, 'factor_id', selectFindingData.cm_result_factor_id) ?? null
+                    
                     selectFindingData.uuid = req.uuid()
                     let findingObj = {
                         ...selectFindingData,
+                        cm_judg: finding.cm_judg,
                         obs_result_id,
                     }
                     let attrsUserFindingData = await attrsUserInsertData(req, findingObj)
