@@ -741,9 +741,9 @@ module.exports = {
 
       const body = {
         pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${pic_id}') `,
-        kanban_id: ` (select kanban_id from ${table.tb_m_kanbans} where uuid = '${kanban_id}') `,
+        /* kanban_id: ` (select kanban_id from ${table.tb_m_kanbans} where uuid = '${kanban_id}') `,
         freq_id: ` (select freq_id from ${table.tb_m_freqs} where uuid = '${freq_id}') `,
-        zone_id: ` (select zone_id from ${table.tb_m_zones} where uuid = '${zone_id}') `,
+        zone_id: ` (select zone_id from ${table.tb_m_zones} where uuid = '${zone_id}') `, */
       }
 
 
@@ -762,7 +762,6 @@ module.exports = {
           attrsUpdate,
           `WHERE ${updateCondition}`
         )
-
         const updateDatesSql = (date = '', colSet = `trss.plan_time = '${date}'`, condition = updateCondition) => {
           return `
               update 
@@ -777,22 +776,34 @@ module.exports = {
         }
 
         let temp = []
-        for (let i = 0; i < planTimeMapped.length; i++)
+        if (Array.isArray(planTimeMapped) && planTimeMapped.length > 0)
         {
-          temp.push(updateDatesSql(planTimeMapped[i]))
+          for (let i = 0; i < planTimeMapped.length; i++)
+          {
+            temp.push(updateDatesSql(planTimeMapped[i]))
+          }
         }
 
-        for (let i = 0; i < morningShiftMapped.length; i++)
+        if (Array.isArray(morningShiftMapped) && morningShiftMapped.length > 0)
         {
-          temp.push(updateDatesSql(morningShiftMapped[i], `trss.shift_type = 'morning_shift'`, `trss.main_schedule_id = '${schedulRow.main_schedule_id}'`))
+          for (let i = 0; i < morningShiftMapped.length; i++)
+          {
+            temp.push(updateDatesSql(morningShiftMapped[i], `trss.shift_type = 'morning_shift'`, `trss.main_schedule_id = '${schedulRow.main_schedule_id}'`))
+          }
         }
 
-        for (let i = 0; i < nightShiftMapped.length; i++)
+        if (Array.isArray(morningShiftMapped) && morningShiftMapped.length > 0)
         {
-          temp.push(updateDatesSql(nightShiftMapped[i], `trss.shift_type = 'night_shift'`, `trss.main_schedule_id = '${schedulRow.main_schedule_id}'`))
+          for (let i = 0; i < nightShiftMapped.length; i++)
+          {
+            temp.push(updateDatesSql(nightShiftMapped[i], `trss.shift_type = 'night_shift'`, `trss.main_schedule_id = '${schedulRow.main_schedule_id}'`))
+          }
         }
 
-        await db.query(temp.join('; '))
+        if (temp.length > 0)
+        {
+          await db.query(temp.join('; '))
+        }
       })
 
       response.success(res, "Success to edit 4s schedule plan", [])

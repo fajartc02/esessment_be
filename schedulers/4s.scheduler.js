@@ -481,6 +481,7 @@ const genSignCheckers = async (shiftRows = []) => {
                                 date desc
                             limit 1
                         ) ended on true
+                        
                 `
 
             //console.log('glSignSql', glSignSql)
