@@ -151,7 +151,7 @@ const childrenSubSchedule = async (
                                         where
                                           main_schedule_id = tbrcs.main_schedule_id
                                           and is_gl = true 
-                                          and date_part('week', start_date) >= date_part('week', tmsc."date")
+                                          -- and date_part('week', start_date) >= date_part('week', tmsc."date")
                                           and tmsc."date" between start_date and end_date
                                         limit 1
                       ) trcc_gl on true
