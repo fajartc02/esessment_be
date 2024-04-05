@@ -404,7 +404,7 @@ module.exports = {
                     selectFindingData.uuid = req.uuid()
                     let findingObj = {
                         ...selectFindingData,
-                        cm_judg: finding.cm_judg,
+                        cm_judg: selectFindingData.cm_judg,
                         obs_result_id,
                     }
                     let attrsUserFindingData = await attrsUserInsertData(req, findingObj)
