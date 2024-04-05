@@ -708,7 +708,7 @@ module.exports = {
       /**
        * plan_dates = 2024-03-01; 2024-03-02; ....
        */
-      const { pic_id, kanban_id, zone_id, freq_id, plan_dates, morning_shift_dates, night_shift_dates } = req.body
+      const { pic_id} = req.body
 
       let schedulRow = await queryGET(
         table.tb_r_4s_sub_schedules,
@@ -726,24 +726,8 @@ module.exports = {
 
       schedulRow = schedulRow[0]
 
-      const planTimeMapped = plan_dates.split(';').map((dt) => {
-        return dt.replace(/ /g, '')
-      })
-
-      const morningShiftMapped = morning_shift_dates.split(';').map((dt) => {
-        return dt.replace(/ /g, '')
-      })
-
-      const nightShiftMapped = night_shift_dates.split(';').map((dt) => {
-        return dt.replace(/ /g, '')
-      })
-
-
       const body = {
         pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${pic_id}') `,
-        /* kanban_id: ` (select kanban_id from ${table.tb_m_kanbans} where uuid = '${kanban_id}') `,
-        freq_id: ` (select freq_id from ${table.tb_m_freqs} where uuid = '${freq_id}') `,
-        zone_id: ` (select zone_id from ${table.tb_m_zones} where uuid = '${zone_id}') `, */
       }
 
 
@@ -762,48 +746,7 @@ module.exports = {
           attrsUpdate,
           `WHERE ${updateCondition}`
         )
-        const updateDatesSql = (date = '', colSet = `trss.plan_time = '${date}'`, condition = updateCondition) => {
-          return `
-              update 
-                ${table.tb_r_4s_sub_schedules}  trss
-                join ${table.tb_m_schedules} tmsc on trss.schedule_id = tmsc.schedule_id
-              set 
-                ${colSet} 
-              where 
-                ${condition} 
-                and tmsc."date" = '${date}'
-            `
-        }
-
-        let temp = []
-        if (Array.isArray(planTimeMapped) && planTimeMapped.length > 0)
-        {
-          for (let i = 0; i < planTimeMapped.length; i++)
-          {
-            temp.push(updateDatesSql(planTimeMapped[i]))
-          }
-        }
-
-        if (Array.isArray(morningShiftMapped) && morningShiftMapped.length > 0)
-        {
-          for (let i = 0; i < morningShiftMapped.length; i++)
-          {
-            temp.push(updateDatesSql(morningShiftMapped[i], `trss.shift_type = 'morning_shift'`, `trss.main_schedule_id = '${schedulRow.main_schedule_id}'`))
-          }
-        }
-
-        if (Array.isArray(morningShiftMapped) && morningShiftMapped.length > 0)
-        {
-          for (let i = 0; i < nightShiftMapped.length; i++)
-          {
-            temp.push(updateDatesSql(nightShiftMapped[i], `trss.shift_type = 'night_shift'`, `trss.main_schedule_id = '${schedulRow.main_schedule_id}'`))
-          }
-        }
-
-        if (temp.length > 0)
-        {
-          await db.query(temp.join('; '))
-        }
+        
       })
 
       response.success(res, "Success to edit 4s schedule plan", [])
