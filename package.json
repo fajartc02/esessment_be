@@ -28,6 +28,8 @@
         "multer": "^1.4.5-lts.1",
         "nodemon": "^2.0.22",
         "pg": "^8.11.0",
-        "uuidv4": "^6.2.13"
+        "uuidv4": "^6.2.13",
+        "winston": "^3.13.0",
+        "winston-daily-rotate-file": "^5.0.0"
     }
 }

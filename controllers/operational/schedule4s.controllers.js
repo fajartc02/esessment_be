@@ -22,12 +22,18 @@ const fromSubScheduleSql = `
       tbrcs.main_schedule_id = trmsc.main_schedule_id 
       and trmsc.month_num = date_part('month', tmsc.date)
       and trmsc.year_num = date_part('year', tmsc.date)
-    left join ${table.tb_m_users} tmu_plan on tmu_plan.user_id = tbrcs.plan_pic_id
-    left join ${table.tb_m_users} tmu_actual on tmu_actual.user_id = tbrcs.actual_pic_id
+    left join ${table.tb_m_users} tmu on tmu.user_id = tbrcs.pic_id
     join lateral (
       select * from ${table.tb_m_lines} where line_id = trmsc.line_id
     ) tml on true
     join ${table.tb_m_groups} tmg on trmsc.group_id = tmg.group_id
+    left join (
+      select 
+        kanban_id, 
+        sum(standart_time)::real as standart_time
+      from ${table.tb_m_4s_item_check_kanbans} 
+      group by kanban_id
+    ) tmich_c on tmk.kanban_id = tmich_c.kanban_id
 `
 
 const selectSubScheduleCol = [
@@ -41,18 +47,16 @@ const selectSubScheduleCol = [
   'tmf.uuid as freq_id',
   'tmf.freq_id as freq_real_id',
   'tmz.zone_id as zone_real_id',
-  'tmu_plan.uuid as pic_id',
-  'tmu_actual.uuid as actual_pic_id',
+  'tmu.uuid as pic_id',
   'tmk.kanban_id as kanban_real_id',
-  'tmu_plan.user_id as pic_real_id',
+  'tmu.user_id as pic_real_id',
   'tml.line_nm',
   'tmg.group_nm',
   'tmz.zone_nm',
   'tmk.kanban_no',
   'tmk.area_nm',
-  'tmk.standart_time',
-  'tmu_plan.fullname as pic_nm',
-  'tmu_actual.fullname as actual_pic_nm',
+  'tmich_c.standart_time::REAL as standart_time',
+  'tmu.fullname as pic_nm',
   'tmf.freq_nm',
   'trmsc.year_num',
   'trmsc.month_num',
@@ -80,7 +84,7 @@ const childrenSubSchedule = async (
   let byPic = ``
   if (planPicRealId)
   {
-    byPic = ` and trcs.plan_pic_id = '${planPicRealId}' `
+    byPic = ` and trcs.pic_id = '${planPicRealId}' `
   }
 
   let childrenSql = `
@@ -96,10 +100,12 @@ const childrenSubSchedule = async (
                     case
                       when tbrcs.shift_type = 'night_shift' then
                         'NightShift'
-                      when tbrcs.plan_time is not null and tbrcs.actual_time is null then
+                      when tbrcs.plan_time is not null then
                         'PLANNING'
-                      when tbrcs.actual_time is not null then
-                        'ACTUAL'
+                      -- when tbrcs.actual_time is not null then
+                        -- 'ACTUAL'
+                      -- when false
+                        -- 'PROBLEM'
                       else
                         null
                     end as status,
@@ -296,11 +302,7 @@ module.exports = {
         return
       }
 
-      const result = {
-        schedule: [],
-        sign_checker_gl: [],
-        sign_checker_sh: [],
-      }
+      let result = []
 
       let scheduleSql = `
           select * from (
@@ -427,10 +429,10 @@ module.exports = {
                       from
                           ${table.tb_r_4s_sub_schedules}
                       where
-                          plan_pic_id = (select user_id from ${table.tb_m_users} where uuid = '${item.plan_pic_id}' limit 1)
+                          pic_id = (select user_id from ${table.tb_m_users} where uuid = '${item.pic_id}' limit 1)
                           and freq_id = ${whereFreqId}
                       group by
-                          plan_pic_id
+                          pic_id
                   ),
                   zones as (
                       select
@@ -497,49 +499,8 @@ module.exports = {
           return item
         })
 
-        const signCheckerQuery = async (who = '') => {
-          let whoIs = ``
-          if (who == 'gl')
-          {
-            whoIs = 'and is_gl = true'
-          } else if (who == 'sh')
-          {
-            whoIs = 'and is_sh = true'
-          }
-
-          return await queryCustom(`
-              select 
-                uuid as sign_checker_id,
-                sign,
-                start_date,
-                end_date,
-                (end_date - start_date)::integer + 1 as col_span
-              from 
-                ${table.tb_r_4s_schedule_sign_checkers} 
-              where 
-                main_schedule_id = '${mainScheduleRealId}' 
-                ${whoIs}
-              order by
-                start_date
-            `, false)
-        }
-
-        const signGl = await signCheckerQuery('gl')
-        const signSh = await signCheckerQuery('sh')
-
-        result.schedule = await Promise.all(scheduleRows)
-        result.sign_checker_gl = []
-        result.sign_checker_sh = []
-        result.sign_checker_gl = signGl.rows.map((item) => {
-          item.is_holiday = false
-
-          return item
-        })
-        result.sign_checker_sh = signSh.rows.map((item) => {
-          item.is_holiday = false
-
-          return item
-        })
+      
+        result = await Promise.all(scheduleRows)
       }
 
       response.success(res, "Success to get 4s sub schedule", result)
@@ -682,8 +643,8 @@ module.exports = {
               trsic.uuid as schedule_item_check_kanban_id,
               tmk.kanban_no,
               tmic.item_check_nm,
-              tmic.standart_time,
-              trsic.actual_time,
+              tmic.standart_time::REAL as standart_time,
+              trsic.actual_time::REAL actual_time,
               trsic.checked_date,
               tmju.judgment_nm
           from
@@ -778,7 +739,7 @@ module.exports = {
 
 
       const body = {
-        plan_pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${pic_id}') `,
+        pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${pic_id}') `,
         kanban_id: ` (select kanban_id from ${table.tb_m_kanbans} where uuid = '${kanban_id}') `,
         freq_id: ` (select freq_id from ${table.tb_m_freqs} where uuid = '${freq_id}') `,
         zone_id: ` (select zone_id from ${table.tb_m_zones} where uuid = '${zone_id}') `,
@@ -853,7 +814,7 @@ module.exports = {
           'freq_id',
           'zone_id',
           'kanban_id',
-          'plan_pic_id'
+          'pic_id'
         ]
       )
 
@@ -868,7 +829,7 @@ module.exports = {
 
       schedulRow = schedulRow[0]
 
-      if (!schedulRow.plan_pic_id)
+      if (!schedulRow.pic_id)
       {
         response.failed(
           res,

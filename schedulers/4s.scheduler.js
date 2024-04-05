@@ -14,6 +14,7 @@ const { queryTransaction } = require('../helpers/query')
 const { generateMonthlyDates } = require('../helpers/date')
 const { holidayRequest } = require('../helpers/externalRequest')
 const { bulkToSchema } = require('../helpers/schema')
+const logger = require('../helpers/logger')
 
 console.log('env', {
     env: process.env.NODE_ENV,
@@ -33,57 +34,6 @@ const currentYear = currentDate.year()
 
 //date_part('week', '${currentMonthDay.date}':: date)
 const dateFormatted = (date = '') => (moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD'))
-
-//#region scheduler generateSchedules
-/**
- * 
- * @param {databasePool} db 
- * @returns 
- */
-const generateSchedules = async (db) => {
-    const currentMonthHoldayResp = await holidayRequest(currentYear, currentMonth)
-    const currentMonthDays = generateMonthlyDates(currentYear, currentMonth)
-
-    const currentMonthHolidayData = currentMonthHoldayResp.data
-    const result = []
-
-    for (let i = 0; i < currentMonthDays.length; i++)
-    {
-        const currentMonthDay = currentMonthDays[i];
-
-        for (let j = 0; j < currentMonthHolidayData.length; j++)
-        {
-            const holiday = currentMonthHolidayData[j];
-            if (currentMonthDay.date == holiday.holiday_date)
-            {
-                currentMonthDay.is_holiday = true
-                currentMonthDay.holiday_nm = holiday.holiday_name
-                break
-            }
-        }
-
-        if (!currentMonthDay.is_holiday)
-        {
-            currentMonthDay.is_holiday = false
-        }
-        if (!currentMonthDay.holiday_nm)
-        {
-            currentMonthDay.holiday_nm = null
-        }
-
-        currentMonthDay.uuid = uuid()
-        result.push(currentMonthDay)
-    }
-
-    const scheduleSchema = await bulkToSchema(result)
-    //console.log('result', scheduleSchema)
-    const scheduleQuery = await db.query(`insert into ${table.tb_m_schedules} (${scheduleSchema.columns}) VALUES ${scheduleSchema.values} returning *`)
-    const scheduleRows = scheduleQuery.rows
-    console.log('schedules', 'inserted')
-
-    return scheduleRows
-}
-//#endregion
 
 //#region scheduler delete all for testing purpose
 const clear4sRows = async () => {
@@ -129,8 +79,8 @@ const genMainSchedule = async () => {
                     tmg.group_id
                     ,tmsm.month_num
                 from 
-                    (select * from tb_m_lines order by line_id asc limit 1) tml,
-                    (select * from tb_m_groups where group_nm in ('WHITE', 'RED')) tmg,
+                    (select * from tb_m_lines order by line_id asc) tml,
+                    (select * from tb_m_groups) tmg,
                     (select date_part('month', date) as month_num from tb_m_schedules where date_part('month', date) = '${currentMonth}' group by month_num) tmsm
             `)
 
@@ -578,7 +528,7 @@ const genSignCheckers = async (shiftRows = []) => {
 
                 result.sh.push(tempSh[i])
                 tempSh.splice(i + 1, 1)
-            } 
+            }
             else
             {
                 delete tempSh[i].is_gl
@@ -628,7 +578,9 @@ const shiftByGroupId = async (groupId) => {
                                     order by week_num desc
                                     limit 1
                                 ) tms2 on true
-                                left join tb_m_shifts tmsh on tms1."date" between tmsh.start_date and tmsh.end_date - 1 and tmsh.group_id = ${groupId}
+                                left join tb_m_shifts tmsh on 
+                                    tms1."date" between tmsh.start_date and tmsh.end_date - 1 
+                                    and tmsh.group_id = ${groupId}
                             where 
                                 date_part('month', "date") = '${currentMonth}'
                                 and date_part('year', "date") = '${currentYear}'
@@ -677,14 +629,18 @@ const shiftByGroupId = async (groupId) => {
                                 shift_type
                         ) shift on date_part('week', tms."date"::date) = shift.week_num and tms.is_holiday is null
                         left join total_day_weeks tdw on date_part('week', tms."date"::date) = tdw.week_num
-                        left join tb_m_shifts tmsh on tms."date" between tmsh.start_date and tmsh.end_date - 1 and tmsh.group_id = ${groupId}
-                        left join tb_m_shifts tmsh_holiday on tms."date" between tmsh.start_date and tmsh.end_date - 1 and is_holiday = true
+                        left join tb_m_shifts tmsh on 
+                            tms."date" between tmsh.start_date and tmsh.end_date - 1 
+                            and tmsh.group_id = ${groupId}
+                        left join tb_m_shifts tmsh_holiday on 
+                            tms."date" between tmsh.start_date and tmsh.end_date - 1 
+                            and is_holiday = true
                     order by 
                         tms."date"
                 `
     //console.log('shiftSql', shiftSql)
     const shiftQuery = await databasePool.query(shiftSql)
-    const shiftRows = shiftQuery.rows
+    return shiftQuery.rows
 }
 //#endregion
 
@@ -694,7 +650,6 @@ const main = async () => {
     try
     {
         await clear4sRows();
-        //await generateSchedules(databasePool)
 
         //#region scheduler shift generator
         const shiftSql = `
@@ -915,16 +870,52 @@ const main = async () => {
 }
 //#endregion
 
-/* clear4sRows()
+const test = async () => {
+    logger.info("this is error")
+    /*  const lgQuery = await databasePool.query(`
+                 select 
+                     tml.line_id,
+                     tmg.group_id
+                     ,tmsm.month_num
+                 from 
+                     (select * from tb_m_lines order by line_id asc) tml,
+                     (select * from tb_m_groups) tmg,
+                     (select date_part('month', date) as month_num from tb_m_schedules where date_part('month', date) = '${currentMonth}' group by month_num) tmsm
+             `)
+ 
+     lgQuery.rows.forEach(async (lg, i) => {
+         const shifts = await shiftByGroupId(lg.groupId)
+ 
+     }) */
+}
+
+/* test()
     .then((r) => process.exit())
-    .catch((error) => {
+    .catch((e) => {
+        console.error('test error', e)
         process.exit()
     }) */
 
-main()
+clear4sRows()
+    .then((r) => {
+        main()
+            .then((r) => {
+                process.exit()
+            })
+            .catch((e) => {
+                console.log('error clear4sRows', e);
+                process.exit()
+            })
+    })
+    .catch((e) => {
+        console.log('error clear4sRows', e);
+        process.exit()
+    })
+
+/* main()
     .then((result) => {
         process.exit()
     })
     .catch((error) => {
         process.exit()
-    })
+    }) */

@@ -93,6 +93,7 @@ const clear4sRows = async () => {
         await databasePool.query(`DELETE FROM ${table.tb_m_schedules} CASCADE`)
         await databasePool.query(`ALTER TABLE ${table.tb_m_schedules} ALTER COLUMN schedule_id RESTART WITH 1`)
 
+        await databasePool.query(`SET session_replication_role = 'origin'`)
         console.log('clearing succeed')
     }
 }
@@ -105,7 +106,15 @@ const main = async () => {
 }
 
 /* clear4sRows()
-    .then((r) => process.exit())
+    .then((r) => {
+        main()
+            .then((result) => {
+                process.exit()
+            })
+            .catch((error) => {
+                process.exit()
+            })
+    })
     .catch((error) => {
         process.exit()
     }) */
