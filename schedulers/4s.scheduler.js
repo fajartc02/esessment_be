@@ -42,9 +42,6 @@ const clear4sRows = async () => {
         console.log('clearing start')
         await databasePool.query(`SET session_replication_role = 'replica'`)
 
-        // await databasePool.query(`DELETE FROM ${table.tb_m_schedules} CASCADE`)
-        // await databasePool.query(`ALTER TABLE ${table.tb_m_schedules} ALTER COLUMN schedule_id RESTART WITH 1`)
-
         await databasePool.query(`DELETE FROM ${table.tb_r_4s_main_schedules} CASCADE`)
         await databasePool.query(`ALTER TABLE ${table.tb_r_4s_main_schedules} ALTER COLUMN main_schedule_id RESTART WITH 1`)
 
@@ -76,8 +73,8 @@ const genMainSchedule = async () => {
     const lgQuery = await databasePool.query(`
                 select 
                     tml.line_id,
-                    tmg.group_id
-                    ,tmsm.month_num
+                    tmg.group_id,
+                    tmsm.month_num
                 from 
                     (select * from tb_m_lines order by line_id asc) tml,
                     (select * from tb_m_groups where is_active = true) tmg,
@@ -95,8 +92,7 @@ const genMainSchedule = async () => {
         })
     }
 
-    //console.log('mainschedule', mainScheduleBulkSchema)
-
+    //console.log('mainschedule result', result)
     return result
 }
 //#endregion
@@ -487,7 +483,7 @@ const genSignCheckers = async (shiftRows = []) => {
                         ) ended on true
                 `
 
-            console.log('glSignSql', glSignSql)
+            //console.log('glSignSql', glSignSql)
             const glSignQuery = await databasePool.query(glSignSql)
 
             for (let glIndex = 0; glIndex < glSignQuery.rows.length; glIndex++)

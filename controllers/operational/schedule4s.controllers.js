@@ -93,13 +93,11 @@ const childrenSubSchedule = async (
                     tbrcs.uuid as sub_schedule_id,
                     trcc1.tl1_sign_checker_id,
                     trcc2.tl2_sign_checker_id,
-                    trcc_gl.gl_sign_checker_id,
-                    trcc_sh.sh_sign_checker_id,
                     EXTRACT('Day' FROM tmsc.date)::INTEGER as date_num,
                     tmsc.is_holiday,
                     case
                       when tbrcs.shift_type = 'night_shift' then
-                        'NightShift'
+                        'NIGHT_SHIFT'
                       when tbrcs.plan_time is not null then
                         'PLANNING'
                       -- when tbrcs.actual_time is not null then
@@ -110,11 +108,7 @@ const childrenSubSchedule = async (
                         null
                     end as status,
                     trcc1.sign as sign_tl_1,
-                    trcc2.sign as sign_tl_2,
-                    trcc_gl.sign as sign_gl,
-                    trcc_sh.sign as sign_sh,
-                    trcc_gl.col_span as col_span_gl,
-                    trcc_sh.col_span as col_span_sh
+                    trcc2.sign as sign_tl_2
                   from
                       ${fromSubScheduleSql}
                       left join lateral (
@@ -141,34 +135,6 @@ const childrenSubSchedule = async (
                                           and end_date = tmsc."date"
                                         limit 1
                       ) trcc2 on true
-                      left join lateral (
-                                        select
-                                          uuid as gl_sign_checker_id,
-                                          sign,
-                                          (end_date - start_date)::integer + 1 as col_span
-                                        from
-                                          ${table.tb_r_4s_schedule_sign_checkers}
-                                        where
-                                          main_schedule_id = tbrcs.main_schedule_id
-                                          and is_gl = true 
-                                          -- and date_part('week', start_date) >= date_part('week', tmsc."date")
-                                          and tmsc."date" between start_date and end_date
-                                        limit 1
-                      ) trcc_gl on true
-                      left join lateral (
-                                        select
-                                          uuid as sh_sign_checker_id,
-                                          sign,
-                                          (end_date - start_date)::integer + 1 as col_span
-                                        from
-                                          ${table.tb_r_4s_schedule_sign_checkers}
-                                        where
-                                          main_schedule_id = tbrcs.main_schedule_id
-                                          and is_sh = true 
-                                          -- and date_part('week', start_date) >= date_part('week', tmsc."date")
-                                          and tmsc."date" between start_date and end_date
-                                        limit 1
-                      ) trcc_sh on true
                   where
                       tbrcs.deleted_dt is null
                       and tbrcs.main_schedule_id = ${mainScheduleRealId}
@@ -302,7 +268,11 @@ module.exports = {
         return
       }
 
-      let result = []
+      let result = {
+        schedule: [],
+        sign_checker_gl: [],
+        sign_checker_sh: []
+      }
 
       let scheduleSql = `
           select * from (
@@ -499,8 +469,39 @@ module.exports = {
           return item
         })
 
-      
-        result = await Promise.all(scheduleRows)
+        const signCheckerQuery = async (who = '') => {
+          let whoIs = ``
+          if (who == 'gl')
+          {
+            whoIs = 'and is_gl = true'
+          } else if (who == 'sh')
+          {
+            whoIs = 'and is_sh = true'
+          }
+
+          return await queryCustom(`
+              select 
+                uuid as sign_checker_id,
+                sign,
+                start_date,
+                end_date,
+                (end_date - start_date)::integer + 1 as col_span
+              from 
+                ${table.tb_r_4s_schedule_sign_checkers} 
+              where 
+                main_schedule_id = '${mainScheduleRealId}' 
+                ${whoIs}
+              order by
+                start_date
+            `, false)
+        }
+
+        const signGl = await signCheckerQuery('gl')
+        const signSh = await signCheckerQuery('sh')
+
+        result.schedule = await Promise.all(scheduleRows)
+        result.sign_checker_gl = signGl.rows
+        result.sign_checker_sh = signSh.rows
       }
 
       response.success(res, "Success to get 4s sub schedule", result)
