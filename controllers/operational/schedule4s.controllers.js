@@ -84,7 +84,7 @@ const childrenSubSchedule = async (
   let byPic = ``
   if (planPicRealId)
   {
-    byPic = ` and trcs.pic_id = '${planPicRealId}' `
+    byPic = ` and tbrcs.pic_id = '${planPicRealId}' `
   }
 
   let childrenSql = `
@@ -730,7 +730,6 @@ module.exports = {
         pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${pic_id}') `,
       }
 
-
       await queryTransaction(async (db) => {
         const attrsUpdate = await attrsUserUpdateData(req, body)
         const updateCondition = `
@@ -754,67 +753,6 @@ module.exports = {
     {
       console.log(e)
       response.failed(res, "Error to edit 4s schedule plan")
-    }
-  },
-  editActual4sSubSchedule: async (req, res) => {
-    try
-    {
-      const { pic_id, actual_dt } = req.body
-
-      let schedulRow = await queryGET(
-        table.tb_r_4s_sub_schedules,
-        `WHERE sub_schedule_id = (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.params.id}' limit 1)`,
-        [
-          'main_schedule_id',
-          'freq_id',
-          'zone_id',
-          'kanban_id',
-          'pic_id'
-        ]
-      )
-
-      if (!schedulRow)
-      {
-        response.failed(
-          res,
-          "Error to edit 4s actual schedule, can't find schedule data"
-        )
-        return
-      }
-
-      schedulRow = schedulRow[0]
-
-      if (!schedulRow.pic_id)
-      {
-        response.failed(
-          res,
-          "Error to edit 4s actual schedule, plan user id doesn't exists. Please edit the plan pic first"
-        )
-        return
-      }
-
-      await queryTransaction(async (db) => {
-        const attrsUpdate = await attrsUserUpdateData(req, {
-          actual_pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${pic_id}') `,
-          actual_time: actual_dt,
-        })
-
-        await queryPutTransaction(
-          db,
-          table.tb_r_4s_sub_schedules,
-          attrsUpdate,
-          `WHERE main_schedule_id = '${schedulRow.main_schedule_id}' 
-            and freq_id = '${schedulRow.freq_id}' 
-            and zone_id = '${schedulRow.zone_id}' 
-            and kanban_id = '${schedulRow.kanban_id}'`
-        )
-      })
-
-      response.success(res, 'success to edit actual 4s schedule', [])
-    } catch (error)
-    {
-      console.log(error)
-      response.failed(res, "Error to edit actual 4s schedule")
     }
   },
   sign4sSchedule: async (req, res) => {
