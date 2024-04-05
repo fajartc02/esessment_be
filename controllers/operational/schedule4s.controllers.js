@@ -104,7 +104,7 @@ const childrenSubSchedule = async (
                         'PLANNING'
                       -- when tbrcs.actual_time is not null then
                         -- 'ACTUAL'
-                      -- when false
+                      -- when false 
                         -- 'PROBLEM'
                       else
                         null
