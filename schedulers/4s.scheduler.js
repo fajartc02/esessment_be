@@ -741,7 +741,7 @@ const main = async () => {
         const signCheckerTl2BulkSchema = signCheckers.tl2
         const signChckerGlBulkSchema = signCheckers.gl
         let signChckerShBulkSchema = signCheckers.sh
-        if (signChckerShBulkSchema[0].constructor === Array)
+        if (signChckerShBulkSchema[0] && signChckerShBulkSchema[0].constructor === Array)
         {
             signChckerShBulkSchema = signChckerShBulkSchema[0]
         }
@@ -867,29 +867,72 @@ const main = async () => {
 //#endregion
 
 const test = async () => {
-    logger.info("this is error")
-    /*  const lgQuery = await databasePool.query(`
-                 select 
-                     tml.line_id,
-                     tmg.group_id
-                     ,tmsm.month_num
-                 from 
-                     (select * from tb_m_lines order by line_id asc) tml,
-                     (select * from tb_m_groups) tmg,
-                     (select date_part('month', date) as month_num from tb_m_schedules where date_part('month', date) = '${currentMonth}' group by month_num) tmsm
-             `)
- 
-     lgQuery.rows.forEach(async (lg, i) => {
-         const shifts = await shiftByGroupId(lg.groupId)
- 
-     }) */
+    const weekSchedules = await databasePool.query(
+        `
+            select
+                "date",
+                date_part('week', "date") as week_num
+            from
+                tb_m_schedules
+            where
+                not exists (
+                    select 1
+                    from tb_m_shifts
+                    where tb_m_schedules."date" between tb_m_shifts.start_date and tb_m_shifts.end_date
+                    and tb_m_shifts.is_holiday = true
+                )
+                and date_part('month', "date") = 4
+                and date_part('year', "date") = ${currentYear}
+                and (
+                    is_holiday = false
+                    or is_holiday is null
+                )
+        `
+    )
+
+    const result = []
+    if (weekSchedules.rowCount > 0)
+    {
+        const result = []
+        let indexWeek = 0
+        let startDate = ''
+        let endDate = ''
+
+        for (let i = 0; i < weekSchedules.rows.length; i++)
+        {
+            const item = weekSchedules.rows[i]
+
+            if (startDate == '')
+            {
+                startDate = item.date
+            }
+
+            if (weekSchedules.rows[i + 1])
+            {
+                let nextDate = moment(weekSchedules.rows[i + 1], 'YYYY-MM-DD').add(1, 'd')
+                    .format('YYYY-MM-DD')
+            }
+
+            if (endDate != '')
+            {
+                result.push({
+                    start_date: item.date,
+                    week: item.week_num
+                })
+            }
+        }
+    }
+
+    logger.info(result)
 }
 
 /* test()
-    .then((r) => process.exit())
+    .then((r) => {
+        return 0
+    })
     .catch((e) => {
         console.error('test error', e)
-        process.exit()
+        return 0
     }) */
 
 clear4sRows()

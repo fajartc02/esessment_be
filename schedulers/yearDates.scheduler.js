@@ -41,7 +41,7 @@ const generateSchedules = async (db) => {
 
     for (let monthIndex = 1; monthIndex <= 12; monthIndex++)
     {
-        const exists = await db.query(
+        /* const exists = await db.query(
             `
                 select 
                     count(*) 
@@ -56,7 +56,7 @@ const generateSchedules = async (db) => {
         if (exists.rowCount > 0)
         {
             continue
-        }
+        } */
 
         const currentMonthHoldayResp = await holidayRequest(currentYear, monthIndex)
         const currentMonthDays = generateMonthlyDates(currentYear, monthIndex)
@@ -123,7 +123,7 @@ const main = async () => {
     })
 }
 
-/* clear4sRows()
+clear4sRows()
     .then((r) => {
         main()
             .then((result) => {
@@ -135,13 +135,13 @@ const main = async () => {
     })
     .catch((error) => {
         process.exit()
-    }) */
+    })
 
 
-main()
+/* main()
     .then((result) => {
         process.exit()
     })
     .catch((error) => {
         process.exit()
-    })
+    }) */
