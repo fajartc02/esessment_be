@@ -400,6 +400,7 @@ module.exports = {
                     selectFindingData.cm_pic_id = await uuidToId(table.tb_m_users, 'user_id', selectFindingData.cm_pic_id.pic_id) ?? null
                     selectFindingData.factor_id = await uuidToId(table.tb_m_factors, 'factor_id', selectFindingData.factor_id) ?? null
                     selectFindingData.cm_result_factor_id = await uuidToId(table.tb_m_factors, 'factor_id', selectFindingData.cm_result_factor_id) ?? null
+                    
                     selectFindingData.uuid = req.uuid()
                     let findingObj = {
                         ...selectFindingData,
@@ -433,6 +434,7 @@ module.exports = {
                         uuid: req.uuid(),
                         finding_id: lastFindingId,
                         finding_obs_id: obsFindingId,
+                        cm_judg: waitFindingsMap.cm_judg,
                         ...findingData
                     }
                     await queryPOST(table.tb_r_findings, dataFinding)
