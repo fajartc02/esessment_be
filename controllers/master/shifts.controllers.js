@@ -168,30 +168,43 @@ module.exports = {
     postShift: async (req, res) => {
         try
         {
-            /* 
-            const shifts = req.body.shifts
-            const insertBodys = []
-            if (Array.isArray(shifts))
+            const shift = req.body
+
+            let sqlExists =
+                `
+                    select
+                        *
+                    from
+                        ${table.tb_m_shifts}
+                    where
+                        ((start_date >= '${shift.start}' and start_date <= '${shift.end}') or (end_date >= '${shift.start}' and end_date <= '${shift.end}'))
+                `
+            if (shift.is_holiday)
             {
-                shifts.forEach((shift) => {
-                    insertBodys.push(
-                        attrsUserInsertData(req, {
-                            uuid: uuid(),
-                            title: shift.title,
-                            allday: shift.allday,
-                            group_id: `(select group_id from ${table.tb_m_groups} where uuid = '${shift.group_id}') `,
-                            start_date: shift.start,
-                            end_date: shift.end,
-                            shift_type: shift.shift_type,
-                            is_holiday: shift.is_holiday,
-                            holiday_desc: shift.holiday_desc,
-                        })
-                    )
-                })
-            } */
+                sqlExists = sqlExists.concat(`and is_holiday = true`)
+            }
+            else
+            {
+                sqlExists = sqlExists.concat(`and (is_holiday = false or is_holiday is null)`)
+            }
+
+            if (shift.group_id)
+            {
+                sqlExists = sqlExists.concat(`and group_id = (select group_id from ${table.tb_m_groups} where uuid = '${shift.group_id}')`)
+            }
+            else
+            {
+                sqlExists = sqlExists.concat(`and group_id is null`)
+            }
+
+            const exists = await queryCustom(sqlExists)
+            if (exists.rowCount > 0)
+            {
+                throw `Date range between '${shift.start}' and '${shift.end}' are exists, please try different ranges`
+            }
 
             const transaction = await queryTransaction(async (db) => {
-                const shift = req.body
+
                 const schema = await attrsUserInsertData(req, {
                     uuid: uuid(),
                     title: shift.title,
@@ -209,7 +222,6 @@ module.exports = {
                 }
 
                 return await queryPostTransaction(db, table.tb_m_shifts, schema)
-                //return await db.query(` insert into ${table.tb_m_shifts} (${schema.columns}) VALUES ${schema.values} returning *`)
             })
 
             response.success(res, "Success to add shift", transaction.rows)

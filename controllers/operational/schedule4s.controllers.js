@@ -23,6 +23,7 @@ const fromSubScheduleSql = `
       and trmsc.month_num = date_part('month', tmsc.date)
       and trmsc.year_num = date_part('year', tmsc.date)
     left join ${table.tb_m_users} tmu on tmu.user_id = tbrcs.pic_id
+    left join ${table.tb_m_users} tmu_actual on tmu.user_id = tbrcs.actual_pic_id
     join lateral (
       select * from ${table.tb_m_lines} where line_id = trmsc.line_id
     ) tml on true
@@ -48,6 +49,7 @@ const selectSubScheduleCol = [
   'tmf.freq_id as freq_real_id',
   'tmz.zone_id as zone_real_id',
   'tmu.uuid as pic_id',
+  'tmu_actual.uuid as actual_pic_id',
   'tmk.kanban_id as kanban_real_id',
   'tmu.user_id as pic_real_id',
   'tml.line_nm',
@@ -57,6 +59,7 @@ const selectSubScheduleCol = [
   'tmk.area_nm',
   'tmich_c.standart_time::REAL as standart_time',
   'tmu.fullname as pic_nm',
+  'tmu_actual.fullname as actual_pic_nm',
   'tmf.freq_nm',
   'trmsc.year_num',
   'trmsc.month_num',
@@ -281,8 +284,7 @@ module.exports = {
           from
              ${fromSubScheduleSql}
           where
-            tbrcs.deleted_dt is null
-            and tbrcs.main_schedule_id = (select main_schedule_id from ${table.tb_r_4s_main_schedules} where uuid = '${main_schedule_id}')
+            tbrcs.main_schedule_id = (select main_schedule_id from ${table.tb_r_4s_main_schedules} where uuid = '${main_schedule_id}')
           ) a 
           where
             1 = 1
@@ -705,11 +707,6 @@ module.exports = {
   edi4sSubSchedule: async (req, res) => {
     try
     {
-      /**
-       * plan_dates = 2024-03-01; 2024-03-02; ....
-       */
-      const { pic_id} = req.body
-
       let schedulRow = await queryGET(
         table.tb_r_4s_sub_schedules,
         `WHERE sub_schedule_id = (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.params.id}' limit 1)`
@@ -726,9 +723,23 @@ module.exports = {
 
       schedulRow = schedulRow[0]
 
-      const body = {
-        pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${pic_id}') `,
+
+      const body = {}
+      if (req.body.pic_id)
+      {
+        body.pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${pic_id}') `
       }
+
+      if (req.body.actual_pic_id)
+      {
+        body.actual_pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${pic_id}') `
+      }
+
+      if (req.body.actual_date)
+      {
+        body.actual_time = req.body.actual_date
+      }
+
 
       await queryTransaction(async (db) => {
         const attrsUpdate = await attrsUserUpdateData(req, body)
@@ -745,7 +756,37 @@ module.exports = {
           attrsUpdate,
           `WHERE ${updateCondition}`
         )
-        
+
+        if (req.body.plan_date)
+        {
+          await db.query(
+            `
+              update 
+                ${table.tb_r_4s_sub_schedules} 
+              set 
+                plan_time = '${req.body.plan_date}' 
+              where 
+                ${updateCondition} 
+                and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')
+            `
+          )
+        }
+
+        if (req.body.before_plan_date)
+        {
+          await db.query(
+            `
+              update 
+                ${table.tb_r_4s_sub_schedules} 
+              set 
+                plan_time = null
+              where 
+                ${updateCondition} 
+                and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.before_plan_date}')
+            `
+          )
+        }
+
       })
 
       response.success(res, "Success to edit 4s schedule plan", [])

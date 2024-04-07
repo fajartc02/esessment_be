@@ -45,12 +45,58 @@ const migrate = async () => {
         const schema = await bulkToSchema([
             {
                 uuid: uuid(),
-                group_id: '',
-                start_date: '',
-                end_date: '',
-                shift_type: null,
+                group_id: 2,
+                start_date: '2024-04-01',
+                end_date: '2024-04-05',
+                shift_type: 'morning_shift',
                 is_holiday: null,
                 holiday_desc: null,
+                all_day: true,
+                title: 'RED'
+            },
+            {
+                uuid: uuid(),
+                group_id: 3,
+                start_date: '2024-04-01',
+                end_date: '2024-04-05',
+                shift_type: 'night_shift',
+                is_holiday: null,
+                holiday_desc: null,
+                all_day: true,
+                title: 'WHITE'
+            },
+            {
+                uuid: uuid(),
+                group_id: null,
+                start_date: '2024-04-08',
+                end_date: '2024-04-09',
+                shift_type: null,
+                is_holiday: true,
+                holiday_desc: 'Cuti Bersama Lebaran',
+                all_day: true,
+                title: 'Cuti Bersama Lebaran'
+            },
+            {
+                uuid: uuid(),
+                group_id: null,
+                start_date: '2024-04-12',
+                end_date: '2024-04-12',
+                shift_type: null,
+                is_holiday: true,
+                holiday_desc: 'Cuti Bersama Test',
+                all_day: true,
+                title: 'Cuti Bersama Test'
+            },
+            {
+                uuid: uuid(),
+                group_id: null,
+                start_date: '2024-04-24',
+                end_date: '2024-04-26',
+                shift_type: null,
+                is_holiday: true,
+                holiday_desc: 'Cuti Group',
+                all_day: true,
+                title: 'Cuti Group'
             },
         ])
 

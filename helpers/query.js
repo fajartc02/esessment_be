@@ -1,3 +1,4 @@
+const pg = require('pg')
 const { database, databasePool } = require('../config/database')
 
 const _defaultCallbackTrans = async (db = databasePool) => { }
@@ -157,7 +158,12 @@ module.exports = {
                 });
         })
     },
-    
+    /**
+     * 
+     * @param {string} sql 
+     * @param {boolean} log 
+     * @returns {Promise<pg.QueryResult<any>>}
+     */
     queryCustom: async (sql, log = true) => {
         return new Promise(async (resolve, reject) => {
             let q = sql

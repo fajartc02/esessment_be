@@ -5,7 +5,6 @@ const {
   get4sSignCheckerBySignCheckerId,
   getDetail4sSubSchedule,
   edi4sSubSchedule,
-  
   sign4sSchedule,
   delete4sSubSchedule,
   delete4sMainSchedule
