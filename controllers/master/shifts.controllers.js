@@ -177,24 +177,26 @@ module.exports = {
                     from
                         ${table.tb_m_shifts}
                     where
-                        ((start_date >= '${shift.start}' and start_date <= '${shift.end}') or (end_date >= '${shift.start}' and end_date <= '${shift.end}'))
+                        (
+                            (start_date >= '${shift.start}' and start_date <= '${shift.end}') or (end_date >= '${shift.start}' and end_date <= '${shift.end}')
+                        )
                 `
             if (shift.is_holiday)
             {
-                sqlExists = sqlExists.concat(`and is_holiday = true`)
+                sqlExists = sqlExists.concat(` and is_holiday = true `)
             }
             else
             {
-                sqlExists = sqlExists.concat(`and (is_holiday = false or is_holiday is null)`)
+                sqlExists = sqlExists.concat(` and (is_holiday = false or is_holiday is null) `)
             }
 
             if (shift.group_id)
             {
-                sqlExists = sqlExists.concat(`and group_id = (select group_id from ${table.tb_m_groups} where uuid = '${shift.group_id}')`)
+                sqlExists = sqlExists.concat(` and group_id = (select group_id from ${table.tb_m_groups} where uuid = '${shift.group_id}') `)
             }
             else
             {
-                sqlExists = sqlExists.concat(`and group_id is null`)
+                sqlExists = sqlExists.concat(` and group_id is null `)
             }
 
             const exists = await queryCustom(sqlExists)

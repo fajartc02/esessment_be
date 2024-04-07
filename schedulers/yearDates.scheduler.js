@@ -38,8 +38,26 @@ const currentYear = currentDate.year()
  */
 const generateSchedules = async (db) => {
     const result = []
+
     for (let monthIndex = 1; monthIndex <= 12; monthIndex++)
     {
+        const exists = await db.query(
+            `
+                select 
+                    count(*) 
+                from 
+                    ${table.tb_m_schedules} 
+                where 
+                    date_part('month', date) = ${monthIndex} 
+                    and date_part('year', date) = ${currentYear}
+            `
+        )
+
+        if (exists.rowCount > 0)
+        {
+            continue
+        }
+
         const currentMonthHoldayResp = await holidayRequest(currentYear, monthIndex)
         const currentMonthDays = generateMonthlyDates(currentYear, monthIndex)
 
