@@ -728,12 +728,12 @@ module.exports = {
       const body = {}
       if (req.body.pic_id)
       {
-        body.pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${pic_id}') `
+        body.pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.pic_id}') `
       }
 
       if (req.body.actual_pic_id)
       {
-        body.actual_pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${pic_id}') `
+        body.actual_pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.actual_pic_id}') `
       }
 
       if (req.body.actual_date)
