@@ -11,6 +11,7 @@ const response = require("../../helpers/response")
 const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData")
 const { padTwoDigits } = require("../../helpers/formatting")
 const moment = require('moment')
+const logger = require('../../helpers/logger')
 
 const fromSubScheduleSql = `
     ${table.tb_r_4s_sub_schedules} tbrcs
@@ -23,7 +24,7 @@ const fromSubScheduleSql = `
       and trmsc.month_num = date_part('month', tmsc.date)
       and trmsc.year_num = date_part('year', tmsc.date)
     left join ${table.tb_m_users} tmu on tmu.user_id = tbrcs.pic_id
-    left join ${table.tb_m_users} tmu_actual on tmu.user_id = tbrcs.actual_pic_id
+    left join ${table.tb_m_users} tmu_actual on tmu_actual.user_id = tbrcs.actual_pic_id
     join lateral (
       select * from ${table.tb_m_lines} where line_id = trmsc.line_id
     ) tml on true
@@ -148,7 +149,7 @@ const childrenSubSchedule = async (
                       ${byPic}
               ) a order by date_num      
            `
-  console.warn('childrensql', childrenSql)
+  //console.warn('childrensql', childrenSql)
   const children = await queryCustom(childrenSql, false)
 
   return children.rows
@@ -351,6 +352,7 @@ module.exports = {
       )
 
       //console.log('scheduleSql', scheduleSql)
+      //logger.info(scheduleSql)
       const scheduleQuery = await queryCustom(scheduleSql, false)
 
       if (scheduleQuery.rows && scheduleQuery.rows.length > 0)
