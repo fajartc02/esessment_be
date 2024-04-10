@@ -60,6 +60,7 @@ const selectSubScheduleCol = [
   'tmich_c.standart_time::REAL as standart_time',
   'tmu.fullname as pic_nm',
   'tmu_actual.fullname as actual_pic_nm',
+  'tbrcs.actual_time',
   'tmf.freq_nm',
   'trmsc.year_num',
   'trmsc.month_num',
@@ -740,7 +741,6 @@ module.exports = {
         body.actual_time = req.body.actual_date
       }
 
-
       await queryTransaction(async (db) => {
         const attrsUpdate = await attrsUserUpdateData(req, body)
         const updateCondition = `
@@ -757,7 +757,7 @@ module.exports = {
           `WHERE ${updateCondition}`
         )
 
-        if (req.body.plan_date)
+        if (req.body.plan_date && req.body.before_plan_date)
         {
           await db.query(
             `
@@ -767,26 +767,10 @@ module.exports = {
                 plan_time = '${req.body.plan_date}' 
               where 
                 ${updateCondition} 
-                and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')
-            `
-          )
-        }
-
-        if (req.body.before_plan_date)
-        {
-          await db.query(
-            `
-              update 
-                ${table.tb_r_4s_sub_schedules} 
-              set 
-                plan_time = null
-              where 
-                ${updateCondition} 
                 and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.before_plan_date}')
             `
           )
         }
-
       })
 
       response.success(res, "Success to edit 4s schedule plan", [])

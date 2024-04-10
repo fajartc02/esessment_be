@@ -11,8 +11,6 @@ const pg = require('pg')
 const { databasePool } = require('../config/database')
 const table = require('../config/table')
 const { queryTransaction } = require('../helpers/query')
-const { generateMonthlyDates } = require('../helpers/date')
-const { holidayRequest } = require('../helpers/externalRequest')
 const { bulkToSchema } = require('../helpers/schema')
 const logger = require('../helpers/logger')
 
@@ -118,6 +116,7 @@ const shiftByGroupId = async () => {
                                     else tmsh.group_id
                                     end                       as group_id,
                                 date_part('week', date::date) as week_num,
+                                shift_holiday.is_holiday or tms1.is_holiday as is_holiday,
                                 case
                                     when shift_holiday.is_holiday or tms1.is_holiday then null
                                     when tmsh.shift_type is not null then tmsh.shift_type
@@ -148,6 +147,7 @@ const shiftByGroupId = async () => {
                                     shifts.date,
                                     to_char(shifts.date::date, 'dd') as date_num,
                                     shifts.shift_type,
+                                    shifts.is_holiday,
                                     ceiling(
                                                 (
                                                         date_part(
@@ -156,10 +156,6 @@ const shiftByGroupId = async () => {
                                     1                                as is_first_week
                                 from
                                     shifts
-                                        left join tb_m_shifts shift_holiday
-                                                on
-                                                        shifts.date between shift_holiday.start_date and shift_holiday.end_date
-                                                        and shift_holiday.is_holiday = true
                                 order by
                                     shifts.date, shifts.group_id
                             )
@@ -642,7 +638,7 @@ const genSignCheckers = async (shiftRows = []) => {
                 result.gl.push({
                     main_schedule_id: null,
                     group_id: shiftRows[glIndex].group_id,
-                    line_id: shiftRows[sIndex].line_id,
+                    line_id: shiftRows[glIndex].line_id,
                     start_date: dateFormatted(glSignQuery.rows[glIndex].start_non_holiday),
                     end_date: dateFormatted(glSignQuery.rows[glIndex].end_non_holiday),
                     col_span: glSignQuery.rows[glIndex].col_span,
