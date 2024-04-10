@@ -97,14 +97,14 @@ const childrenSubSchedule = async (
                     trcc1.tl1_sign_checker_id,
                     trcc2.tl2_sign_checker_id,
                     EXTRACT('Day' FROM tmsc.date)::INTEGER as date_num,
-                    tmsc.is_holiday,
+                    tmsc.is_holiday or tbrcs.shift_type is null as is_holiday, -- null of shift_type was set as holiday from monthly scheduler 
                     case
                       when tbrcs.shift_type = 'night_shift' then
                         'NIGHT_SHIFT'
                       when tbrcs.plan_time is not null then
                         'PLANNING'
-                      -- when tbrcs.actual_time is not null then
-                        -- 'ACTUAL'
+                      when tbrcs.actual_time is not null then
+                        'ACTUAL'
                       -- when false 
                         -- 'PROBLEM'
                       else

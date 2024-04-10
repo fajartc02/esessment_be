@@ -167,13 +167,13 @@ module.exports = {
                     let result = ''
                     switch (freq.toLowerCase())
                     {
-                        case 'daily':
+                        case 'day':
                             result = sql()
                             break;
-                        case 'weekly':
+                        case 'week':
                             result = sql('distinct on (tmsw.week) tmsw.week, ').concat(` ${joinWeekly} `)
                             break;
-                        case 'monthly':
+                        case 'month':
                             result = sql('distinct on (tmsw.month) tmsw.month, ').concat(` ${joinMonthly} `)
                             break;
                         default:

@@ -26,7 +26,7 @@ console.log(`Migration Running ...`)
 const migrate = async () => {
     const clearRows = async (db) => {
         await Promise.all([
-            db.query(`DELETE FROM ${table.tb_m_system} WHERE system_type in ('OPT_CHANGE', 'OPT_DEPT', 'EVALUATION')`),
+            db.query(`DELETE FROM ${table.tb_m_system} WHERE system_type in ('4S_OPT_CHANGE', '4S_OPT_DEPT', '4S_EVALUATION')`),
         ]).then((res) => {
             console.log('delete and reset count complete')
         })
@@ -40,63 +40,63 @@ const migrate = async () => {
             //#region finding4sMst opt_changes schema
             {
                 uuid: uuid(),
-                system_type: 'OPT_CHANGE',
+                system_type: '4S_OPT_CHANGE',
                 system_value: 'Perubahan Item Check'
             },
             {
                 uuid: uuid(),
-                system_type: 'OPT_CHANGE',
+                system_type: '4S_OPT_CHANGE',
                 system_value: 'Perubahan Kanban'
             },
             //#endregion
             //#region finding4sMst opt_depts schema
             {
                 uuid: uuid(),
-                system_type: 'OPT_DEPT',
+                system_type: '4S_OPT_DEPT',
                 system_value: 'Produksi'
             },
             {
                 uuid: uuid(),
-                system_type: 'OPT_DEPT',
+                system_type: '4S_OPT_DEPT',
                 system_value: 'Kaizen'
             },
             {
                 uuid: uuid(),
-                system_type: 'OPT_DEPT',
+                system_type: '4S_OPT_DEPT',
                 system_value: 'Maintenance'
             },
             {
                 uuid: uuid(),
-                system_type: 'OPT_DEPT',
+                system_type: '4S_OPT_DEPT',
                 system_value: 'Engginering'
             },
             //#endregion
             //#region finding4sMst evaluations schema
             {
                 uuid: uuid(),
-                system_type: 'EVALUATION',
+                system_type: '4S_EVALUATION',
                 system_value: 'Order Part'
             },
             {
                 uuid: uuid(),
-                system_type: 'EVALUATION',
+                system_type: '4S_EVALUATION',
                 system_value: 'Countermeasure'
             },
             {
                 uuid: uuid(),
-                system_type: 'EVALUATION',
+                system_type: '4S_EVALUATION',
                 system_value: 'Monitor/Follow'
             },
             {
                 uuid: uuid(),
-                system_type: 'EVALUATION',
+                system_type: '4S_EVALUATION',
                 system_value: 'Finish'
             }
             //#endregion
         ])
 
         await db.query(`insert into ${table.tb_m_system} (${systemSchema.columns}) VALUES ${systemSchema.values}`)
-        console.log('tb_m_4s_opt_changes', 'inserted')
+        console.log('tb_m_system 4S FINDINGS', 'inserted')
         //#endregion
 
         console.log('Seeder Completed!!!')

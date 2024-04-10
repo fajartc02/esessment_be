@@ -179,6 +179,7 @@ module.exports = {
                     where
                         (
                             (start_date >= '${shift.start}' and start_date <= '${shift.end}') or (end_date >= '${shift.start}' and end_date <= '${shift.end}')
+                            -- or (start_date between ${shift.start}' and '${shift.end}' or end_date between ${shift.start}' and '${shift.end}')
                         )
                 `
             if (shift.is_holiday)

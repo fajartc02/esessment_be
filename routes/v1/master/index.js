@@ -18,10 +18,11 @@ const factors = require('./factors')
 const judgments = require('./judgments')
 const zones = require('./zones')
 const kanbans = require('./kanbans')
-const itemCheckKanbans = require('./itemCheckKanban')
+const itemCheckKanbans4S = require('./4sitemCheckKanban')
 const freqs = require('./freqs')
 const shifts = require('./shifts')
 const system = require('./systems')
+const oemItemCheckKanbans = require('./oemItemCheckKanbans')
 
 router.use('/companies', companies)
 router.use('/plants', plants)
@@ -41,10 +42,12 @@ router.use('/factors', factors)
 router.use('/judgments', judgments)
 router.use("/zones", zones)
 router.use("/kanbans", kanbans)
-router.use('/item-check-kanbans', itemCheckKanbans)
+router.use('/item-check-kanbans', itemCheckKanbans4S)
 router.use('/freqs', freqs)
 router.use('/shifts', shifts)
 router.use('/systems', system)
+
+router.use('/oem-item-check-kanbans', oemItemCheckKanbans)
 
 
 module.exports = router

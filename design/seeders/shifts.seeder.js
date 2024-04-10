@@ -90,13 +90,79 @@ const migrate = async () => {
             {
                 uuid: uuid(),
                 group_id: null,
-                start_date: '2024-04-24',
-                end_date: '2024-04-26',
+                start_date: '2024-04-15',
+                end_date: '2024-04-15',
                 shift_type: null,
                 is_holiday: true,
-                holiday_desc: 'Cuti Group',
+                holiday_desc: 'Libur Lebaran',
                 all_day: true,
-                title: 'Cuti Group'
+                title: 'Libur Lebaran'
+            },
+            {
+                uuid: uuid(),
+                group_id: 2,
+                start_date: '2024-04-16',
+                end_date: '2024-04-19',
+                shift_type: 'night_shift',
+                is_holiday: null,
+                holiday_desc: null,
+                all_day: true,
+                title: 'RED'
+            },
+            {
+                uuid: uuid(),
+                group_id: 3,
+                start_date: '2024-04-16',
+                end_date: '2024-04-19',
+                shift_type: 'morning_shift',
+                is_holiday: null,
+                holiday_desc: null,
+                all_day: true,
+                title: 'WHITE'
+            },
+            {
+                uuid: uuid(),
+                group_id: 2,
+                start_date: '2024-04-22',
+                end_date: '2024-04-26',
+                shift_type: 'morning_shift',
+                is_holiday: null,
+                holiday_desc: null,
+                all_day: true,
+                title: 'RED'
+            },
+            {
+                uuid: uuid(),
+                group_id: 3,
+                start_date: '2024-04-22',
+                end_date: '2024-04-26',
+                shift_type: 'night_shift',
+                is_holiday: null,
+                holiday_desc: null,
+                all_day: true,
+                title: 'WHITE'
+            },
+            {
+                uuid: uuid(),
+                group_id: 2,
+                start_date: '2024-04-29',
+                end_date: '2024-05-03',
+                shift_type: 'night_shift',
+                is_holiday: null,
+                holiday_desc: null,
+                all_day: true,
+                title: 'RED'
+            },
+            {
+                uuid: uuid(),
+                group_id: 3,
+                start_date: '2024-04-29',
+                end_date: '2024-05-03',
+                shift_type: 'morning_shift',
+                is_holiday: null,
+                holiday_desc: null,
+                all_day: true,
+                title: 'WHITE'
             },
         ])
 

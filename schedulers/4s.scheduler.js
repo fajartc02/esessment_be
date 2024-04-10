@@ -57,20 +57,14 @@ const clear4sRows = async () => {
 }
 //#endregion
 
-//#region scheduler added group to mainSchedule
+//#region scheduler line, group schedule month
 /**
- * @typedef {Object} mainScheduleBulkSchema
- * @returns {Promise<Array<mainScheduleBulkSchema>>}
+ * 
+ * @returns {Promise<pg.QueryResultRow>}
  */
-const genMainSchedule = async () => {
-    const result = []
-
-    /* const groupQuery = await databasePool.query(`select * from ${table.tb_m_groups} where group_nm in ('WHITE', 'RED')`)
-        groupQuery.rows.forEach((group, gIndex) => {
-            
-        }) */
-    //const lineQuery = await databasePool.query(`select * from ${table.tb_m_lines} order by line_id asc limit 6`)
-    const lgQuery = await databasePool.query(`
+const lineGroupRows = async (onlySql = false) => {
+    const lineGroupQuery =
+        `
                 select 
                     tml.line_id,
                     tmg.group_id,
@@ -78,17 +72,140 @@ const genMainSchedule = async () => {
                 from 
                     (select * from tb_m_lines order by line_id asc) tml,
                     (select * from tb_m_groups where is_active = true) tmg,
-                    (select date_part('month', date) as month_num from tb_m_schedules where date_part('month', date) = '${currentMonth}' group by month_num) tmsm
-            `)
+                    (select date_part('month', date) as month_num from tb_m_schedules where date_part('month', date) = '${currentMonth}' and date_part('year', date) = ${currentYear} group by month_num) tmsm
+            `
+    if (onlySql)
+    {
+        return lineGroupQuery
+    }
 
-    for (let lnIndex = 0; lnIndex < lgQuery.rows.length; lnIndex++)
+    const lgQuery = await databasePool.query(lineGroupQuery)
+    return lgQuery.rows
+}
+//#endregion
+
+//#region scheduler shift by group id
+/**
+ * 
+ * @returns {Promise<Array<any>>}
+ */
+const shiftByGroupId = async () => {
+    //#region scheduler shiftSql
+    const shiftSql =
+        `
+            with
+                lines as (
+                            select
+                                line_id,
+                                line_nm
+                            from
+                                tb_m_lines
+                            order by line_id
+                        ),
+                shifts as (
+                            select distinct on
+                                (
+                                case
+                                    when tmsh.group_id is null then tmg.group_id
+                                    else tmsh.group_id
+                                    end,
+                                tms1.date
+                                )
+                                tms1.schedule_id,
+                                tms1.date,
+                                case
+                                    when tmsh.group_id is null then tmg.group_id
+                                    else tmsh.group_id
+                                    end                       as group_id,
+                                date_part('week', date::date) as week_num,
+                                case
+                                    when shift_holiday.is_holiday or tms1.is_holiday then null
+                                    when tmsh.shift_type is not null then tmsh.shift_type
+                                    when tmsh.shift_type is null and date_part('week', date::date)::integer % 2 = 0
+                                        then 'morning_shift'
+                                    else 'night_shift'
+                                    end                       as shift_type
+                            from
+                                tb_m_schedules tms1
+                                    left join tb_m_shifts tmsh
+                                                on tms1.date between tmsh.start_date and tmsh.end_date
+                                    left join tb_m_shifts shift_holiday on
+                                        tms1.date between shift_holiday.start_date and shift_holiday.end_date
+                                        and shift_holiday.is_holiday = true,
+                                tb_m_groups tmg
+                            where
+                                    date_part('month', tms1.date) = ${currentMonth}
+                                and date_part('year', tms1.date) = ${currentYear}
+                                and tmg.is_active = true
+                            order by
+                                group_id, date, shift_type
+                        ),
+                schedules as (
+                                select distinct on (shifts.group_id, shifts.date)
+                                    shifts.group_id,
+                                    shifts.schedule_id,
+                                    shifts.week_num,
+                                    shifts.date,
+                                    to_char(shifts.date::date, 'dd') as date_num,
+                                    shifts.shift_type,
+                                    ceiling(
+                                                (
+                                                        date_part(
+                                                                'day', shifts.date) - date_part(
+                                                                'dow', shifts.date)) / 7) =
+                                    1                                as is_first_week
+                                from
+                                    shifts
+                                        left join tb_m_shifts shift_holiday
+                                                on
+                                                        shifts.date between shift_holiday.start_date and shift_holiday.end_date
+                                                        and shift_holiday.is_holiday = true
+                                order by
+                                    shifts.date, shifts.group_id
+                            )
+            select
+                        row_number()
+                        over (partition by lines.line_id ORDER BY lines.line_id, schedules.group_id, schedules.date )::integer as no,
+                        lines.*,
+                        schedules.*
+            from
+                schedules,
+                lines
+            order by
+                lines.line_id, schedules.group_id, schedules.date
+        `
+    //#endregion    
+
+    //console.log('shiftSql', shiftSql)
+    //logger.log('info', shiftSql)
+    const shiftQuery = await databasePool.query(shiftSql)
+    return shiftQuery.rows
+}
+//#endregion
+
+//#region scheduler added group to mainSchedule
+/**
+ * @typedef {Object} mainScheduleBulkSchema
+ * @property {string} uuid 
+ * @property {number} month_num
+ * @property {number} year_num
+ * @property {number} line_id
+ * @property {number} group_id
+ * 
+ * @param {pg.QueryResultRow} lineGroupRows
+ * @returns {Promise<Array<mainScheduleBulkSchema>>}
+ */
+const genMainSchedule = async (lineGroups) => {
+    const result = []
+
+    for (let lnIndex = 0; lnIndex < lineGroups.length; lnIndex++)
     {
         result.push({
             uuid: uuid(),
-            month_num: lgQuery.rows[lnIndex].month_num,
+            month_num: lineGroups[lnIndex].month_num,
             year_num: currentYear,
-            line_id: lgQuery.rows[lnIndex].line_id,
-            group_id: lgQuery.rows[lnIndex].group_id,
+            line_id: lineGroups[lnIndex].line_id,
+            group_id: lineGroups[lnIndex].group_id,
         })
     }
 
@@ -133,6 +250,7 @@ const genSubSchedule = async (shiftRows = []) => {
         {
             let planTime = null
             let shouldPlan = false
+            //lastWeekNum = 0
 
             // determine plan time should only has precition_val * 
             if (
@@ -152,7 +270,7 @@ const genSubSchedule = async (shiftRows = []) => {
                 countSame = 0
             }
 
-            // WEEKLY, MONTHLY, 2 MONTH .....
+            // >= 1 MONTH 
             if (kanbanRows[kIndex].precition_val >= 30)
             {
                 const lastPlanTimeQuery = await databasePool.query(`
@@ -168,6 +286,7 @@ const genSubSchedule = async (shiftRows = []) => {
                                         trss.kanban_id = '${kanbanRows[kIndex].kanban_id}'
                                         and trss.zone_id = '${kanbanRows[kIndex].zone_id}'
                                         and trss.freq_id = '${kanbanRows[kIndex].freq_id}'
+                                        and tms.date <= current_date - interval '${kanbanRows[kIndex].precition_val} days'
                                     order by
                                         trss.sub_schedule_id desc limit 1
                                     `
@@ -182,8 +301,7 @@ const genSubSchedule = async (shiftRows = []) => {
 
                     //MONTHLY should plan on holiday  
                     if (
-                        kanbanRows[kIndex].freq_nm
-                        && kanbanRows[kIndex].freq_nm.toLowerCase() == 'monthly'
+                        kanbanRows[kIndex].precition_val == 30
                         && moment(planTime).day() != 6
                     )
                     {
@@ -207,8 +325,7 @@ const genSubSchedule = async (shiftRows = []) => {
                 {
                     shouldPlan = true
                     if (
-                        kanbanRows[kIndex].freq_nm
-                        && kanbanRows[kIndex].freq_nm.toLowerCase() == 'monthly'
+                        kanbanRows[kIndex].precition_val == 30
                     )
                     {
                         countSame = 6 // saturday was 6 index of 7 days
@@ -226,7 +343,7 @@ const genSubSchedule = async (shiftRows = []) => {
             }
 
             //#region scheduler generate daily 
-            if (kanbanRows[kIndex].freq_nm.toLowerCase() == 'daily')
+            if (kanbanRows[kIndex].precition_val == 1)
             {
                 for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
                 {
@@ -253,8 +370,23 @@ const genSubSchedule = async (shiftRows = []) => {
                         shouldPlan = true
                     }
 
+                    const exists = result.find((item) =>
+                        item.group_id == shiftRows[sIndex].group_id
+                        && item.kanban_id == shiftRows[sIndex].kanban_id
+                        && item.zone_id == shiftRows[sIndex].zone_id
+                        && item.freq_id == shiftRows[sIndex].freq_id
+                        && item.schedule_id == shiftRows[sIndex].schedule_id
+                    )
+
+                    if (exists)
+                    {
+                        continue
+                    }
+
                     result.push({
                         main_schedule_id: null,
+                        group_id: shiftRows[sIndex].group_id,
+                        line_id: shiftRows[sIndex].line_id,
                         kanban_id: kanbanRows[kIndex].kanban_id,
                         zone_id: kanbanRows[kIndex].zone_id,
                         freq_id: kanbanRows[kIndex].freq_id,
@@ -265,7 +397,7 @@ const genSubSchedule = async (shiftRows = []) => {
                 }
             }
             //#endregion
-            //#region scheduler generate weekly, monthly etc
+            //#region scheduler generate 1 week, 1 month etc
             else
             {
                 let planTimeWeeklyArr = []
@@ -275,7 +407,7 @@ const genSubSchedule = async (shiftRows = []) => {
                     {
                         if (shiftRows[sIndex].shift_type == 'morning_shift')
                         {
-                            if (kanbanRows[kIndex].freq_nm.toLowerCase() == 'weekly')
+                            if (kanbanRows[kIndex].precition_val == 7)
                             {
                                 if (countSame == 0)
                                 {
@@ -283,11 +415,14 @@ const genSubSchedule = async (shiftRows = []) => {
                                 }
 
                                 if (
-                                    shiftRows[sIndex].total_day_of_week > 1
-                                    && lastWeekNum != shiftRows[sIndex].week_num
+                                    lastWeekNum != shiftRows[sIndex].week_num
+                                    && !shiftRows[sIndex].is_holiday
                                 )
                                 {
-                                    const byDowSql = `
+                                    //shiftRows[sIndex].total_day_of_week > 1
+
+                                    const byDowSql =
+                                        `
                                             select 
                                                 tmsc.date 
                                             from (
@@ -320,13 +455,12 @@ const genSubSchedule = async (shiftRows = []) => {
                                     lastWeekNum = shiftRows[sIndex].week_num
                                 }
                             }
-                            else if (
-                                shiftRows[sIndex].is_first_week
-                                && (kanbanRows[kIndex].freq_nm.toLowerCase() == 'monthly'
-                                    || kanbanRows[kIndex].freq_nm.toLowerCase() == '2 month'
-                                    || kanbanRows[kIndex].freq_nm.toLowerCase() == '3 month')
-                            )
+                            else if (shiftRows[sIndex].is_first_week)
                             {
+                                /* && (kanbanRows[kIndex].freq_nm.toLowerCase() == 'monthly'
+                                   || kanbanRows[kIndex].freq_nm.toLowerCase() == '2 month'
+                                   || kanbanRows[kIndex].freq_nm.toLowerCase() == '3 month') */
+
                                 planTime = moment(shiftRows[sIndex].date)
                                     .clone()
                                     .weekday(countSame)
@@ -345,13 +479,27 @@ const genSubSchedule = async (shiftRows = []) => {
 
                 for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
                 {
-                    if (kanbanRows[kIndex].freq_nm.toLowerCase() == 'weekly')
+                    if (kanbanRows[kIndex].precition_val == 7)
                     {
                         planTime = planTimeWeeklyArr.find((item) => item == dateFormatted(shiftRows[sIndex].date))
                     }
 
+                    const exists = result.find((item) =>
+                        item.group_id == shiftRows[sIndex].group_id
+                        && item.kanban_id == shiftRows[sIndex].kanban_id
+                        && item.zone_id == shiftRows[sIndex].zone_id
+                        && item.freq_id == shiftRows[sIndex].freq_id
+                        && item.schedule_id == shiftRows[sIndex].schedule_id
+                    )
+                    if (exists)
+                    {
+                        continue
+                    }
+
                     result.push({
                         main_schedule_id: null,
+                        group_id: shiftRows[sIndex].group_id,
+                        line_id: shiftRows[sIndex].line_id,
                         kanban_id: kanbanRows[kIndex].kanban_id,
                         zone_id: kanbanRows[kIndex].zone_id,
                         freq_id: kanbanRows[kIndex].freq_id,
@@ -376,7 +524,6 @@ const genSubSchedule = async (shiftRows = []) => {
 /**
  * 
  * @param {pg.QueryResultRow} shiftRows 
- * @returns {Promise<Array<any>>} result
  */
 const genSignCheckers = async (shiftRows = []) => {
     const result = {
@@ -394,6 +541,8 @@ const genSignCheckers = async (shiftRows = []) => {
             {
                 result.tl1.push({
                     main_schedule_id: null,
+                    group_id: shiftRows[sIndex].group_id,
+                    line_id: shiftRows[sIndex].line_id,
                     is_tl_1: true,
                     start_date: moment(shiftRows[sIndex].date, 'YYYY-MM-DD').format('YYYY-MM-DD'),
                     end_date: moment(shiftRows[sIndex].date, 'YYYY-MM-DD').format('YYYY-MM-DD')
@@ -401,6 +550,8 @@ const genSignCheckers = async (shiftRows = []) => {
 
                 result.tl2.push({
                     main_schedule_id: null,
+                    group_id: shiftRows[sIndex].group_id,
+                    line_id: shiftRows[sIndex].line_id,
                     is_tl_2: true,
                     start_date: moment(shiftRows[sIndex].date, 'YYYY-MM-DD').format('YYYY-MM-DD'),
                     end_date: moment(shiftRows[sIndex].date, 'YYYY-MM-DD').format('YYYY-MM-DD')
@@ -490,6 +641,8 @@ const genSignCheckers = async (shiftRows = []) => {
             {
                 result.gl.push({
                     main_schedule_id: null,
+                    group_id: shiftRows[glIndex].group_id,
+                    line_id: shiftRows[sIndex].line_id,
                     start_date: dateFormatted(glSignQuery.rows[glIndex].start_non_holiday),
                     end_date: dateFormatted(glSignQuery.rows[glIndex].end_non_holiday),
                     col_span: glSignQuery.rows[glIndex].col_span,
@@ -542,303 +695,158 @@ const genSignCheckers = async (shiftRows = []) => {
 }
 //#endregion
 
-//#region shift by group id
-const shiftByGroupId = async (groupId) => {
-    const shiftSql = `
-                    with
-                        weekly_shifts as (
-                            select
-                                date_part('week', "date"::date) as week_num,
-                                case
-                                    when tms2.shift_type = 'morning_shift' then 'night_shift'
-                                    when tms2.shift_type = 'night_shift' then 'morning_shift'
-                                    when tmsh.shift_type = 'morning_shift' then 'night_shift'
-                                    when tmsh.shift_type = 'night_shift' then 'morning_shift'
-                                    when date_part('week', "date"::date)::integer % 2 = 0 then 
-                                        'morning_shift'
-                                    else 'night_shift'
-                                end as shift_type
-                            from
-                                ${table.tb_m_schedules} tms1
-                                full outer join (
-                                    select date_part('week', "date"::date) as week_num,
-                                       case
-                                           when date_part('week', "date"::date)::integer % 2 = 0 then
-                                               'morning_shift'
-                                           else 'night_shift'
-                                           end                         as shift_type
-                                    from tb_m_schedules
-                                    where date_part('month', "date") = '${currentMonth - 1}'
-                                    and date_part('year', "date") = '${currentYear}'
-                                    group by week_num, shift_type
-                                    order by week_num desc
-                                    limit 1
-                                ) tms2 on true
-                                left join tb_m_shifts tmsh on 
-                                    tms1."date" between tmsh.start_date and tmsh.end_date - 1 
-                                    and tmsh.group_id = ${groupId}
-                            where 
-                                date_part('month', "date") = '${currentMonth}'
-                                and date_part('year', "date") = '${currentYear}'
-                        ),
-                        total_day_weeks as (
-                            select 
-                                date_part('week', "date"::date) as week_num,
-                                count(*) as total_day_of_week
-                            from 
-                                ${table.tb_m_schedules} 
-                            where 
-								is_holiday = false or is_holiday is null
-							group by 
-								week_num
-                        )
-                    select
-                        tms.schedule_id,
-                        tms."date",
-                        EXTRACT('DOW' FROM tms."date"::timestamp) AS day_of_week,
-                        (EXTRACT(WEEK FROM "date"::date) % 2) <> 0 AS is_odd_week, -- determine an weekly should plan
-                        TO_CHAR(tms."date"::date, 'dd' ) as date_num,
-                        shift.shift_type,
-                        case 
-                            when tmsh_holiday.is_holiday then 
-                                tmsh.is_holiday
-                            else 
-                                tms.is_holiday
-                        end as is_holiday,
-                        shift.week_num,
-                        tdw.total_day_of_week,
-                        ceiling((date_part('day', tms."date") - date_part('dow', tms."date")) / 7) = 1 as is_first_week
-                    from
-                        ${table.tb_m_schedules} tms
-                        left join (
-                            select
-                                week_num,
-                                shift_type,
-                                count(*) as num_shifts
-                            from
-                                weekly_shifts
-                            group by
-                                week_num,
-                                shift_type
-                            order by
-                                week_num,
-                                shift_type
-                        ) shift on date_part('week', tms."date"::date) = shift.week_num and tms.is_holiday is null
-                        left join total_day_weeks tdw on date_part('week', tms."date"::date) = tdw.week_num
-                        left join tb_m_shifts tmsh on 
-                            tms."date" between tmsh.start_date and tmsh.end_date - 1 
-                            and tmsh.group_id = ${groupId}
-                        left join tb_m_shifts tmsh_holiday on 
-                            tms."date" between tmsh.start_date and tmsh.end_date - 1 
-                            and is_holiday = true
-                    order by 
-                        tms."date"
-                `
-    //console.log('shiftSql', shiftSql)
-    const shiftQuery = await databasePool.query(shiftSql)
-    return shiftQuery.rows
-}
-//#endregion
-
-
 //#region scheduler main 
 const main = async () => {
     try
     {
         await clear4sRows();
 
-        //#region scheduler shift generator
-        const shiftSql = `
-                       with
-                        weekly_shifts as (
-                            select
-                                date_part('week', "date"::date) as week_num,
-                                case
-                                    when date_part('week', "date"::date) = 9 or date_part('week'::text, "date") = 10 then 
-                                        'morning_shift'
-                                    when tms2.shift_type = 'morning_shift' then 'night_shift'
-                                    when date_part('week', "date"::date)::integer % 2 = 0 then 
-                                        'morning_shift'
-                                    else 'night_shift'
-                                end as shift_type
-                            from
-                                ${table.tb_m_schedules} tms1
-                                full outer join (
-                                    select date_part('week', "date"::date) as week_num,
-                                       case
-                                           when date_part('week', "date"::date)::integer % 2 = 0 then
-                                               'morning_shift'
-                                           else 'night_shift'
-                                           end                         as shift_type
-                                    from tb_m_schedules
-                                    where date_part('month', "date") = '${currentMonth - 1}'
-                                    and date_part('year', "date") = '${currentYear}'
-                                    group by week_num, shift_type
-                                    order by week_num desc
-                                    limit 1
-                                ) tms2 on true
-                            where 
-                                date_part('month', "date") = '${currentMonth}'
-                                and date_part('year', "date") = '${currentYear}'
-                        ),
-                        total_day_weeks as (
-                            select 
-                                date_part('week', "date"::date) as week_num,
-                                count(*) as total_day_of_week
-                            from 
-                                ${table.tb_m_schedules} 
-                            where 
-								is_holiday = false or is_holiday is null
-							group by 
-								week_num
-                        )
-                    select distinct on (tms.date)
-                        tms.schedule_id,
-                        tms."date",
-                        EXTRACT('DOW' FROM tms."date"::timestamp) AS day_of_week,
-                        (EXTRACT(WEEK FROM "date"::date) % 2) <> 0 AS is_odd_week, -- determine an weekly should plan
-                        TO_CHAR(tms."date"::date, 'dd' ) as date_num,
-                        shift.shift_type,
-                        tms.is_holiday,
-                        shift.week_num,
-                        tdw.total_day_of_week,
-                        ceiling((date_part('day', tms."date") - date_part('dow', tms."date")) / 7) = 1 as is_first_week
-                    from
-                        ${table.tb_m_schedules} tms
-                        left join (
-                            select
-                                week_num,
-                                shift_type,
-                                count(*) as num_shifts
-                            from
-                                weekly_shifts
-                            group by
-                                week_num,
-                                shift_type
-                            order by
-                                week_num,
-                                shift_type
-                        ) shift on date_part('week', tms."date"::date) = shift.week_num and tms.is_holiday is null
-                        left join total_day_weeks tdw on date_part('week', tms."date"::date) = tdw.week_num
-                    where
-                        date_part('month', tms."date") = '${currentMonth}'
-                        and date_part('year', tms."date") = '${currentYear}'
-                    order by 
-                        tms."date"
-                `
-        //console.log('shiftSql', shiftSql)
-        const shiftQuery = await databasePool.query(shiftSql)
-        const shiftRows = shiftQuery.rows
-        //console.log('shiftRows', shiftSql)
+        //#region schedulers parent 
+        const lineGroups = await lineGroupRows()
+        const shiftRows = await shiftByGroupId()
+        console.log('shiftRows length', shiftRows.length)
+        /*  logger.info('shiftRows', {
+             meta: {
+                 isJson: true,
+                 message: shiftRows
+             }
+         }) */
         //#endregion
 
         //#region scheduler bulk temp var
-        const mainScheduleBulkSchema = await genMainSchedule()
+        const mainScheduleBulkSchema = await genMainSchedule(lineGroups)
         const subScheduleBulkSchema = await genSubSchedule(shiftRows)
-
         const signCheckers = await genSignCheckers(shiftRows)
         const signCheckerTl1BulkSchema = signCheckers.tl1
         const signCheckerTl2BulkSchema = signCheckers.tl2
         const signChckerGlBulkSchema = signCheckers.gl
-        let signChckerShBulkSchema = signCheckers.sh
-        if (signChckerShBulkSchema[0] && signChckerShBulkSchema[0].constructor === Array)
-        {
-            signChckerShBulkSchema = signChckerShBulkSchema[0]
-        }
-        //console.warn('signCheckers', signCheckers)
-
+        const signChckerShBulkSchema = signCheckers.sh
         //#endregion
 
 
         //#region scheduler transaction
-        /**
-         * @param {databasePool} db
-         */
         const transaction = await queryTransaction(async (db) => {
             //#region scheduler inserted tb_r_4s_main_schedules
             const mSchema = await bulkToSchema(mainScheduleBulkSchema)
-            const mainScheduleInserted = await db.query(`insert into ${table.tb_r_4s_main_schedules} (${mSchema.columns}) values ${mSchema.values} returning *`)
+            const mainScheduleInserted = await db.query(
+                `insert into ${table.tb_r_4s_main_schedules} (${mSchema.columns}) values ${mSchema.values} returning *`)
             console.log('tb_r_4s_main_schedules', 'inserted')
             //#endregion
 
             let subScheduleTemp = []
             let signCheckersTemp = []
 
+            /* logger.info('subScheduleBulkSchema', {
+                meta: {
+                    isJson: true,
+                    message: subScheduleBulkSchema
+                }
+            }) */
+
             for (let mIndex = 0; mIndex < mainScheduleInserted.rows.length; mIndex++)
             {
                 //#region scheduler generate main_schedule_id for subScheduleBulkSchema
                 for (let subIndex = 0; subIndex < subScheduleBulkSchema.length; subIndex++)
                 {
-                    subScheduleTemp.push({
-                        ...subScheduleBulkSchema[subIndex],
-                        uuid: uuid(),
-                        main_schedule_id: mainScheduleInserted.rows[mIndex].main_schedule_id
-                    })
+                    if (
+                        subScheduleBulkSchema[subIndex].line_id == mainScheduleInserted.rows[mIndex].line_id
+                        && subScheduleBulkSchema[subIndex].group_id == mainScheduleInserted.rows[mIndex].group_id
+                    )
+                    {
+                        subScheduleTemp.push({
+                            uuid: uuid(),
+                            main_schedule_id: mainScheduleInserted.rows[mIndex].main_schedule_id,
+                            kanban_id: subScheduleBulkSchema[subIndex].kanban_id,
+                            zone_id: subScheduleBulkSchema[subIndex].zone_id,
+                            freq_id: subScheduleBulkSchema[subIndex].freq_id,
+                            schedule_id: subScheduleBulkSchema[subIndex].schedule_id,
+                            shift_type: subScheduleBulkSchema[subIndex].shift_type,
+                            plan_time: subScheduleBulkSchema[subIndex].plan_time,
+                        })
+                    }
                 }
                 //#endregion
 
                 //#region scheduler combine all sign checker schema
                 for (let tl1Index = 0; tl1Index < signCheckerTl1BulkSchema.length; tl1Index++)
                 {
-                    signCheckersTemp.push({
-                        main_schedule_id: mainScheduleInserted.rows[mIndex].main_schedule_id,
-                        uuid: uuid(),
-                        start_date: signCheckerTl1BulkSchema[tl1Index].start_date,
-                        end_date: signCheckerTl1BulkSchema[tl1Index].end_date,
-                        is_tl_1: true,
-                        is_tl_2: null,
-                        is_gl: null,
-                        is_sh: null,
-                    })
+                    if (
+                        signCheckerTl1BulkSchema[tl1Index].group_id == mainScheduleInserted.rows[mIndex].group_id
+                        && signCheckerTl1BulkSchema[tl1Index].line_id == mainScheduleInserted.rows[mIndex].line_id
+                    )
+                    {
+                        signCheckersTemp.push({
+                            main_schedule_id: mainScheduleInserted.rows[mIndex].main_schedule_id,
+                            uuid: uuid(),
+                            start_date: signCheckerTl1BulkSchema[tl1Index].start_date,
+                            end_date: signCheckerTl1BulkSchema[tl1Index].end_date,
+                            is_tl_1: true,
+                            is_tl_2: null,
+                            is_gl: null,
+                            is_sh: null,
+                        })
+                    }
                 }
 
                 for (let tl2Index = 0; tl2Index < signCheckerTl2BulkSchema.length; tl2Index++)
                 {
-                    signCheckersTemp.push({
-                        main_schedule_id: mainScheduleInserted.rows[mIndex].main_schedule_id,
-                        uuid: uuid(),
-                        start_date: signCheckerTl2BulkSchema[tl2Index].start_date,
-                        end_date: signCheckerTl2BulkSchema[tl2Index].end_date,
-                        is_tl_1: null,
-                        is_tl_2: true,
-                        is_gl: null,
-                        is_sh: null,
-                    })
+                    if (
+                        signCheckerTl2BulkSchema[tl2Index].group_id == mainScheduleInserted.rows[mIndex].group_id
+                        && signCheckerTl2BulkSchema[tl2Index].line_id == mainScheduleInserted.rows[mIndex].line_id
+                    )
+                    {
+                        signCheckersTemp.push({
+                            main_schedule_id: mainScheduleInserted.rows[mIndex].main_schedule_id,
+                            uuid: uuid(),
+                            start_date: signCheckerTl2BulkSchema[tl2Index].start_date,
+                            end_date: signCheckerTl2BulkSchema[tl2Index].end_date,
+                            is_tl_1: null,
+                            is_tl_2: true,
+                            is_gl: null,
+                            is_sh: null,
+                        })
+                    }
                 }
 
                 for (let glIndex = 0; glIndex < signChckerGlBulkSchema.length; glIndex++)
                 {
-                    signCheckersTemp.push({
-                        main_schedule_id: mainScheduleInserted.rows[mIndex].main_schedule_id,
-                        uuid: uuid(),
-                        start_date: signChckerGlBulkSchema[glIndex].start_date,
-                        end_date: signChckerGlBulkSchema[glIndex].end_date,
-                        is_tl_1: null,
-                        is_tl_2: null,
-                        is_gl: true,
-                        is_sh: null,
-                    })
+                    if (
+                        signChckerGlBulkSchema[glIndex].group_id == mainScheduleInserted.rows[mIndex].group_id
+                        && signChckerGlBulkSchema[glIndex].line_id == mainScheduleInserted.rows[mIndex].line_id
+                    )
+                    {
+                        signCheckersTemp.push({
+                            main_schedule_id: mainScheduleInserted.rows[mIndex].main_schedule_id,
+                            uuid: uuid(),
+                            start_date: signChckerGlBulkSchema[glIndex].start_date,
+                            end_date: signChckerGlBulkSchema[glIndex].end_date,
+                            is_tl_1: null,
+                            is_tl_2: null,
+                            is_gl: true,
+                            is_sh: null,
+                        })
+                    }
                 }
 
                 for (let shIndex = 0; shIndex < signChckerShBulkSchema.length; shIndex++)
                 {
-                    signCheckersTemp.push({
-                        main_schedule_id: mainScheduleInserted.rows[mIndex].main_schedule_id,
-                        uuid: uuid(),
-                        start_date: signChckerShBulkSchema[shIndex].start_date,
-                        end_date: `func (select "date" from tb_m_schedules where "date" between '${signChckerShBulkSchema[shIndex].start_date}' and '${signChckerShBulkSchema[shIndex].end_date}' and (is_holiday is null or is_holiday = false) order by schedule_id desc limit 1)`,
-                        is_tl_1: null,
-                        is_tl_2: null,
-                        is_gl: null,
-                        is_sh: true,
-                    })
+                    if (
+                        signChckerShBulkSchema[shIndex].group_id == mainScheduleInserted.rows[mIndex].group_id
+                        && signChckerShBulkSchema[shIndex].line_id == mainScheduleInserted.rows[mIndex].line_id
+                        )
+                    {
+                        signCheckersTemp.push({
+                            main_schedule_id: mainScheduleInserted.rows[mIndex].main_schedule_id,
+                            uuid: uuid(),
+                            start_date: signChckerShBulkSchema[shIndex].start_date,
+                            end_date: `func (select "date" from tb_m_schedules where "date" between '${signChckerShBulkSchema[shIndex].start_date}' and '${signChckerShBulkSchema[shIndex].end_date}' and (is_holiday is null or is_holiday = false) order by schedule_id desc limit 1)`,
+                            is_tl_1: null,
+                            is_tl_2: null,
+                            is_gl: null,
+                            is_sh: true,
+                        })
+                    }
                 }
-
-                /*  for (let ikIndex = 0; ikIndex < itemCheckKanbanSchema.length; ikIndex++) {
-                     itemCheckKanbanTemp.push({
- 
-                     })
-                 } */
                 //#endregion
             }
 
@@ -849,7 +857,6 @@ const main = async () => {
             //#endregion
 
             //#region scheduler inserted tb_r_4s_schedule_sign_checkers
-            //console.log('signCheckersTemp', signCheckersTemp)
             const sgSchema = await bulkToSchema(signCheckersTemp)
             await db.query(`insert into ${table.tb_r_4s_schedule_sign_checkers} (${sgSchema.columns}) values ${sgSchema.values}`)
             console.log('tb_r_4s_schedule_sign_checkers', 'inserted')
@@ -867,63 +874,13 @@ const main = async () => {
 //#endregion
 
 const test = async () => {
-    const weekSchedules = await databasePool.query(
-        `
-            select
-                "date",
-                date_part('week', "date") as week_num
-            from
-                tb_m_schedules
-            where
-                not exists (
-                    select 1
-                    from tb_m_shifts
-                    where tb_m_schedules."date" between tb_m_shifts.start_date and tb_m_shifts.end_date
-                    and tb_m_shifts.is_holiday = true
-                )
-                and date_part('month', "date") = 4
-                and date_part('year', "date") = ${currentYear}
-                and (
-                    is_holiday = false
-                    or is_holiday is null
-                )
-        `
-    )
+    await clear4sRows()
+    const shiftRows = await shiftByGroupId(2)
 
-    const result = []
-    if (weekSchedules.rowCount > 0)
-    {
-        const result = []
-        let indexWeek = 0
-        let startDate = ''
-        let endDate = ''
 
-        for (let i = 0; i < weekSchedules.rows.length; i++)
-        {
-            const item = weekSchedules.rows[i]
-
-            if (startDate == '')
-            {
-                startDate = item.date
-            }
-
-            if (weekSchedules.rows[i + 1])
-            {
-                let nextDate = moment(weekSchedules.rows[i + 1], 'YYYY-MM-DD').add(1, 'd')
-                    .format('YYYY-MM-DD')
-            }
-
-            if (endDate != '')
-            {
-                result.push({
-                    start_date: item.date,
-                    week: item.week_num
-                })
-            }
-        }
-    }
-
-    logger.info(result)
+    logger.info(`shiftRows`, {
+        data: shiftRows
+    })
 }
 
 /* test()
@@ -939,16 +896,21 @@ clear4sRows()
     .then((r) => {
         main()
             .then((r) => {
-                process.exit()
+                logger.info(`success run scheduler for month=${currentMonth}-${currentYear}`)
+                return 0
             })
             .catch((e) => {
-                console.log('error clear4sRows', e);
-                process.exit()
+                logger.error(`error clear4sRows() 4s.scheduler for month=${currentMonth}-${currentYear}`, {
+                    data: e
+                })
+                return 0
             })
     })
     .catch((e) => {
-        console.log('error clear4sRows', e);
-        process.exit()
+        logger.error(`error clear4sRows() 4s.scheduler for month=${currentMonth}-${currentYear}`, {
+            data: e
+        })
+        return 0
     })
 
 /* main()
