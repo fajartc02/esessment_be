@@ -20,7 +20,7 @@ module.exports = {
             let qOffset = (limit != -1 && limit) && currentPage > 1 ? `OFFSET ${limit * (currentPage - 1)}` : ``
             if (limit != -1 && limit) qLimit = `LIMIT ${limit}`
             let conditions = queryCondExacOpAnd(req.query, 'finding_date');
-            let findingCmData = await queryGET(table.v_finding_list, `WHERE ${conditions} ORDER BY finding_date DESC ${qLimit} ${qOffset}`)
+            let findingCmData = await queryGET(table.v_finding_list, `WHERE ${condDataNotDeleted} ${conditions} ORDER BY finding_date DESC ${qLimit} ${qOffset}`)
             let qCountTotal = `SELECT 
             count(finding_id) as total_page
         FROM ${table.v_finding_list}
