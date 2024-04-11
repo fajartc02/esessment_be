@@ -376,8 +376,8 @@ module.exports = {
 
           const whereFreqId = ` ((select freq_id from ${table.tb_m_freqs} where uuid = '${item.freq_id}' limit 1)) `
 
-          const countRowSpanSql = 
-          `
+          const countRowSpanSql =
+            `
               with
                   pics as (
                       select
@@ -829,28 +829,26 @@ module.exports = {
 
       subScheduleRow = subScheduleRow[0]
 
-      let obj = {
-        // deleted_dt: "CURRENT_TIMESTAMP",
-        // deleted_by: req.user.fullname
-        plan_time: null,
-        actual_time: null,
-        actual_pic_id: null,
-      }
-
-      await queryPUT(
-        table.tb_r_4s_sub_schedules,
-        obj,
+      const result = await queryCustom(
         `
-            WHERE  
+          update ${table.tb_r_4s_sub_schedules}
+          set 
+            plan_time = null,
+            actual_time = null,
+            actual_pic_id = null,
+            changed_by = '${req.user.fullname}',
+            changed_dt = '${moment().format('YYYY-MM-DD HH:mm:ss')}'
+          where
             main_schedule_id = '${subScheduleRow.main_schedule_id}' 
             and freq_id = '${subScheduleRow.freq_id}' 
             and zone_id = '${subScheduleRow.zone_id}' 
             and kanban_id = '${subScheduleRow.kanban_id}'
             and schedule_id = '${subScheduleRow.schedule_id}'
+          returning *
         `
       )
 
-      response.success(res, 'success to delete 4s sub schedule', [])
+      response.success(res, 'success to delete 4s sub schedule', result.rows[0])
     } catch (e)
     {
       console.log(e)
