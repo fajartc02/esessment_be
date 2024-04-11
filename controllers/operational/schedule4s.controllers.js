@@ -831,7 +831,9 @@ module.exports = {
       let obj = {
         // deleted_dt: "CURRENT_TIMESTAMP",
         // deleted_by: req.user.fullname
-        plan_time: null
+        plan_time: null,
+        actual_time: null,
+        actual_pic_id: null,
       }
 
       await queryPUT(
