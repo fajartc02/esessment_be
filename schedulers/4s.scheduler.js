@@ -892,18 +892,18 @@ clear4sRows()
     .then((r) => {
         main()
             .then((r) => {
-                logger.info(`success run scheduler for month=${currentMonth}-${currentYear}`)
+                logger(`success run scheduler for month=${currentMonth}-${currentYear}`)
                 return 0
             })
             .catch((e) => {
-                logger.error(`error clear4sRows() 4s.scheduler for month=${currentMonth}-${currentYear}`, {
+                logger(`error clear4sRows() 4s.scheduler for month=${currentMonth}-${currentYear}`, {
                     data: e
                 })
                 return 0
             })
     })
     .catch((e) => {
-        logger.error(`error clear4sRows() 4s.scheduler for month=${currentMonth}-${currentYear}`, {
+        logger(`error clear4sRows() 4s.scheduler for month=${currentMonth}-${currentYear}`, {
             data: e
         })
         return 0

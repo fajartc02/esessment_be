@@ -98,6 +98,7 @@ const childrenSubSchedule = async (
                     tbrcs.uuid as sub_schedule_id,
                     trcc1.tl1_sign_checker_id,
                     trcc2.tl2_sign_checker_id,
+                    tmsc.date,
                     EXTRACT('Day' FROM tmsc.date)::INTEGER as date_num,
                     tmsc.is_holiday or tbrcs.shift_type is null as is_holiday, -- null of shift_type was set as holiday from monthly scheduler 
                     case
@@ -846,7 +847,7 @@ module.exports = {
             and zone_id = '${subScheduleRow.zone_id}' 
             and kanban_id = '${subScheduleRow.kanban_id}'
             and schedule_id = '${subScheduleRow.schedule_id}'
-          `
+        `
       )
 
       response.success(res, 'success to delete 4s sub schedule', [])
