@@ -829,8 +829,9 @@ module.exports = {
       subScheduleRow = subScheduleRow[0]
 
       let obj = {
-        deleted_dt: "CURRENT_TIMESTAMP",
-        deleted_by: req.user.fullname
+        // deleted_dt: "CURRENT_TIMESTAMP",
+        // deleted_by: req.user.fullname
+        plan_time: null
       }
 
       await queryPUT(

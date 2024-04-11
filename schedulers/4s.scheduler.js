@@ -282,7 +282,7 @@ const genSubSchedule = async (shiftRows = []) => {
                                         trss.kanban_id = '${kanbanRows[kIndex].kanban_id}'
                                         and trss.zone_id = '${kanbanRows[kIndex].zone_id}'
                                         and trss.freq_id = '${kanbanRows[kIndex].freq_id}'
-                                        and tms.date <= current_date - interval '${kanbanRows[kIndex].precition_val} days'
+                                        and tms.date >= current_date - interval '${kanbanRows[kIndex].precition_val} days'
                                     order by
                                         trss.sub_schedule_id desc limit 1
                                     `
