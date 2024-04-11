@@ -29,7 +29,7 @@ module.exports = {
       let conditions = queryCondExacOpAnd(req.query, "finding_date");
       let findingCmData = await queryGET(
         table.v_finding_list,
-        `WHERE ${condDataNotDeleted} ${conditions} ORDER BY finding_date DESC ${qLimit} ${qOffset}`
+        `WHERE ${condDataNotDeleted} ${conditions} ORDER BY finding_date DESC  ${qLimit} ${qOffset}`
       );
       let qCountTotal = `SELECT 
             count(finding_id) as total_page
