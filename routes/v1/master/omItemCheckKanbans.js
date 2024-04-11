@@ -4,7 +4,7 @@ const {
     postOemItemCheck,
     editOemItemCheck,
     deleteOemItemCheck
-} = require("../../../controllers/master/itemCheckKanbanOem.controllers")
+} = require("../../../controllers/master/itemCheckKanbanOm.controllers")
 
 const auth = require("../../../helpers/auth")
 

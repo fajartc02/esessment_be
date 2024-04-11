@@ -2,7 +2,7 @@ const fs = require('fs')
 const winston = require('winston');
 const moment = require('moment')
 const { splat, combine, timestamp, printf } = winston.format;
-const env = process.env.NODE_ENV ? process.env.NODE_ENV.trim() : 'dev';
+const env = process.env.NODE_ENV.trim() ? process.env.NODE_ENV.trim() : 'dev';
 const logDir = 'logs';
 
 
@@ -54,16 +54,23 @@ const logger = winston.createLogger({
             datePattern: 'DD-MM-yyyy',
             prepend: true,
             json: false,
-            level: env === 'dev' ? 'verbose' : 'info'
+            level: env === 'dev' || env === 'local' ? 'verbose' : 'info'
         })
     ],
     exitOnError: false
 });
 
-module.exports = logger;
-module.exports.stream = {
-    write: function (message, encoding) {
-        logger.info(message);
-        console.log('message=', message);
-    }
-};
+const logRaw = (text, message = 'log', level = 'info', isJson = false) => {
+    logger.log(
+        level,
+        message,
+        {
+            meta: {
+                isJson: isJson,
+                message: text
+            }
+        }
+    )
+}
+
+module.exports = logRaw

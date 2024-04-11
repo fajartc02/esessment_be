@@ -101,16 +101,14 @@ const childrenSubSchedule = async (
                     EXTRACT('Day' FROM tmsc.date)::INTEGER as date_num,
                     tmsc.is_holiday or tbrcs.shift_type is null as is_holiday, -- null of shift_type was set as holiday from monthly scheduler 
                     case
+                      when finding.finding_date = tmsc.date then
+                        'PROBLEM'
                       when tbrcs.shift_type = 'night_shift' then
                         'NIGHT_SHIFT'
                       when tbrcs.plan_time is not null then
                         'PLANNING'
                       when tbrcs.actual_time is not null then
                         'ACTUAL'
-                      -- when false 
-                        -- 'PROBLEM'
-                      else
-                        null
                     end as status,
                     trcc1.sign as sign_tl_1,
                     trcc2.sign as sign_tl_2
@@ -140,6 +138,18 @@ const childrenSubSchedule = async (
                                           and end_date = tmsc."date"
                                         limit 1
                       ) trcc2 on true
+                      left join lateral (
+                        select *
+                        from
+                            v_4s_finding_list v4sfl
+                        where
+                              v4sfl.freq_id = tmf.uuid
+                          and v4sfl.zone_id = tmz.uuid
+                          and v4sfl.kanban_id = tmk.uuid
+                          and v4sfl.finding_date = tmsc.date
+                        order by v4sfl.finding_date desc
+                        limit 1
+                      ) finding on true
                   where
                       tbrcs.deleted_dt is null
                       and tbrcs.main_schedule_id = ${mainScheduleRealId}
@@ -150,6 +160,7 @@ const childrenSubSchedule = async (
               ) a order by date_num      
            `
   //console.warn('childrensql', childrenSql)
+  logger(childrenSql, 'childrenSql')
   const children = await queryCustom(childrenSql, false)
 
   return children.rows
@@ -344,9 +355,9 @@ module.exports = {
       scheduleSql = scheduleSql.concat(` 
             order by 
             case freq_nm 
-              when 'Daily' then 1
-              when 'Weekly' then 2
-              when 'Monthly' then 3
+              when 'Day' then 1
+              when '1 Week' then 2
+              when '1 Month' then 3
             end 
           `
       )
@@ -362,41 +373,10 @@ module.exports = {
         const scheduleRows = scheduleQuery.rows.map(async (item) => {
           mainScheduleRealId = item.main_schedule_id
 
-          const whereSubScheduleId = ` (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${item.sub_schedule_id}') `
           const whereFreqId = ` ((select freq_id from ${table.tb_m_freqs} where uuid = '${item.freq_id}' limit 1)) `
 
-          /* const freqRotationQuery = await queryCustom(`
-                        select
-                            case
-                                when freq_nm = 'Daily' and '${item.freq_nm}' = 'Weekly' then
-                                    true
-                                else
-                                    false
-                            end as is_daily_to_weekly,
-                            case
-                                when freq_nm = 'Weekly' and '${item.freq_nm}' = 'Monthly' then
-                                    true
-                                else
-                                    false
-                            end as is_weekly_to_monthly
-                        from
-                            ${table.tb_r_4s_schedule_revisions} 
-                        where
-                            sub_schedule_id = ${whereSubScheduleId}
-                        order by
-                            schedule_revision_id desc 
-                        limit 1
-                    `, false)
-          const freqRotationRow = freqRotationQuery.rows
-          if (freqRotationRow && freqRotationRow.length > 0)
-          {
-            item.is_daily_to_weekly =
-              freqRotationRow[0].is_daily_to_weekly ?? false
-            item.is_weekly_to_monthly =
-              freqRotationRow[0].is_weekly_to_monthly ?? false
-          } */
-
-          const countRowSpanSql = `
+          const countRowSpanSql = 
+          `
               with
                   pics as (
                       select
@@ -434,7 +414,7 @@ module.exports = {
                     pics 
                     full outer join zones on true 
                     full outer join freqs on true
-            `
+          `
 
           //console.log('countRowSpanSql', countRowSpanSql)
           const countRowSpanQuery = await queryCustom(countRowSpanSql, false)
@@ -862,6 +842,7 @@ module.exports = {
             and freq_id = '${subScheduleRow.freq_id}' 
             and zone_id = '${subScheduleRow.zone_id}' 
             and kanban_id = '${subScheduleRow.kanban_id}'
+            and schedule_id = '${subScheduleRow.schedule_id}'
           `
       )
 

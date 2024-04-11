@@ -22,7 +22,7 @@ const itemCheckKanbans4S = require('./4sitemCheckKanban')
 const freqs = require('./freqs')
 const shifts = require('./shifts')
 const system = require('./systems')
-const oemItemCheckKanbans = require('./oemItemCheckKanbans')
+const oemItemCheckKanbans = require('./omItemCheckKanbans')
 
 router.use('/companies', companies)
 router.use('/plants', plants)
@@ -47,7 +47,7 @@ router.use('/freqs', freqs)
 router.use('/shifts', shifts)
 router.use('/systems', system)
 
-router.use('/oem-item-check-kanbans', oemItemCheckKanbans)
+router.use('/om-item-check-kanbans', oemItemCheckKanbans)
 
 
 module.exports = router

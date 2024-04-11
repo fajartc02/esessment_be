@@ -42,13 +42,13 @@ const table = {
     v_4s_finding_list: 'v_4s_finding_list',
     //#endregion
 
-    //#region oem
-    tb_m_oem_item_check_kanbans: 'tb_m_oem_item_check_kanbans',
-    tb_r_oem_main_schedules: 'tb_r_oem_main_schedules',
-    tb_r_oem_sub_schedules: 'tb_r_oem_sub_schedules',
-    tb_r_oem_schedule_item_check_kanbans: 'tb_r_oem_schedule_item_check_kanbans',
-    tb_r_oem_schedule_sign_checkers: 'tb_r_oem_schedule_sign_checkers',
-    tb_r_oem_findings: 'tb_r_oem_findings',
+    //#region om
+    tb_m_om_item_check_kanbans: 'tb_m_om_item_check_kanbans',
+    tb_r_om_main_schedules: 'tb_r_om_main_schedules',
+    tb_r_om_sub_schedules: 'tb_r_om_sub_schedules',
+    tb_r_om_schedule_item_check_kanbans: 'tb_r_om_schedule_item_check_kanbans',
+    tb_r_om_schedule_sign_checkers: 'tb_r_om_schedule_sign_checkers',
+    tb_r_om_findings: 'tb_r_om_findings',
     //#endregion
 }
 

@@ -31,7 +31,7 @@ module.exports = {
         {
             let { id, line_id, machine_id, kanban_nm, limit, current_page } = req.query
             const fromCondition = ` 
-                        ${table.tb_m_oem_item_check_kanbans} tmoich
+                        ${table.tb_m_om_item_check_kanbans} tmoich
                         join ${table.tb_m_freqs} tmf on tmoich.freq_id = tmf.freq_id 
                         join ${table.tb_m_machines} tmm on tmoich.machine_id = tmm.machine_id
                         join ${table.tb_m_lines} tml on tmm.line_id = tml.line_id
@@ -50,7 +50,7 @@ module.exports = {
                             order by
                             tmoich.created_dt
                         )::integer as no,
-                        tmoich.uuid as item_check_kanban_id,
+                        tmoich.uuid as om_item_check_kanban_id,
                         tml.uuid as line_id,
                         tmf.uuid as freq_id,
                         tmm.uuid as machine_id,
@@ -60,8 +60,8 @@ module.exports = {
                         tmoich.method_name,
                         tmoich.standart_nm,
                         tmoich.standart_time,
-                        tmic.created_by,
-                        tmic.created_dt
+                        tmoich.created_by,
+                        tmoich.created_dt
                     from
                         ${fromCondition}
                     where
@@ -117,11 +117,11 @@ module.exports = {
                 }
             }
 
-            response.success(res, "Success to get oem item check kanbans", result)
+            response.success(res, "Success to get om item check kanbans", result)
         } catch (error)
         {
             console.log(error)
-            response.failed(res, "Error to get oem item check kanbans")
+            response.failed(res, "Error to get om item check kanbans")
         }
     },
     postOemItemCheck: async (req, res) => {
@@ -138,10 +138,14 @@ module.exports = {
                 }
 
                 const attrsInsert = await attrsUserInsertData(req, insertBody)
-                return await queryPostTransaction(db, table.tb_m_oem_item_check_kanbans, attrsInsert)
+                return await queryPostTransaction(db, table.tb_m_om_item_check_kanbans, attrsInsert)
             })
 
-            response.success(res, "Success to add oem item check kanban", transaction)
+            const result = {
+                om_item_check_kanban_id: transaction.rows[0].uuid ?? null
+            }
+
+            response.success(res, "Success to add om item check kanban", result)
         }
         catch (error)
         {
@@ -163,13 +167,17 @@ module.exports = {
 
                 return await queryPutTransaction(
                     db,
-                    table.tb_m_oem_item_check_kanbans,
+                    table.tb_m_om_item_check_kanbans,
                     attrsUserUpdate,
                     `WHERE uuid = '${req.params.id}'`
                 )
             })
 
-            response.success(res, "Success to edit oem item check kanban", transaction)
+            const result = {
+                om_item_check_kanban_id: transaction.rows[0].uuid ?? null
+            }
+
+            response.success(res, "Success to edit om item check kanban", result)
         }
         catch (error)
         {
@@ -187,11 +195,11 @@ module.exports = {
 
             let attrsUserUpdate = await attrsUserUpdateData(req, obj)
             const result = await queryPUT(
-                table.tb_m_oem_item_check_kanbans,
+                table.tb_m_om_item_check_kanbans,
                 attrsUserUpdate,
                 `WHERE uuid = '${req.params.id}'`
             )
-            response.success(res, "Success to soft delete oem item check kanban", result)
+            response.success(res, "Success to soft delete om item check kanban", {})
         } catch (error)
         {
             console.log(error)
