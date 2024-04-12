@@ -29,10 +29,6 @@ router.put('/sub-schedule/sign/:sign_checker_id', auth.verifyToken, signOmSchedu
 //router.use("/finding", findingOm)
 //#endregion
 
-//#region item-check-kanban
-//router.use("/schedule-item-check-kanban", scheduleItemCheckKanbanOm)
-//#endregion
-
 //#region graph
 //router.use("/", graphOm)
 //#endregion

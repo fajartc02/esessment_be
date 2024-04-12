@@ -27,7 +27,7 @@ console.log('env', {
 console.log(`OM Schedule Date Scheduler Running .....`)
 
 const currentDate = moment()
-const currentMonth = 5//currentDate.month() + 1 // need +1 to determine current month
+const currentMonth = currentDate.month() + 1 // need +1 to determine current month
 const currentYear = currentDate.year()
 
 //date_part('week', '${currentMonthDay.date}':: date)
