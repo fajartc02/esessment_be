@@ -9,6 +9,28 @@ const multipleUUidToIds = require("../../helpers/multipleUuidToId")
 const moment = require("moment")
 const { uuid } = require("uuidv4")
 
+const existsFreq = async (req) => {
+    const exists = await queryGET(
+        table.tb_m_freqs,
+        `
+                    where
+                        freq_nm = '${req.body.freq_nm}'
+                        or precition_val = '${req.body.precition_val}'
+                `,
+        [
+            'freq_nm',
+            'precition_val'
+        ]
+    )
+
+    if (exists.length > 0)
+    {
+        throw `Freq Name ${req.body.freq_nm} or Precition Range ${req.body.precition_val} already exists, try different value`
+    }
+
+    return exists
+}
+
 module.exports = {
     getFreqs: async (req, res) => {
         try
@@ -39,6 +61,8 @@ module.exports = {
     postFreq: async (req, res) => {
         try
         {
+            await existsFreq(req)
+            
             const insertBody = {
                 ...req.body,
                 uuid: uuid(),
@@ -56,6 +80,8 @@ module.exports = {
     editFreq: async (req, res) => {
         try
         {
+            await existsFreq(req)
+            
             const updateBody = {
                 ...req.body,
             }

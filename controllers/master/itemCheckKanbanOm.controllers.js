@@ -57,7 +57,7 @@ module.exports = {
                         tmoich.kanban_nm,
                         tmoich.item_check_nm,
                         tmoich.location_nm,
-                        tmoich.method_name,
+                        tmoich.method_nm,
                         tmoich.standart_nm,
                         tmoich.standart_time,
                         tmoich.created_by,

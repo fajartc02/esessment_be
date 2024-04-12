@@ -161,7 +161,7 @@ const childrenSubSchedule = async (
               ) a order by date_num      
            `
   //console.warn('childrensql', childrenSql)
-  logger(childrenSql, 'childrenSql')
+  //logger(childrenSql, 'childrenSql')
   const children = await queryCustom(childrenSql, false)
 
   return children.rows
@@ -364,7 +364,7 @@ module.exports = {
       )
 
       //console.log('scheduleSql', scheduleSql)
-      //logger.info(scheduleSql)
+      //logger(scheduleSql, 'scheduleSql')
       const scheduleQuery = await queryCustom(scheduleSql, false)
 
       if (scheduleQuery.rows && scheduleQuery.rows.length > 0)
@@ -740,7 +740,7 @@ module.exports = {
           `WHERE ${updateCondition}`
         )
 
-        if (req.body.plan_date && req.body.before_plan_date)
+        if (req.body.plan_date)
         {
           await db.query(
             `
@@ -748,6 +748,21 @@ module.exports = {
                 ${table.tb_r_4s_sub_schedules} 
               set 
                 plan_time = '${req.body.plan_date}' 
+              where 
+                ${updateCondition} 
+                and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')
+            `
+          )
+        }
+
+        if (req.body.before_plan_date)
+        {
+          await db.query(
+            `
+              update 
+                ${table.tb_r_4s_sub_schedules} 
+              set 
+                plan_time = null
               where 
                 ${updateCondition} 
                 and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.before_plan_date}')
