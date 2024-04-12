@@ -166,25 +166,25 @@ module.exports = {
             limit = parseInt(limit ?? 10)
 
             const fromSql = `
-          ${table.tb_r_4s_main_schedules} trcp
-          join ${table.tb_m_lines} tml on trcp.line_id = tml.line_id
-          join ${table.tb_m_groups} tmg on trcp.group_id = tmg.group_id
+          ${table.tb_r_om_main_schedules} troms
+          join ${table.tb_m_lines} tml on troms.line_id = tml.line_id
+          join ${table.tb_m_groups} tmg on troms.group_id = tmg.group_id
       `
 
             let mainScheduleSql = `
                 select 
                     row_number () over (
                         order by
-                        trcp.created_dt
+                        troms.created_dt
                     )::integer as no,
-                    trcp.uuid as main_schedule_id,
+                    troms.uuid as main_schedule_id,
                     tml.uuid as line_id,
                     tmg.uuid  as group_id,
-                    trcp.year_num,
-                    trcp.month_num,
-                    trcp.section_head_sign,
-                    trcp.group_leader_sign,
-                    trcp.team_leader_sign,
+                    troms.year_num,
+                    troms.month_num,
+                    troms.section_head_sign,
+                    troms.group_leader_sign,
+                    troms.team_leader_sign,
                     tml.line_nm,
                     tmg.group_nm
                 from
@@ -194,12 +194,12 @@ module.exports = {
             `
 
             let filterCondition = [
-                ' and trcp.deleted_dt is null '
+                ' and troms.deleted_dt is null '
             ]
 
             if (line_id && line_id != null && line_id != "")
             {
-                filterCondition.push(` trcp.line_id = (select line_id from ${table.tb_m_lines} where uuid = '${line_id}') `)
+                filterCondition.push(` troms.line_id = (select line_id from ${table.tb_m_lines} where uuid = '${line_id}') `)
             }
             if (month_year_num && month_year_num != null && month_year_num != "")
             {
@@ -208,21 +208,21 @@ module.exports = {
                 {
                     if (MYFilterSplit[0].length == 4)
                     {
-                        filterCondition.push(` trcp.year_num = '${MYFilterSplit[0]}}' `)
+                        filterCondition.push(` troms.year_num = '${MYFilterSplit[0]}}' `)
                     }
                     else
                     {
-                        filterCondition.push(` trcp.month_num = '${parseInt(MYFilterSplit[0])}}' `)
+                        filterCondition.push(` troms.month_num = '${parseInt(MYFilterSplit[0])}}' `)
                     }
                 }
                 else
                 {
-                    filterCondition.push(` trcp.year_num || '-' || trcp.month_num = '${MYFilterSplit[0]}-${parseInt(MYFilterSplit[1])}' `)
+                    filterCondition.push(` troms.year_num || '-' || troms.month_num = '${MYFilterSplit[0]}-${parseInt(MYFilterSplit[1])}' `)
                 }
             }
             if (group_id && group_id != null && group_id != "")
             {
-                filterCondition.push(` trcp.group_id = (select group_id from ${table.tb_m_groups} where uuid = '${group_id}') `)
+                filterCondition.push(` troms.group_id = (select group_id from ${table.tb_m_groups} where uuid = '${group_id}') `)
             }
 
             const qOffset = (limit != -1 && limit) && current_page > 1 ? `OFFSET ${limit * (current_page - 1)}` : ``
@@ -230,14 +230,14 @@ module.exports = {
 
             filterCondition = filterCondition.join(' and ')
             mainScheduleSql = mainScheduleSql.concat(` ${filterCondition} `)
-            mainScheduleSql = mainScheduleSql.concat(` order by trcp.created_dt ${qLimit} ${qOffset} `)
+            mainScheduleSql = mainScheduleSql.concat(` order by troms.created_dt ${qLimit} ${qOffset} `)
 
             const mainScheduleQuery = await queryCustom(mainScheduleSql)
             let result = mainScheduleQuery.rows
 
             if (result.length > 0)
             {
-                const count = await queryCustom(`select count(trcp.main_schedule_id)::integer as count from ${fromSql} where 1 = 1 ${filterCondition}`)
+                const count = await queryCustom(`select count(troms.main_schedule_id)::integer as count from ${fromSql} where 1 = 1 ${filterCondition}`)
                 const countRows = count.rows[0]
                 result = {
                     current_page: current_page,
@@ -250,11 +250,11 @@ module.exports = {
 
             //const result = await Promise.all(mainScheduleQuery.rows)
 
-            response.success(res, "Success to get 4s main schedule", result)
+            response.success(res, "Success to get om main schedule", result)
         } catch (error)
         {
             console.log(error)
-            response.failed(res, "Error to get 4s main schedule")
+            response.failed(res, "Error to get om main schedule")
         }
     },
     getOmSubSchedule: async (req, res) => {

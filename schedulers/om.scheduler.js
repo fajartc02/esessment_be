@@ -24,30 +24,30 @@ console.log('env', {
     ssl: false
 })
 
-console.log(`4S Schedule Date Scheduler Running .....`)
+console.log(`OM Schedule Date Scheduler Running .....`)
 
 const currentDate = moment()
-const currentMonth = currentDate.month() + 1 // need +1 to determine current month
+const currentMonth = 5//currentDate.month() + 1 // need +1 to determine current month
 const currentYear = currentDate.year()
 
 //date_part('week', '${currentMonthDay.date}':: date)
 const dateFormatted = (date = '') => (moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD'))
 
 //#region scheduler delete all for testing purpose
-const clear4sRows = async () => {
+const clearOmRows = async () => {
     if (process.env.NODE_ENV.trim() == 'dev' || process.env.NODE_ENV.trim() == 'local')
     {
         console.log('clearing start')
         await databasePool.query(`SET session_replication_role = 'replica'`)
 
-        await databasePool.query(`DELETE FROM ${table.tb_r_4s_main_schedules} CASCADE`)
-        await databasePool.query(`ALTER TABLE ${table.tb_r_4s_main_schedules} ALTER COLUMN main_schedule_id RESTART WITH 1`)
+        await databasePool.query(`DELETE FROM ${table.tb_r_om_main_schedules} CASCADE`)
+        await databasePool.query(`ALTER TABLE ${table.tb_r_om_main_schedules} ALTER COLUMN om_main_schedule_id RESTART WITH 1`)
 
-        await databasePool.query(`DELETE FROM ${table.tb_r_4s_sub_schedules} CASCADE`)
-        await databasePool.query(`ALTER TABLE ${table.tb_r_4s_sub_schedules} ALTER COLUMN sub_schedule_id RESTART WITH 1`)
+        await databasePool.query(`DELETE FROM ${table.tb_r_om_sub_schedules} CASCADE`)
+        await databasePool.query(`ALTER TABLE ${table.tb_r_om_sub_schedules} ALTER COLUMN om_sub_schedule_id RESTART WITH 1`)
 
-        await databasePool.query(`DELETE FROM ${table.tb_r_4s_schedule_sign_checkers} CASCADE`)
-        await databasePool.query(`ALTER TABLE ${table.tb_r_4s_schedule_sign_checkers} ALTER COLUMN sign_checker_id RESTART WITH 1`)
+        await databasePool.query(`DELETE FROM ${table.tb_r_om_schedule_sign_checkers} CASCADE`)
+        await databasePool.query(`ALTER TABLE ${table.tb_r_om_schedule_sign_checkers} ALTER COLUMN om_sign_checker_id RESTART WITH 1`)
 
         await databasePool.query(`SET session_replication_role = 'origin'`)
         console.log('clearing succeed')
@@ -219,30 +219,27 @@ const genMainSchedule = async (lineGroups) => {
 const genSubSchedule = async (shiftRows = []) => {
     const result = []
 
-    //#region scheduler fetch all kanban
-    const kanbanQuery = await databasePool.query(`
-                select
-                    tmk.kanban_id,
-                    tmz.zone_id,
-                    tmf.freq_id,
-                    tmf.freq_nm,
-                    tmz.zone_nm,
-                    tmk.kanban_no,
-                    tmk.area_nm,
-                    tmf.precition_val
-                from
-                    ${table.tb_m_kanbans} tmk
-                    join ${table.tb_m_zones} tmz on tmk.zone_id = tmz.zone_id
-                    join ${table.tb_m_freqs} tmf on tmf.freq_id = tmk.freq_id
-            `)
-    const kanbanRows = kanbanQuery.rows
+    //#region scheduler fetch all item check
+    const itemCheckQuery = await databasePool.query(
+        `
+            select
+                tmoick.om_item_check_kanban_id,
+                tmf.freq_id,
+                tmm.machine_id,
+                tmf.precition_val
+            from
+                ${table.tb_m_om_item_check_kanbans} tmoick
+                    join ${table.tb_m_machines} tmm on tmoick.machine_id = tmm.machine_id
+                    join ${table.tb_m_freqs} tmf on tmoick.freq_id = tmf.freq_id
+        `)
+    const itemCheckRows = itemCheckQuery.rows
     //#endregion
 
     {
         let countSame = 0 // determine steps pattern
         let skip = false
         let lastWeekNum = 0
-        for (let kIndex = 0; kIndex < kanbanRows.length; kIndex++)
+        for (let kIndex = 0; kIndex < itemCheckRows.length; kIndex++)
         {
             let planTime = null
             let shouldPlan = false
@@ -250,8 +247,8 @@ const genSubSchedule = async (shiftRows = []) => {
 
             // determine plan time should only has precition_val * 
             if (
-                kanbanRows[kIndex - 1]
-                && kanbanRows[kIndex - 1].freq_id == kanbanRows[kIndex].freq_id
+                itemCheckRows[kIndex - 1]
+                && itemCheckRows[kIndex - 1].freq_id == itemCheckRows[kIndex].freq_id
             )
             {
                 countSame++
@@ -263,43 +260,40 @@ const genSubSchedule = async (shiftRows = []) => {
             }
             else
             {
-                countSame = 0
+                countSame = 0 //reset
             }
 
             // >= 1 MONTH 
-            if (kanbanRows[kIndex].precition_val >= 30)
+            if (itemCheckRows[kIndex].precition_val >= 30)
             {
                 const lastPlanTimeQuery = await databasePool.query(
                     `
                         select
-                            tms."date"
+                            tms.date
                         from
-                            ${table.tb_r_4s_sub_schedules} trss
-                            join ${table.tb_m_kanbans} tmk on trss.kanban_id = tmk.kanban_id
-                            join ${table.tb_m_zones} tmz on trss.zone_id = tmz.zone_id
-                            join ${table.tb_m_freqs} tmf on trss.freq_id = tmf.freq_id
-                            join ${table.tb_m_schedules} tms on trss.schedule_id = tms.schedule_id
+                            tb_r_om_sub_schedules tross
+                                join tb_m_om_item_check_kanbans tmoick on tross.om_item_check_kanban_id = tmoick.om_item_check_kanban_id
+                                join tb_m_machines tmm on tross.machine_id = tmm.machine_id
+                                join tb_m_freqs tmf on tross.freq_id = tmf.freq_id
+                                join tb_m_schedules tms on tross.schedule_id = tms.schedule_id
                         where 
-                            trss.kanban_id = '${kanbanRows[kIndex].kanban_id}'
-                            and trss.zone_id = '${kanbanRows[kIndex].zone_id}'
-                            and trss.freq_id = '${kanbanRows[kIndex].freq_id}'
-                            and tms.date = '${currentYear}-${currentMonth}-01'::date - interval '${kanbanRows[kIndex].precition_val} days'
-                        order by
-                            trss.sub_schedule_id desc 
+                            tross.om_item_check_kanban_id = '${itemCheckRows[kIndex].om_item_check_kanban_id}'
+                            and tross.machine_id = '${itemCheckRows[kIndex].machine_id}'
+                            and tross.freq_id = '${itemCheckRows[kIndex].freq_id}'
+                            and tms.date = '${currentYear}-${currentMonth}-01'::date - interval '${itemCheckRows[kIndex].precition_val} days'
                         limit 1
                     `
                 )
 
                 if (lastPlanTimeQuery.rows && lastPlanTimeQuery.rowCount > 0)
                 {
-                    //console.log('lastPlanTimeQuery.rows[0]', lastPlanTimeQuery.rows[0])
                     planTime = moment(lastPlanTimeQuery.rows[0].date, 'YYYY-MM-DD')
-                        .add(kanbanRows[kIndex].precition_val, 'd')
+                        .add(itemCheckRows[kIndex].precition_val, 'd')
                         .format('YYYY-MM-DD')
 
                     //MONTHLY should plan on holiday  
                     if (
-                        kanbanRows[kIndex].precition_val == 30
+                        itemCheckRows[kIndex].precition_val == 30
                         && moment(planTime).day() != 6
                     )
                     {
@@ -321,17 +315,17 @@ const genSubSchedule = async (shiftRows = []) => {
                 }
                 else
                 {
-                    //#region check validaty of kanban precition_val should plan if not already exists 
+                    //#region check validaty of item check precition_val should plan if not already exists 
                     const scheduleExists = await databasePool.query(
                         `
                             select 
                                 count(*) as count
                             from 
-                                ${table.tb_r_4s_sub_schedules}  
+                                ${table.tb_r_om_sub_schedules}  
                             where 
-                                kanban_id = '${kanbanRows[kIndex].kanban_id}'
-                                and zone_id = '${kanbanRows[kIndex].zone_id}'
-                                and freq_id = '${kanbanRows[kIndex].freq_id}'
+                                om_item_check_kanban_id = '${itemCheckRows[kIndex].om_item_check_kanban_id}'
+                                and machine_id = '${itemCheckRows[kIndex].machine_id}'
+                                and freq_id = '${itemCheckRows[kIndex].freq_id}'
                         `
                     )
                     if (scheduleExists.rows && scheduleExists.rows.length > 0 && scheduleExists.rows[0].count > 0)
@@ -342,7 +336,7 @@ const genSubSchedule = async (shiftRows = []) => {
 
                     shouldPlan = true
                     if (
-                        kanbanRows[kIndex].precition_val == 30
+                        itemCheckRows[kIndex].precition_val == 30
                     )
                     {
                         countSame = 6 // saturday was 6 index of 7 days
@@ -351,7 +345,6 @@ const genSubSchedule = async (shiftRows = []) => {
                     {
                         countSame = 2
                     }
-
                 }
             }
             else
@@ -360,17 +353,13 @@ const genSubSchedule = async (shiftRows = []) => {
             }
 
             //#region scheduler generate daily 
-            if (kanbanRows[kIndex].precition_val == 1)
+            if (itemCheckRows[kIndex].precition_val == 1)
             {
                 for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
                 {
-                    if (shiftRows[sIndex].shift_type == 'morning_shift')
+                    if (!shiftRows[sIndex].is_holiday)
                     {
-                        // DAILY 
-                        if (!shiftRows[sIndex].is_holiday && kanbanRows[kIndex].precition_val == 1)
-                        {
-                            planTime = dateFormatted(shiftRows[sIndex].date)
-                        }
+                        planTime = dateFormatted(shiftRows[sIndex].date)
                     }
                     else
                     {
@@ -378,19 +367,11 @@ const genSubSchedule = async (shiftRows = []) => {
                         planTime = null
                     }
 
-                    if (
-                        !shouldPlan
-                        && shiftRows[sIndex + 1]
-                        && shiftRows[sIndex + 1].shift_type == 'morning_shift'
-                    )
-                    {
-                        shouldPlan = true
-                    }
-
                     const exists = result.find((item) =>
-                        item.group_id == shiftRows[sIndex].group_id
-                        && item.kanban_id == shiftRows[sIndex].kanban_id
-                        && item.zone_id == shiftRows[sIndex].zone_id
+                        item.line_id == shiftRows[sIndex].line_id
+                        && item.group_id == shiftRows[sIndex].group_id
+                        && item.om_item_check_kanban_id == shiftRows[sIndex].om_item_check_kanban_id
+                        && item.machine_id == shiftRows[sIndex].machine_id
                         && item.freq_id == shiftRows[sIndex].freq_id
                         && item.schedule_id == shiftRows[sIndex].schedule_id
                     )
@@ -404,9 +385,9 @@ const genSubSchedule = async (shiftRows = []) => {
                         main_schedule_id: null,
                         group_id: shiftRows[sIndex].group_id,
                         line_id: shiftRows[sIndex].line_id,
-                        kanban_id: kanbanRows[kIndex].kanban_id,
-                        zone_id: kanbanRows[kIndex].zone_id,
-                        freq_id: kanbanRows[kIndex].freq_id,
+                        om_item_check_kanban_id: itemCheckRows[kIndex].om_item_check_kanban_id,
+                        machine_id: itemCheckRows[kIndex].machine_id,
+                        freq_id: itemCheckRows[kIndex].freq_id,
                         schedule_id: shiftRows[sIndex].schedule_id,
                         shift_type: shiftRows[sIndex].shift_type,
                         plan_time: planTime == dateFormatted(shiftRows[sIndex].date) ? planTime : null, // validate if date plan is equal the date loop
@@ -422,24 +403,20 @@ const genSubSchedule = async (shiftRows = []) => {
                 {
                     for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
                     {
-                        if (shiftRows[sIndex].shift_type == 'morning_shift')
+                        if (itemCheckRows[kIndex].precition_val == 7)
                         {
-                            if (kanbanRows[kIndex].precition_val == 7)
+                            if (countSame == 0)
                             {
-                                if (countSame == 0)
-                                {
-                                    countSame++
-                                }
+                                countSame++
+                            }
 
-                                if (
-                                    lastWeekNum != shiftRows[sIndex].week_num
-                                    && !shiftRows[sIndex].is_holiday
-                                )
-                                {
-                                    //shiftRows[sIndex].total_day_of_week > 1
-
-                                    const byDowSql =
-                                        `
+                            if (
+                                lastWeekNum != shiftRows[sIndex].week_num
+                                && !shiftRows[sIndex].is_holiday
+                            )
+                            {
+                                const byDowSql =
+                                    `
                                             select 
                                                 tmsc.date 
                                             from (
@@ -460,51 +437,42 @@ const genSubSchedule = async (shiftRows = []) => {
                                             limit 1
                                         `
 
-                                    const byDow = await databasePool.query(byDowSql)
-                                    planTimeWeeklyArr.push(dateFormatted(byDow.rows[0].date))
-                                    lastWeekNum = shiftRows[sIndex].week_num
+                                const byDow = await databasePool.query(byDowSql)
+                                planTimeWeeklyArr.push(dateFormatted(byDow.rows[0].date))
+                                lastWeekNum = shiftRows[sIndex].week_num
 
-                                    skip = true
-                                }
-
-                                if (lastWeekNum == 0)
-                                {
-                                    lastWeekNum = shiftRows[sIndex].week_num
-                                }
+                                skip = true
                             }
-                            else if (shiftRows[sIndex].is_first_week)
+
+                            if (lastWeekNum == 0)
                             {
-                                /* && (kanbanRows[kIndex].freq_nm.toLowerCase() == 'monthly'
-                                   || kanbanRows[kIndex].freq_nm.toLowerCase() == '2 month'
-                                   || kanbanRows[kIndex].freq_nm.toLowerCase() == '3 month') */
-
-                                planTime = moment(shiftRows[sIndex].date)
-                                    .clone()
-                                    .weekday(countSame)
-                                    .format('YYYY-MM-DD')
-
-                                /*  console.log('plantime monthly', {
-                                     planTime: planTime,
-                                     countSame: countSame
-                                 }) */
-
-                                break;
+                                lastWeekNum = shiftRows[sIndex].week_num
                             }
+                        }
+                        else if (shiftRows[sIndex].is_first_week)
+                        {
+                            planTime = moment(shiftRows[sIndex].date)
+                                .clone()
+                                .weekday(countSame)
+                                .format('YYYY-MM-DD')
+
+                            break;
                         }
                     }
                 }
 
                 for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
                 {
-                    if (kanbanRows[kIndex].precition_val == 7)
+                    if (itemCheckRows[kIndex].precition_val == 7)
                     {
                         planTime = planTimeWeeklyArr.find((item) => item == dateFormatted(shiftRows[sIndex].date))
                     }
 
                     const exists = result.find((item) =>
-                        item.group_id == shiftRows[sIndex].group_id
-                        && item.kanban_id == shiftRows[sIndex].kanban_id
-                        && item.zone_id == shiftRows[sIndex].zone_id
+                        item.line_id == shiftRows[sIndex].line_id
+                        && item.group_id == shiftRows[sIndex].group_id
+                        && item.om_item_check_kanban_id == shiftRows[sIndex].om_item_check_kanban_id
+                        && item.machine_id == shiftRows[sIndex].machine_id
                         && item.freq_id == shiftRows[sIndex].freq_id
                         && item.schedule_id == shiftRows[sIndex].schedule_id
                     )
@@ -517,9 +485,9 @@ const genSubSchedule = async (shiftRows = []) => {
                         main_schedule_id: null,
                         group_id: shiftRows[sIndex].group_id,
                         line_id: shiftRows[sIndex].line_id,
-                        kanban_id: kanbanRows[kIndex].kanban_id,
-                        zone_id: kanbanRows[kIndex].zone_id,
-                        freq_id: kanbanRows[kIndex].freq_id,
+                        om_item_check_kanban_id: itemCheckRows[kIndex].om_item_check_kanban_id,
+                        machine_id: itemCheckRows[kIndex].machine_id,
+                        freq_id: itemCheckRows[kIndex].freq_id,
                         schedule_id: shiftRows[sIndex].schedule_id,
                         shift_type: shiftRows[sIndex].shift_type,
                         plan_time: planTime == dateFormatted(shiftRows[sIndex].date) ? planTime : null, // validate if date plan is equal the date loop
@@ -527,7 +495,6 @@ const genSubSchedule = async (shiftRows = []) => {
                 }
             }
             //#endregion
-
         }
 
         //console.log('subScheduleBulkSchema', subScheduleBulkSchema.length)
@@ -544,10 +511,8 @@ const genSubSchedule = async (shiftRows = []) => {
  */
 const genSignCheckers = async (shiftRows = []) => {
     const result = {
-        tl1: [],
-        tl2: [],
+        tl: [],
         gl: [],
-        sh: []
     }
 
     //#region scheduler generate tl1 & tl2 sign checker
@@ -556,20 +521,11 @@ const genSignCheckers = async (shiftRows = []) => {
         {
             if (!shiftRows[sIndex].is_holiday)
             {
-                result.tl1.push({
+                result.tl.push({
                     main_schedule_id: null,
                     group_id: shiftRows[sIndex].group_id,
                     line_id: shiftRows[sIndex].line_id,
-                    is_tl_1: true,
-                    start_date: moment(shiftRows[sIndex].date, 'YYYY-MM-DD').format('YYYY-MM-DD'),
-                    end_date: moment(shiftRows[sIndex].date, 'YYYY-MM-DD').format('YYYY-MM-DD')
-                })
-
-                result.tl2.push({
-                    main_schedule_id: null,
-                    group_id: shiftRows[sIndex].group_id,
-                    line_id: shiftRows[sIndex].line_id,
-                    is_tl_2: true,
+                    is_tl: true,
                     start_date: moment(shiftRows[sIndex].date, 'YYYY-MM-DD').format('YYYY-MM-DD'),
                     end_date: moment(shiftRows[sIndex].date, 'YYYY-MM-DD').format('YYYY-MM-DD')
                 })
@@ -676,38 +632,6 @@ const genSignCheckers = async (shiftRows = []) => {
     }
     //#endregion
 
-    //#region scheduler generate sh sign checker
-    {
-        let tempSh = []
-        result.gl.forEach((gl) => tempSh.push(Object.assign({}, gl)))
-
-        for (var i = 0; i < tempSh.length; ++i)
-        {
-            if (tempSh[i + 1])
-            {
-                tempSh[i].col_span = tempSh[i].col_span + tempSh[i + 1].col_span
-                tempSh[i].start_date = moment(tempSh[i].start_date, 'YYYY-MM-DD').format('YYYY-MM-DD')
-                tempSh[i].end_date = moment(tempSh[i + 1].end_date, 'YYYY-MM-DD').format('YYYY-MM-DD')
-                tempSh[i].is_sh = true
-
-                delete tempSh[i].is_gl
-
-                result.sh.push(tempSh[i])
-                tempSh.splice(i + 1, 1)
-            }
-            else
-            {
-                delete tempSh[i].is_gl
-                tempSh[i].is_sh = true
-
-                result.sh.push(tempSh[i])
-            }
-        }
-
-        //console.log('result.sh', result.sh)
-    }
-    //#endregion
-
     return result
 }
 //#endregion
@@ -716,53 +640,38 @@ const genSignCheckers = async (shiftRows = []) => {
 const main = async () => {
     try
     {
-        //await clear4sRows();
+        //await clearOmRows();
 
         //#region schedulers parent 
         const lineGroups = await lineGroupRows()
         const shiftRows = await shiftByGroupId()
-        console.log('shiftRows length', shiftRows.length)
-        /*  logger.info('shiftRows', {
-             meta: {
-                 isJson: true,
-                 message: shiftRows
-             }
-         }) */
+        //console.log('shiftRows length', shiftRows.length)
         //#endregion
 
         //#region scheduler bulk temp var
         const mainScheduleBulkSchema = await genMainSchedule(lineGroups)
         const subScheduleBulkSchema = await genSubSchedule(shiftRows)
         const signCheckers = await genSignCheckers(shiftRows)
-        const signCheckerTl1BulkSchema = signCheckers.tl1
-        const signCheckerTl2BulkSchema = signCheckers.tl2
+        const signCheckerTl1BulkSchema = signCheckers.tl
         const signChckerGlBulkSchema = signCheckers.gl
-        const signChckerShBulkSchema = signCheckers.sh
         //#endregion
 
 
         //#region scheduler transaction
         const transaction = await queryTransaction(async (db) => {
-            //#region scheduler inserted tb_r_4s_main_schedules
+            //#region scheduler inserted tb_r_om_main_schedules
             const mSchema = await bulkToSchema(mainScheduleBulkSchema)
             const mainScheduleInserted = await db.query(
-                `insert into ${table.tb_r_4s_main_schedules} (${mSchema.columns}) values ${mSchema.values} returning *`)
-            console.log('tb_r_4s_main_schedules', 'inserted')
+                `insert into ${table.tb_r_om_main_schedules} (${mSchema.columns}) values ${mSchema.values} returning *`)
+            console.log('tb_r_om_main_schedules', 'inserted')
             //#endregion
 
             let subScheduleTemp = []
             let signCheckersTemp = []
 
-            /* logger.info('subScheduleBulkSchema', {
-                meta: {
-                    isJson: true,
-                    message: subScheduleBulkSchema
-                }
-            }) */
-
             for (let mIndex = 0; mIndex < mainScheduleInserted.rows.length; mIndex++)
             {
-                //#region scheduler generate main_schedule_id for subScheduleBulkSchema
+                //#region scheduler generate om_main_schedule_id for subScheduleBulkSchema
                 for (let subIndex = 0; subIndex < subScheduleBulkSchema.length; subIndex++)
                 {
                     if (
@@ -772,9 +681,9 @@ const main = async () => {
                     {
                         subScheduleTemp.push({
                             uuid: uuid(),
-                            main_schedule_id: mainScheduleInserted.rows[mIndex].main_schedule_id,
-                            kanban_id: subScheduleBulkSchema[subIndex].kanban_id,
-                            zone_id: subScheduleBulkSchema[subIndex].zone_id,
+                            om_main_schedule_id: mainScheduleInserted.rows[mIndex].om_main_schedule_id,
+                            om_item_check_kanban_id: subScheduleBulkSchema[subIndex].om_item_check_kanban_id,
+                            machine_id: subScheduleBulkSchema[subIndex].machine_id,
                             freq_id: subScheduleBulkSchema[subIndex].freq_id,
                             schedule_id: subScheduleBulkSchema[subIndex].schedule_id,
                             shift_type: subScheduleBulkSchema[subIndex].shift_type,
@@ -793,34 +702,12 @@ const main = async () => {
                     )
                     {
                         signCheckersTemp.push({
-                            main_schedule_id: mainScheduleInserted.rows[mIndex].main_schedule_id,
+                            om_main_schedule_id: mainScheduleInserted.rows[mIndex].om_main_schedule_id,
                             uuid: uuid(),
                             start_date: signCheckerTl1BulkSchema[tl1Index].start_date,
                             end_date: signCheckerTl1BulkSchema[tl1Index].end_date,
-                            is_tl_1: true,
-                            is_tl_2: null,
+                            is_tl: true,
                             is_gl: null,
-                            is_sh: null,
-                        })
-                    }
-                }
-
-                for (let tl2Index = 0; tl2Index < signCheckerTl2BulkSchema.length; tl2Index++)
-                {
-                    if (
-                        signCheckerTl2BulkSchema[tl2Index].group_id == mainScheduleInserted.rows[mIndex].group_id
-                        && signCheckerTl2BulkSchema[tl2Index].line_id == mainScheduleInserted.rows[mIndex].line_id
-                    )
-                    {
-                        signCheckersTemp.push({
-                            main_schedule_id: mainScheduleInserted.rows[mIndex].main_schedule_id,
-                            uuid: uuid(),
-                            start_date: signCheckerTl2BulkSchema[tl2Index].start_date,
-                            end_date: signCheckerTl2BulkSchema[tl2Index].end_date,
-                            is_tl_1: null,
-                            is_tl_2: true,
-                            is_gl: null,
-                            is_sh: null,
                         })
                     }
                 }
@@ -833,50 +720,28 @@ const main = async () => {
                     )
                     {
                         signCheckersTemp.push({
-                            main_schedule_id: mainScheduleInserted.rows[mIndex].main_schedule_id,
+                            om_main_schedule_id: mainScheduleInserted.rows[mIndex].om_main_schedule_id,
                             uuid: uuid(),
                             start_date: signChckerGlBulkSchema[glIndex].start_date,
                             end_date: signChckerGlBulkSchema[glIndex].end_date,
-                            is_tl_1: null,
-                            is_tl_2: null,
+                            is_tl: null,
                             is_gl: true,
-                            is_sh: null,
-                        })
-                    }
-                }
-
-                for (let shIndex = 0; shIndex < signChckerShBulkSchema.length; shIndex++)
-                {
-                    if (
-                        signChckerShBulkSchema[shIndex].group_id == mainScheduleInserted.rows[mIndex].group_id
-                        && signChckerShBulkSchema[shIndex].line_id == mainScheduleInserted.rows[mIndex].line_id
-                    )
-                    {
-                        signCheckersTemp.push({
-                            main_schedule_id: mainScheduleInserted.rows[mIndex].main_schedule_id,
-                            uuid: uuid(),
-                            start_date: signChckerShBulkSchema[shIndex].start_date,
-                            end_date: `func (select "date" from tb_m_schedules where "date" between '${signChckerShBulkSchema[shIndex].start_date}' and '${signChckerShBulkSchema[shIndex].end_date}' and (is_holiday is null or is_holiday = false) order by schedule_id desc limit 1)`,
-                            is_tl_1: null,
-                            is_tl_2: null,
-                            is_gl: null,
-                            is_sh: true,
                         })
                     }
                 }
                 //#endregion
             }
 
-            //#region scheduler inserted tb_r_4s_sub_schedules
+            //#region scheduler inserted tb_r_om_sub_schedules
             const sSchema = await bulkToSchema(subScheduleTemp)
-            await db.query(`insert into ${table.tb_r_4s_sub_schedules} (${sSchema.columns}) values ${sSchema.values}`)
-            console.log('tb_r_4s_sub_schedules', 'inserted')
+            await db.query(`insert into ${table.tb_r_om_sub_schedules} (${sSchema.columns}) values ${sSchema.values}`)
+            console.log('tb_r_om_sub_schedules', 'inserted')
             //#endregion
 
-            //#region scheduler inserted tb_r_4s_schedule_sign_checkers
+            //#region scheduler inserted tb_r_om_schedule_sign_checkers
             const sgSchema = await bulkToSchema(signCheckersTemp)
-            await db.query(`insert into ${table.tb_r_4s_schedule_sign_checkers} (${sgSchema.columns}) values ${sgSchema.values}`)
-            console.log('tb_r_4s_schedule_sign_checkers', 'inserted')
+            await db.query(`insert into ${table.tb_r_om_schedule_sign_checkers} (${sgSchema.columns}) values ${sgSchema.values}`)
+            console.log('tb_r_om_schedule_sign_checkers', 'inserted')
             //#endregion
         })
         //#endregion
@@ -884,20 +749,15 @@ const main = async () => {
         return transaction
     } catch (error)
     {
-        console.log('error 4s generate schedule, scheduler running', error)
+        console.log('error om generate schedule, scheduler running', error)
         throw error
     }
 }
 //#endregion
 
 const test = async () => {
-    await clear4sRows()
+    await clearOmRows()
     const shiftRows = await shiftByGroupId(2)
-
-
-    logger.info(`shiftRows`, {
-        data: shiftRows
-    })
 }
 
 /* test()
@@ -909,11 +769,11 @@ const test = async () => {
         return 0
     }) */
 
-/* clear4sRows()
+/* clearOmRows()
     .then((r) => 0)
     .catch((e) => 0) */
 
-/* clear4sRows()
+/* clearOmRows()
     .then((r) => {
         main()
             .then((r) => {
@@ -921,14 +781,14 @@ const test = async () => {
                 return 0
             })
             .catch((e) => {
-                logger(`error clear4sRows() 4s.scheduler for month=${currentMonth}-${currentYear}`, {
+                logger(`error clearOmRows() om.scheduler for month=${currentMonth}-${currentYear}`, {
                     data: e
                 })
                 return 0
             })
     })
     .catch((e) => {
-        logger(`error clear4sRows() 4s.scheduler for month=${currentMonth}-${currentYear}`, {
+        logger(`error clearOmRows() om.scheduler for month=${currentMonth}-${currentYear}`, {
             data: e
         })
         return 0
