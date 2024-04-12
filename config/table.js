@@ -49,6 +49,7 @@ const table = {
     tb_r_om_schedule_item_check_kanbans: 'tb_r_om_schedule_item_check_kanbans',
     tb_r_om_schedule_sign_checkers: 'tb_r_om_schedule_sign_checkers',
     tb_r_om_findings: 'tb_r_om_findings',
+    v_om_finding_list: 'v_om_finding_list',
     //#endregion
 }
 
