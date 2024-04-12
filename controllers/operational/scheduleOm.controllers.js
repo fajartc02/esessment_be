@@ -241,7 +241,7 @@ module.exports = {
             console.log(error)
             response.failed(res, "Error to get om main schedule")
         }
-    },
+    }, 
     getOmSubSchedule: async (req, res) => {
         try
         {
@@ -447,6 +447,15 @@ module.exports = {
             response.success(res, "Success to get om sub schedule", result)
         } catch (error)
         {
+            console.log(error)
+            response.failed(res, "Error to get om sub schedule")
+        }
+    },
+    getDetailOmSubSchedule: async (req, res) => {
+        try
+        {
+            const subScheduleId = req.params.sub_schedule_id
+        } catch (error) {
             console.log(error)
             response.failed(res, "Error to get om sub schedule")
         }
