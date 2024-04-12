@@ -11,6 +11,8 @@ const {
 } = require("../../../controllers/operational/scheduleOm.controllers")
 
 const auth = require("../../../helpers/auth")
+const findingOm = require("./findingOm")
+const graphOm = require("./graphOm")
 
 //#region schedule
 router.get("/main-schedule", auth.verifyToken, getOmMainSchedule)
@@ -26,11 +28,11 @@ router.put('/sub-schedule/sign/:sign_checker_id', auth.verifyToken, signOmSchedu
 //#endregion
 
 //#region findings
-//router.use("/finding", findingOm)
+router.use("/finding", findingOm)
 //#endregion
 
 //#region graph
-//router.use("/", graphOm)
+router.use("/", graphOm)
 //#endregion
 
 module.exports = router
