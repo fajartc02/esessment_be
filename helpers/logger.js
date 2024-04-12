@@ -2,7 +2,7 @@ const fs = require('fs')
 const winston = require('winston');
 const moment = require('moment')
 const { splat, combine, timestamp, printf } = winston.format;
-const env = process.env.NODE_ENV.trim() ? process.env.NODE_ENV.trim() : 'dev';
+const env = process.env.NODE_ENV?.trim() ? process.env.NODE_ENV?.trim() : 'dev';
 const logDir = 'logs';
 
 
