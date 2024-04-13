@@ -11,10 +11,10 @@
         "mstFinding-seeder-4s": "SET NODE_ENV=local && node ./design/seeders/finding4sMst.seeder.js",
         "finding-seeder-4s": "SET NODE_ENV=dev && node ./design/seeders/finding4s.seeder.js",
         "shift-seeder": "SET NODE_ENV=local && node ./design/seeders/shifts.seeder.js",
-        "omMst-seeder": "SET NODE_ENV=local && node ./design/seeders/omMST.seeder.js",
+        "omMst-seeder": "SET NODE_ENV=dev && node ./design/seeders/omMST.seeder.js",
         "4s-scheduler": "SET NODE_ENV=local && node ./schedulers/4s.scheduler.js",
         "yearly-scheduler": "SET NODE_ENV=local && node ./schedulers/yearDates.scheduler.js",
-        "om-scheduler": "SET NODE_ENV=local && node ./schedulers/om.scheduler.js"
+        "om-scheduler": "SET NODE_ENV=dev && node ./schedulers/om.scheduler.js"
     },
     "dependencies": {
         "axios": "^1.4.0",
