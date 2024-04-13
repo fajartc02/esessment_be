@@ -33,7 +33,7 @@ const selectSubScheduleCol = [
     'tml.uuid as line_id',
     'tmg.uuid as group_id',
     'tross.om_main_schedule_id',
-    'trmsc.uuid as main_schedule_uuid',
+    'trmsc.uuid as om_main_schedule_uuid',
     'tross.uuid as om_sub_schedule_id',
     'tmoic.uuid as om_item_check_kanban_id',
     'tmm.uuid as machine_id',
@@ -96,18 +96,14 @@ const childrenSubSchedule = async (
                     trcc1.tl_sign_checker_id,
                     tmsc.date,
                     EXTRACT('Day' FROM tmsc.date)::INTEGER as date_num,
-                    tmsc.is_holiday or tross.shift_type is null as is_holiday, -- null of shift_type was set as holiday from monthly scheduler 
+                    tmsc.is_holiday, 
                     case
-                      when tross.shift_type = 'night_shift' then
-                        'NIGHT_SHIFT'
-                      when tross.plan_time is not null then
-                        'PLANNING'
+                      when finding.finding_date = tmsc.date then
+                        'PROBLEM'
                       when tross.actual_time is not null then
                         'ACTUAL'
-                      -- when false 
-                        -- 'PROBLEM'
-                      else
-                        null
+                      when tross.plan_time is not null then
+                        'PLANNING'
                     end as status,
                     trcc1.sign as sign_tl
                   from
@@ -124,6 +120,19 @@ const childrenSubSchedule = async (
                                           and end_date = tmsc."date"
                                         limit 1
                       ) trcc1 on true
+                      left join lateral (
+                        select *
+                        from
+                            v_om_finding_list vofl
+                        where
+                              vofl.freq_id = tmf.uuid
+                          and vofl.om_item_check_kanban_id = tmoic.uuid
+                          and vofl.machine_id = tmm.uuid
+                          and vofl.finding_date = tmsc.date
+                          and vofl.deleted_dt is null
+                        order by vofl.finding_date desc
+                        limit 1
+                      ) finding on true
                   where
                       tross.deleted_dt is null
                       and tross.om_main_schedule_id = ${mainScheduleRealId}
@@ -397,13 +406,13 @@ module.exports = {
                         item.pic_real_id
                     )
 
-                    item.om_main_schedule_id = item.main_schedule_uuid
+                    item.om_main_schedule_id = item.om_main_schedule_uuid
 
                     delete item.freq_real_id
                     delete item.om_item_check_kanban_real_id
                     delete item.machine_real_id
                     delete item.pic_real_id
-                    delete item.main_schedule_uuid
+                    delete item.om_main_schedule_uuid
                     delete item.year_num
                     delete item.month_num
 
@@ -454,7 +463,65 @@ module.exports = {
     getDetailOmSubSchedule: async (req, res) => {
         try
         {
-            const subScheduleId = req.params.sub_schedule_id
+            const sub_schedule_uuid = req.params.id
+
+            const subScheduleSql = 
+                `
+                    select 
+                        ${selectSubScheduleSql}
+                        , tmsc.date
+                        , EXTRACT('Day' FROM tmsc.date)::INTEGER as date_num
+                    from
+                        ${fromSubScheduleSql}
+                    where
+                        tross.uuid = '${sub_schedule_uuid}'
+                    limit 1
+                `
+
+            let subScheduleQuery = await queryCustom(subScheduleSql, false)
+            if (subScheduleQuery.rows.length == 0)
+            {
+                throw "Can't find 4s sub schedule with id provided"
+            }
+
+            subScheduleQuery = subScheduleQuery.rows[0]
+
+            const findings = await queryCustom(
+                `
+                    select 
+                        * 
+                    from 
+                        ${table.v_om_finding_list} 
+                    where
+                        deleted_dt is null 
+                        and 
+                            (
+                                om_sub_schedule_id = '${sub_schedule_uuid}'
+                                or 
+                                (
+                                    line_id = '${subScheduleQuery.line_id}'
+                                    and group_id = '${subScheduleQuery.group_id}'
+                                    and freq_id = '${subScheduleQuery.freq_id}'
+                                    and machine_id = '${subScheduleQuery.machine_id}'
+                                    and om_item_check_kanban_id = '${subScheduleQuery.om_item_check_kanban_id}'
+                                )
+                            )
+
+                    order by
+                        created_dt desc
+                `
+            )
+
+            subScheduleQuery.om_main_schedule_id = subScheduleQuery.om_main_schedule_uuid
+            subScheduleQuery.findings = findings.rows
+
+            delete subScheduleQuery.freq_real_id
+            delete subScheduleQuery.zone_real_id
+            delete subScheduleQuery.kanban_real_id
+            delete subScheduleQuery.pic_real_id
+            delete subScheduleQuery.om_main_schedule_uuid
+
+            response.success(res, "Success to get detail om sub schedule", subScheduleQuery)
         } catch (error) {
             console.log(error)
             response.failed(res, "Error to get om sub schedule")
@@ -652,6 +719,8 @@ module.exports = {
                 )
                 return
             }
+
+            subScheduleRow = subScheduleRow[0]
 
             const result = await queryCustom(
                 `

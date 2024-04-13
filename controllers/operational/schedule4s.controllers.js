@@ -104,12 +104,12 @@ const childrenSubSchedule = async (
                     case
                       when finding.finding_date = tmsc.date then
                         'PROBLEM'
+                      when tbrcs.actual_time is not null then
+                        'ACTUAL'
                       when tbrcs.shift_type = 'night_shift' then
                         'NIGHT_SHIFT'
                       when tbrcs.plan_time is not null then
                         'PLANNING'
-                      when tbrcs.actual_time is not null then
-                        'ACTUAL'
                     end as status,
                     trcc1.sign as sign_tl_1,
                     trcc2.sign as sign_tl_2
@@ -148,6 +148,7 @@ const childrenSubSchedule = async (
                           and v4sfl.zone_id = tmz.uuid
                           and v4sfl.kanban_id = tmk.uuid
                           and v4sfl.finding_date = tmsc.date
+                          and v4sfl.deleted_dt is null
                         order by v4sfl.finding_date desc
                         limit 1
                       ) finding on true

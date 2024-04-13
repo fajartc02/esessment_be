@@ -25,7 +25,7 @@ module.exports = {
                 'vofl.deleted_dt is null'
             ]
 
-            let findingSql = 
+            let findingSql =
                 `
                     select
                         *
@@ -108,6 +108,11 @@ module.exports = {
                 finding_pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.finding_pic_id}') `,
             }
 
+            if (req.body.om_sub_schedule_id)
+            {
+                insertBody.om_sub_schedule_id = ` (select om_sub_schedule_id from ${table.tb_r_om_sub_schedules} where uuid = '${req.body.om_sub_schedule_id}') `
+            }
+
             if (req.body.actual_pic_id)
             {
                 insertBody.actual_pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.actual_pic_id}') `
@@ -119,7 +124,7 @@ module.exports = {
             })
 
 
-            response.success(res, "Success to add om finding", transaction.rows)
+            response.success(res, "Success to add om finding", transaction.rows[0])
         } catch (error)
         {
             console.log(error)
@@ -201,7 +206,7 @@ module.exports = {
                 attrsUserUpdate,
                 `WHERE uuid = '${req.params.id}'`
             )
-            response.success(res, "Success to soft delete freq", result)
+            response.success(res, "Success to soft delete om", result)
         } catch (error)
         {
             console.log(error)

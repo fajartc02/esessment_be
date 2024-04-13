@@ -102,32 +102,14 @@ const shiftByGroupId = async () => {
                         ),
                 shifts as (
                             select distinct on
-                                (
-                                case
-                                    when tmsh.group_id is null then tmg.group_id
-                                    else tmsh.group_id
-                                    end,
-                                tms1.date
-                                )
+                                ( tmg.group_id, tms1.date)
                                 tms1.schedule_id,
                                 tms1.date,
-                                case
-                                    when tmsh.group_id is null then tmg.group_id
-                                    else tmsh.group_id
-                                    end                       as group_id,
+                                tmg.group_id,
                                 date_part('week', date::date) as week_num,
-                                shift_holiday.is_holiday or tms1.is_holiday as is_holiday,
-                                case
-                                    when shift_holiday.is_holiday or tms1.is_holiday then null
-                                    when tmsh.shift_type is not null then tmsh.shift_type
-                                    when tmsh.shift_type is null and date_part('week', date::date)::integer % 2 = 0
-                                        then 'morning_shift'
-                                    else 'night_shift'
-                                    end                       as shift_type
+                                shift_holiday.is_holiday or tms1.is_holiday as is_holiday
                             from
                                 tb_m_schedules tms1
-                                    left join tb_m_shifts tmsh
-                                                on tms1.date between tmsh.start_date and tmsh.end_date
                                     left join tb_m_shifts shift_holiday on
                                         tms1.date between shift_holiday.start_date and shift_holiday.end_date
                                         and shift_holiday.is_holiday = true,
@@ -137,7 +119,7 @@ const shiftByGroupId = async () => {
                                 and date_part('year', tms1.date) = ${currentYear}
                                 and tmg.is_active = true
                             order by
-                                group_id, date, shift_type
+                                group_id, date
                         ),
                 schedules as (
                                 select distinct on (shifts.group_id, shifts.date)
@@ -146,7 +128,6 @@ const shiftByGroupId = async () => {
                                     shifts.week_num,
                                     shifts.date,
                                     to_char(shifts.date::date, 'dd') as date_num,
-                                    shifts.shift_type,
                                     shifts.is_holiday,
                                     ceiling(
                                                 (
@@ -173,7 +154,7 @@ const shiftByGroupId = async () => {
     //#endregion    
 
     //console.log('shiftSql', shiftSql)
-    //logger.log('info', shiftSql)
+    //logger(shiftSql)
     const shiftQuery = await databasePool.query(shiftSql)
     return shiftQuery.rows
 }
@@ -389,7 +370,6 @@ const genSubSchedule = async (shiftRows = []) => {
                         machine_id: itemCheckRows[kIndex].machine_id,
                         freq_id: itemCheckRows[kIndex].freq_id,
                         schedule_id: shiftRows[sIndex].schedule_id,
-                        shift_type: shiftRows[sIndex].shift_type,
                         plan_time: planTime == dateFormatted(shiftRows[sIndex].date) ? planTime : null, // validate if date plan is equal the date loop
                     })
                 }
@@ -489,7 +469,6 @@ const genSubSchedule = async (shiftRows = []) => {
                         machine_id: itemCheckRows[kIndex].machine_id,
                         freq_id: itemCheckRows[kIndex].freq_id,
                         schedule_id: shiftRows[sIndex].schedule_id,
-                        shift_type: shiftRows[sIndex].shift_type,
                         plan_time: planTime == dateFormatted(shiftRows[sIndex].date) ? planTime : null, // validate if date plan is equal the date loop
                     })
                 }
@@ -608,21 +587,30 @@ const genSignCheckers = async (shiftRows = []) => {
                 `
 
             //console.log('glSignSql', glSignSql)
+            //logger(glSignSql)
             const glSignQuery = await databasePool.query(glSignSql)
 
-            for (let glIndex = 0; glIndex < glSignQuery.rows.length; glIndex++)
+            for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
             {
-                result.gl.push({
-                    main_schedule_id: null,
-                    group_id: shiftRows[glIndex].group_id,
-                    line_id: shiftRows[glIndex].line_id,
-                    start_date: dateFormatted(glSignQuery.rows[glIndex].start_non_holiday),
-                    end_date: dateFormatted(glSignQuery.rows[glIndex].end_non_holiday),
-                    col_span: glSignQuery.rows[glIndex].col_span,
-                    is_gl: true,
-                })
-            }
+                const exists = result.gl.find((g) => g.group_id == shiftRows[sIndex].group_id && g.line_id == shiftRows[sIndex].line_id)
+                if (exists)
+                {
+                    continue
+                }
 
+                for (let glIndex = 0; glIndex < glSignQuery.rows.length; glIndex++)
+                {
+                    result.gl.push({
+                        main_schedule_id: null,
+                        group_id: shiftRows[sIndex].group_id,
+                        line_id: shiftRows[sIndex].line_id,
+                        start_date: dateFormatted(glSignQuery.rows[glIndex].start_non_holiday),
+                        end_date: dateFormatted(glSignQuery.rows[glIndex].end_non_holiday),
+                        col_span: glSignQuery.rows[glIndex].col_span,
+                        is_gl: true,
+                    })
+                }
+            }
             //console.log('result.gl', result.gl)
         } catch (error)
         {
@@ -686,7 +674,6 @@ const main = async () => {
                             machine_id: subScheduleBulkSchema[subIndex].machine_id,
                             freq_id: subScheduleBulkSchema[subIndex].freq_id,
                             schedule_id: subScheduleBulkSchema[subIndex].schedule_id,
-                            shift_type: subScheduleBulkSchema[subIndex].shift_type,
                             plan_time: subScheduleBulkSchema[subIndex].plan_time,
                         })
                     }
@@ -773,7 +760,7 @@ const test = async () => {
     .then((r) => 0)
     .catch((e) => 0) */
 
-/* clearOmRows()
+clearOmRows()
     .then((r) => {
         main()
             .then((r) => {
@@ -792,12 +779,12 @@ const test = async () => {
             data: e
         })
         return 0
-    }) */
+    })
 
-main()
+/* main()
     .then((result) => {
         process.exit()
     })
     .catch((error) => {
         process.exit()
-    })
+    }) */
