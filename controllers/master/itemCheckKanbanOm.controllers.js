@@ -54,6 +54,9 @@ module.exports = {
                         tml.uuid as line_id,
                         tmf.uuid as freq_id,
                         tmm.uuid as machine_id,
+                        tml.line_nm,
+                        tmm.machine_nm,
+                        tmf.freq_nm,
                         tmoich.kanban_nm,
                         tmoich.item_check_nm,
                         tmoich.location_nm,
@@ -63,9 +66,7 @@ module.exports = {
                         tmoich.created_by,
                         tmoich.created_dt
                     from
-                        ${fromCondition}
-                    where
-                        
+                        ${fromCondition}    
                 `
             //#region filter
             if (id)
@@ -89,7 +90,7 @@ module.exports = {
             const qLimit = (limit != -1 && limit) ? `LIMIT ${limit}` : ``
 
             filterCondition = filterCondition.join(' and ')
-            itemCheckQuery = itemCheckQuery.concat(` ${filterCondition} `)
+            itemCheckQuery = itemCheckQuery.concat(`where ${filterCondition} `)
             itemCheckQuery = itemCheckQuery.concat(` order by tmoich.created_dt ${qLimit} ${qOffset} `)
             //#endregion
 
