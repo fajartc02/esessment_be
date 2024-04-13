@@ -654,19 +654,28 @@ const genSignCheckers = async (shiftRows = []) => {
             //console.log('glSignSql', glSignSql)
             const glSignQuery = await databasePool.query(glSignSql)
 
-            for (let glIndex = 0; glIndex < glSignQuery.rows.length; glIndex++)
+            for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
             {
-                result.gl.push({
-                    main_schedule_id: null,
-                    group_id: shiftRows[glIndex].group_id,
-                    line_id: shiftRows[glIndex].line_id,
-                    start_date: dateFormatted(glSignQuery.rows[glIndex].start_non_holiday),
-                    end_date: dateFormatted(glSignQuery.rows[glIndex].end_non_holiday),
-                    col_span: glSignQuery.rows[glIndex].col_span,
-                    is_gl: true,
-                })
+                const exists = result.gl.find((g) => g.group_id == shiftRows[sIndex].group_id && g.line_id == shiftRows[sIndex].line_id)
+                if (exists)
+                {
+                    continue
+                }
+                
+                for (let glIndex = 0; glIndex < glSignQuery.rows.length; glIndex++)
+                {
+                    result.gl.push({
+                        main_schedule_id: null,
+                        group_id: shiftRows[glIndex].group_id,
+                        line_id: shiftRows[glIndex].line_id,
+                        start_date: dateFormatted(glSignQuery.rows[glIndex].start_non_holiday),
+                        end_date: dateFormatted(glSignQuery.rows[glIndex].end_non_holiday),
+                        col_span: glSignQuery.rows[glIndex].col_span,
+                        is_gl: true,
+                    })
+                }
             }
-
+            
             //console.log('result.gl', result.gl)
         } catch (error)
         {

@@ -67,7 +67,7 @@ module.exports = {
 
             let mapLinesCountFindings = await linesData.map(async (line) => {
                 let findingTagRedProblem = await queryGET(
-                    table.v_finding_list,
+                    table.v_om_finding_list,
                     `WHERE ${condDataNotDeleted} AND line_id = '${isLine ? line_id : line.line_id
                     }' AND source_tag = 'Tag Red' AND status_finding = 'problem' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ""
                     } ${isLine
@@ -85,7 +85,7 @@ module.exports = {
                     ]
                 );
                 let findingTagRedClosed = await queryGET(
-                    table.v_finding_list,
+                    table.v_om_finding_list,
                     `WHERE ${condDataNotDeleted} AND line_id = '${isLine ? line_id : line.line_id
                     }' AND source_tag = 'Tag Red' AND status_finding = 'closed' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ""
                     } ${isLine
@@ -103,7 +103,7 @@ module.exports = {
                     ]
                 );
                 let findingTagRedRemain = await queryGET(
-                    table.v_finding_list,
+                    table.v_om_finding_list,
                     `WHERE ${condDataNotDeleted} AND line_id = '${isLine ? line_id : line.line_id
                     }' AND source_tag = 'Tag Red' AND status_finding = 'remain' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ""
                     } ${isLine
@@ -122,7 +122,7 @@ module.exports = {
                 );
 
                 let findingTagWhiteProblem = await queryGET(
-                    table.v_finding_list,
+                    table.v_om_finding_list,
                     `WHERE ${condDataNotDeleted} AND line_id = '${isLine ? line_id : line.line_id
                     }' AND source_tag = 'Tag White' AND status_finding = 'problem' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ""
                     } ${isLine
@@ -140,7 +140,7 @@ module.exports = {
                     ]
                 );
                 let findingTagWhiteClosed = await queryGET(
-                    table.v_finding_list,
+                    table.v_om_finding_list,
                     `WHERE ${condDataNotDeleted} AND line_id = '${isLine ? line_id : line.line_id
                     }' AND source_tag = 'Tag White' AND status_finding = 'closed' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ""
                     } ${isLine
@@ -158,7 +158,7 @@ module.exports = {
                     ]
                 );
                 let findingTagWhiteRemain = await queryGET(
-                    table.v_finding_list,
+                    table.v_om_finding_list,
                     `WHERE ${condDataNotDeleted} AND line_id = '${isLine ? line_id : line.line_id
                     }' AND source_tag = 'Tag White' AND status_finding = 'remain' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ""
                     } ${isLine
