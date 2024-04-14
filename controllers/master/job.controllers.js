@@ -74,10 +74,10 @@ module.exports = {
         ${condDataNotDeleted}
         ${containerQuery}`;
       console.log(job);
-      const countJobTotal = await queryCustom(
-        `SELECT COUNT(job_id) as total_data FROM tb_m_jobs tmj ${condDataNotDeleted}
-        ${containerQuery}`
-      );
+      //   const countJobTotal = await queryCustom(
+      //     `SELECT COUNT(job_id) as total_data FROM tb_m_jobs tmj ${condDataNotDeleted}
+      //     ${containerQuery}`
+      //   );
       if (job.rows.length > 0) {
         const total_job = await queryCustom(qCountTotal);
         job.rows[0].total_page =
@@ -85,7 +85,7 @@ module.exports = {
             ? Math.ceil(total_job.rows[0].count / +limit)
             : 0;
         job.rows[0].limit = +limit;
-        job.rows[0].total_data = +countJobTotal.rows[0].total_data;
+        job.rows[0].total_data = +total_job.rows[0].count;
         job.rows[0].currentPage = currentPage;
       }
 
@@ -98,8 +98,8 @@ module.exports = {
   postJob: async (req, res) => {
     try {
       /* 
-                                                                            pos_id,job_type_id,machine_id, job_nm, attachment, job_no, 
-                                                                        */
+                                                                                        pos_id,job_type_id,machine_id, job_nm, attachment, job_no, 
+                                                                                    */
       // console.log(req.body);
       let idLast = (await getLastIdData(table.tb_m_jobs, "job_id")) + 1;
       req.body.job_id = idLast;
