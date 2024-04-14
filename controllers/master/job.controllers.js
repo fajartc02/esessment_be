@@ -30,10 +30,10 @@ module.exports = {
           : ``;
       if (limit != -1 && limit) qLimit = `LIMIT ${limit}`;
       if (id) containerQuery += ` AND tmj.uuid = '${id}'`;
-      if (pos_id && pos_id != -1 && pos_id != "null")
-        containerQuery += ` AND tmp.uuid = '${pos_id}'`;
       if (line_id && line_id != -1 && line_id != "null")
         containerQuery += ` AND tml.uuid = '${line_id}'`;
+      if (pos_id && pos_id != -1 && pos_id != "null")
+        containerQuery += ` AND tmp.uuid = '${pos_id}'`;
       if (job_no) containerQuery += ` AND LOWER(tmj.job_no) LIKE '%${job_no}%'`;
       console.log(containerQuery);
       let q = `
@@ -73,11 +73,6 @@ module.exports = {
         LEFT JOIN ${table.tb_m_lines} tml ON tmp.line_id = tml.line_id
         ${condDataNotDeleted}
         ${containerQuery}`;
-      console.log(job);
-      //   const countJobTotal = await queryCustom(
-      //     `SELECT COUNT(job_id) as total_data FROM tb_m_jobs tmj ${condDataNotDeleted}
-      //     ${containerQuery}`
-      //   );
       if (job.rows.length > 0) {
         const total_job = await queryCustom(qCountTotal);
         job.rows[0].total_page =
@@ -98,8 +93,8 @@ module.exports = {
   postJob: async (req, res) => {
     try {
       /* 
-                                                                                        pos_id,job_type_id,machine_id, job_nm, attachment, job_no, 
-                                                                                    */
+                                                                                              pos_id,job_type_id,machine_id, job_nm, attachment, job_no, 
+                                                                                          */
       // console.log(req.body);
       let idLast = (await getLastIdData(table.tb_m_jobs, "job_id")) + 1;
       req.body.job_id = idLast;
