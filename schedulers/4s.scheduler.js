@@ -666,8 +666,8 @@ const genSignCheckers = async (shiftRows = []) => {
                 {
                     result.gl.push({
                         main_schedule_id: null,
-                        group_id: shiftRows[glIndex].group_id,
-                        line_id: shiftRows[glIndex].line_id,
+                        group_id: shiftRows[sIndex].group_id,
+                        line_id: shiftRows[sIndex].line_id,
                         start_date: dateFormatted(glSignQuery.rows[glIndex].start_non_holiday),
                         end_date: dateFormatted(glSignQuery.rows[glIndex].end_non_holiday),
                         col_span: glSignQuery.rows[glIndex].col_span,
@@ -676,6 +676,7 @@ const genSignCheckers = async (shiftRows = []) => {
                 }
             }
             
+            logger(result.gl.length)
             //console.log('result.gl', result.gl)
         } catch (error)
         {
@@ -725,7 +726,7 @@ const genSignCheckers = async (shiftRows = []) => {
 const main = async () => {
     try
     {
-        //await clear4sRows();
+        await clear4sRows();
 
         //#region schedulers parent 
         const lineGroups = await lineGroupRows()
@@ -900,13 +901,13 @@ const main = async () => {
 //#endregion
 
 const test = async () => {
-    await clear4sRows()
-    const shiftRows = await shiftByGroupId(2)
+    const shiftRows = await shiftByGroupId()
+    const signCheckers = await genSignCheckers(shiftRows)
+    const signChckerGlBulkSchema = signCheckers.gl
+    const signChckerShBulkSchema = signCheckers.sh
 
-
-    logger.info(`shiftRows`, {
-        data: shiftRows
-    })
+    console.log('signChckerGlBulkSchema', signChckerGlBulkSchema.length)
+    console.log('signChckerShBulkSchema', signChckerShBulkSchema.length)
 }
 
 /* test()
