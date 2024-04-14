@@ -34,6 +34,7 @@ module.exports = {
         containerQuery += ` AND tmm.uuid = '${id}'`;
       }
       let q = `SELECT 
+                row_number() over(order by tmm.uuid DESC) as no, 
                 tmm.uuid as id,
                 tmm.machine_nm,
                 tmm.op_no,
