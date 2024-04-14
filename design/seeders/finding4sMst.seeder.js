@@ -25,11 +25,8 @@ console.log(`Migration Running ...`)
 
 const migrate = async () => {
     const clearRows = async (db) => {
-        await Promise.all([
-            db.query(`DELETE FROM ${table.tb_m_system} WHERE system_type in ('4S_OPT_CHANGE', 'OPT_DEPT', '4S_EVALUATION')`),
-        ]).then((res) => {
-            console.log('delete and reset count complete')
-        })
+        await db.query(`DELETE FROM ${table.tb_m_system} WHERE system_type in ('OPT_CHANGE', 'OPT_DEPT', 'EVALUATION')`)
+        await db.query(`DELETE FROM ${table.tb_m_system} WHERE system_type in ('4S_OPT_CHANGE', '4S_OPT_DEPT', '4S_EVALUATION')`)
     }
 
     await queryTransaction(async (db) => {
@@ -52,22 +49,22 @@ const migrate = async () => {
             //#region finding4sMst opt_depts schema
             {
                 uuid: uuid(),
-                system_type: 'OPT_DEPT',
+                system_type: '4S_OPT_DEPT',
                 system_value: 'Produksi'
             },
             {
                 uuid: uuid(),
-                system_type: 'OPT_DEPT',
+                system_type: '4S_OPT_DEPT',
                 system_value: 'Kaizen'
             },
             {
                 uuid: uuid(),
-                system_type: 'OPT_DEPT',
+                system_type: '4S_OPT_DEPT',
                 system_value: 'Maintenance'
             },
             {
                 uuid: uuid(),
-                system_type: 'OPT_DEPT',
+                system_type: '4S_OPT_DEPT',
                 system_value: 'Engginering'
             },
             //#endregion

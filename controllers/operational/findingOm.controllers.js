@@ -28,6 +28,7 @@ module.exports = {
             let findingSql =
                 `
                     select
+                        
                         *
                     from
                        ${fromCondition}    
@@ -71,7 +72,7 @@ module.exports = {
             {
                 if (nullId)
                 {
-                    const count = await queryCustom(`select count(*) as count from ${fromCondition} where ${filterCondition}`)
+                    const count = await queryCustom(`select count(*)::integer as count from ${fromCondition} where ${filterCondition}`)
                     const countRows = count.rows[0]
                     result = {
                         current_page: current_page,

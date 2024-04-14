@@ -29,7 +29,7 @@ module.exports = {
     getOmItemCheckKanbans: async (req, res) => {
         try
         {
-            let { id, line_id, machine_id, kanban_nm, limit, current_page } = req.query
+            let { id, line_id, machine_id, freq_id, kanban_nm, limit, current_page } = req.query
             const fromCondition = ` 
                         ${table.tb_m_om_item_check_kanbans} tmoich
                         join ${table.tb_m_freqs} tmf on tmoich.freq_id = tmf.freq_id 
@@ -80,6 +80,10 @@ module.exports = {
             if (machine_id)
             {
                 filterCondition.push(` tmm.uuid = '${machine_id}' `)
+            }
+            if (freq_id)
+            {
+                filterCondition.push(` tmf.uuid = '${freq_id}' `)
             }
             if (kanban_nm)
             {

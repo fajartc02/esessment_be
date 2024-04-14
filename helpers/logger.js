@@ -61,6 +61,7 @@ const logger = winston.createLogger({
 });
 
 const logRaw = (text, message = 'log', level = 'info', isJson = false) => {
+    if(level == '') level = 'info'
     logger.log(
         level,
         message,
