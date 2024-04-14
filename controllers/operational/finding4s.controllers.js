@@ -27,6 +27,14 @@ module.exports = {
 
             let findingSql = `
                     select
+                        row_number () over (
+                            order by
+                            vfl.plan_cm_date,
+                            case 
+                                when cm_judg = true then 1
+                                else 2
+                            end
+                        )::integer as no,
                         *
                     from
                        ${fromCondition}
