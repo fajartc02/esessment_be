@@ -98,8 +98,7 @@ module.exports = {
                 obs.checkers = checkers
                 obs.total_page = +totalRowTable > 0 ? Math.ceil(totalRowTable / +limit) : 0
                 obs.limit = +limit
-                    // console.log();
-                // console.log(obs);
+                obs.total_data = +totalRowTable;
                 obs.plan_check_dt = moment(obs.plan_check_dt).format('YYYY-MM-DD')
                 obs.actual_check_dt = obs.actual_check_dt ? moment(obs.actual_check_dt).format('YYYY-MM-DD') : null
                 return obs
