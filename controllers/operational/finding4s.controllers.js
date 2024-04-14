@@ -70,7 +70,15 @@ module.exports = {
 
             filterCondition = filterCondition.join(' and ')
             findingSql = findingSql.concat(` ${filterCondition} `)
-            findingSql = findingSql.concat(` order by vfl.created_dt ${qLimit} ${qOffset} `)
+            findingSql = findingSql.concat(
+                ` 
+                    order by vfl.plan_cm_date,
+                      case 
+                          when cm_judg = true then 1
+                          else 2
+                      end ${qLimit} ${qOffset} 
+                `
+            )
             //#endregion
 
             let findingQuery = await queryCustom(findingSql)
@@ -81,7 +89,7 @@ module.exports = {
             {
                 if (nullId)
                 {
-                    const count = await queryCustom(`select count(*) as count from ${fromCondition} where ${filterCondition}`)
+                    const count = await queryCustom(`select count(*)::integer as count from ${fromCondition} where ${filterCondition}`)
                     const countRows = count.rows[0]
                     result = {
                         current_page: current_page,
