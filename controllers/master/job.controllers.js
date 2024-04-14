@@ -85,6 +85,7 @@ module.exports = {
             : 0;
         job.rows[0].limit = +limit;
         job.rows[0].total_data = +countJobTotal.rows[0].total_data;
+        job.rows[0].currentPage = currentPage;
       }
 
       response.success(res, "Success to get job", job.rows);
@@ -96,8 +97,8 @@ module.exports = {
   postJob: async (req, res) => {
     try {
       /* 
-                                        pos_id,job_type_id,machine_id, job_nm, attachment, job_no, 
-                                    */
+                                              pos_id,job_type_id,machine_id, job_nm, attachment, job_no, 
+                                          */
       // console.log(req.body);
       let idLast = (await getLastIdData(table.tb_m_jobs, "job_id")) + 1;
       req.body.job_id = idLast;
