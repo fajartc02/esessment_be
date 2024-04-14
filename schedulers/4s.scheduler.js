@@ -537,6 +537,7 @@ const genSubSchedule = async (shiftRows = []) => {
 }
 //#endregion
 
+var ii = 0
 //#region scheduler generate sign checkers
 /**
  * 
@@ -652,6 +653,7 @@ const genSignCheckers = async (shiftRows = []) => {
                 `
 
             //console.log('glSignSql', glSignSql)
+            //logger(glSignSql)
             const glSignQuery = await databasePool.query(glSignSql)
 
             for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
@@ -661,7 +663,7 @@ const genSignCheckers = async (shiftRows = []) => {
                 {
                     continue
                 }
-                
+
                 for (let glIndex = 0; glIndex < glSignQuery.rows.length; glIndex++)
                 {
                     result.gl.push({
@@ -675,8 +677,8 @@ const genSignCheckers = async (shiftRows = []) => {
                     })
                 }
             }
-            
-            logger(result.gl.length)
+
+            //logger(result.gl.length)
             //console.log('result.gl', result.gl)
         } catch (error)
         {
@@ -691,19 +693,35 @@ const genSignCheckers = async (shiftRows = []) => {
         let tempSh = []
         result.gl.forEach((gl) => tempSh.push(Object.assign({}, gl)))
 
+
         for (var i = 0; i < tempSh.length; ++i)
         {
+
             if (tempSh[i + 1])
             {
+                let tempEndDate = tempSh[i].end_date
+
                 tempSh[i].col_span = tempSh[i].col_span + tempSh[i + 1].col_span
                 tempSh[i].start_date = moment(tempSh[i].start_date, 'YYYY-MM-DD').format('YYYY-MM-DD')
                 tempSh[i].end_date = moment(tempSh[i + 1].end_date, 'YYYY-MM-DD').format('YYYY-MM-DD')
                 tempSh[i].is_sh = true
 
+                if (moment(tempSh[i].end_date).valueOf() < moment(tempSh[i].start_date).valueOf())
+                {
+                    tempSh[i].end_date = tempEndDate
+                }
+
                 delete tempSh[i].is_gl
 
                 result.sh.push(tempSh[i])
-                tempSh.splice(i + 1, 1)
+
+                if (
+                    tempSh[i].line_id == tempSh[i + 1].line_id
+                    && tempSh[i].group_id == tempSh[i + 1].group_id
+                )
+                {
+                    tempSh.splice(i + 1, 1)
+                }
             }
             else
             {
@@ -866,7 +884,8 @@ const main = async () => {
                             main_schedule_id: mainScheduleInserted.rows[mIndex].main_schedule_id,
                             uuid: uuid(),
                             start_date: signChckerShBulkSchema[shIndex].start_date,
-                            end_date: `func (select "date" from tb_m_schedules where "date" between '${signChckerShBulkSchema[shIndex].start_date}' and '${signChckerShBulkSchema[shIndex].end_date}' and (is_holiday is null or is_holiday = false) order by schedule_id desc limit 1)`,
+                            end_date: signChckerShBulkSchema[shIndex].end_date,
+                            //end_date: `func (select "date" from tb_m_schedules where "date" between '${signChckerShBulkSchema[shIndex].start_date}' and '${signChckerShBulkSchema[shIndex].end_date}' and (is_holiday is null or is_holiday = false) order by schedule_id desc limit 1)`,
                             is_tl_1: null,
                             is_tl_2: null,
                             is_gl: null,
@@ -906,8 +925,7 @@ const test = async () => {
     const signChckerGlBulkSchema = signCheckers.gl
     const signChckerShBulkSchema = signCheckers.sh
 
-    console.log('signChckerGlBulkSchema', signChckerGlBulkSchema.length)
-    console.log('signChckerShBulkSchema', signChckerShBulkSchema.length)
+    logger(signChckerShBulkSchema.splice(0, 6), '', 'info', true)
 }
 
 /* test()
