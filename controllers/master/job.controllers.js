@@ -75,7 +75,8 @@ module.exports = {
         ${containerQuery}`;
       console.log(job);
       const countJobTotal = await queryCustom(
-        `SELECT COUNT(job_id) as total_data FROM tb_m_jobs tmj ${condDataNotDeleted}`
+        `SELECT COUNT(job_id) as total_data FROM tb_m_jobs tmj ${condDataNotDeleted}
+        ${containerQuery}`
       );
       if (job.rows.length > 0) {
         const total_job = await queryCustom(qCountTotal);
@@ -97,8 +98,8 @@ module.exports = {
   postJob: async (req, res) => {
     try {
       /* 
-                                                                      pos_id,job_type_id,machine_id, job_nm, attachment, job_no, 
-                                                                  */
+                                                                            pos_id,job_type_id,machine_id, job_nm, attachment, job_no, 
+                                                                        */
       // console.log(req.body);
       let idLast = (await getLastIdData(table.tb_m_jobs, "job_id")) + 1;
       req.body.job_id = idLast;
