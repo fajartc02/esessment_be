@@ -47,13 +47,7 @@ module.exports = {
                 ${condDataNotDeleted}
                 ${containerQuery} ${qLimit} ${qOffset}`;
       let qCountTotal = `SELECT 
-                tmm.uuid as id,
-                tmm.machine_nm,
-                tmm.op_no,
-                tml.uuid as line_id,
-                tml.line_nm,
-                tmm.created_by,
-                tmm.created_dt
+                count(machine_id)
             FROM ${table.tb_m_machines} tmm
             JOIN ${table.tb_m_lines} tml ON tml.line_id = tmm.line_id
             WHERE
