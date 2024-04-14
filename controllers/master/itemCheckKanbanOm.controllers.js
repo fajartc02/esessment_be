@@ -26,7 +26,7 @@ module.exports = {
      * @param {*} res 
      * @param {JSON} req.query.id is determine for detail usecase
      */
-    getOemItemCheckKanbans: async (req, res) => {
+    getOmItemCheckKanbans: async (req, res) => {
         try
         {
             let { id, line_id, machine_id, kanban_nm, limit, current_page } = req.query
@@ -125,7 +125,92 @@ module.exports = {
             response.failed(res, "Error to get om item check kanbans")
         }
     },
-    postOemItemCheck: async (req, res) => {
+    getOmGroupMachinesPaginate: async(req, res) => {
+        try
+        {
+            let { line_id, machine_id, limit, current_page } = req.query
+            const fromCondition = 
+                ` 
+                    ${table.tb_m_machines} tmm
+                       join ${table.tb_m_lines} tml on tmm.line_id = tml.line_id
+                       left join lateral (
+                       select
+                           sum(standart_time) as total_duration_time,
+                           count(*) as total_item_check
+                       from
+                           ${table.tb_m_om_item_check_kanbans} tmoick
+                       where
+                           tmoick.machine_id = tmm.machine_id
+                       and tmoick.deleted_dt is null
+                       ) tmoick on true
+                `
+
+            current_page = parseInt(current_page ?? 1)
+            limit = parseInt(limit ?? 10)
+
+            let filterCondition = [
+                'tmm.deleted_dt is null'
+            ]
+
+            let itemCheckQuery = `
+                   select
+                        row_number () over (
+                            order by
+                            tmm.created_dt
+                        )::integer as no,
+                        tml.uuid       as line_id,
+                        tmm.uuid       as machine_id,
+                        tml.line_nm,
+                        tmm.machine_nm,
+                        tml.line_snm,
+                        tml.line_desc,
+                        tmoick.total_duration_time::real,
+                        tmoick.total_item_check::real
+                    from
+                        ${fromCondition}    
+                `
+            //#region filter
+            if (line_id)
+            {
+                filterCondition.push(` tml.uuid = '${line_id}' `)
+            }
+            if (machine_id)
+            {
+                filterCondition.push(` tmm.uuid = '${machine_id}' `)
+            }
+
+            const qOffset = (limit != -1 && limit) && current_page > 1 ? `OFFSET ${limit * (current_page - 1)}` : ``
+            const qLimit = (limit != -1 && limit) ? `LIMIT ${limit}` : ``
+
+            filterCondition = filterCondition.join(' and ')
+            itemCheckQuery = itemCheckQuery.concat(`where ${filterCondition} `)
+            itemCheckQuery = itemCheckQuery.concat(` order by tmm.created_dt ${qLimit} ${qOffset} `)
+            //#endregion
+
+            const itemChecks = await queryCustom(itemCheckQuery)
+            let result = itemChecks.rows
+
+            if (result.length > 0)
+            {
+                const count = await queryCustom(`select count(*)::integer as count from ${fromCondition} where ${filterCondition}`)
+                const countRows = count.rows[0]
+                result = {
+                    current_page: current_page,
+                    total_page: +countRows.count > 0 ? Math.ceil(countRows.count / +limit) : 0,
+                    total_data: countRows.count,
+                    limit: limit,
+                    list: itemChecks.rows,
+                }
+            }
+
+            response.success(res, "Success to get group machine om item check kanbans", result)
+        } catch (error)
+        {
+            console.log(error)
+            response.failed(res, "Error to get group machine om item check kanbans")
+        }
+    },
+    postOmItemCheck: async (req, res) => {
         try
         {
             const transaction = await queryTransaction(async (db) => {
@@ -150,11 +235,11 @@ module.exports = {
         }
         catch (error)
         {
-            console.log('postOemItemCheck', error)
+            console.log('postOmItemCheck', error)
             response.failed(res, error)
         }
     },
-    editOemItemCheck: async (req, res) => {
+    editOmItemCheck: async (req, res) => {
         try
         {
             const transaction = await queryTransaction(async (db) => {
@@ -186,7 +271,7 @@ module.exports = {
             response.failed(res, error)
         }
     },
-    deleteOemItemCheck: async (req, res) => {
+    deleteOmItemCheck: async (req, res) => {
         try
         {
             let obj = {

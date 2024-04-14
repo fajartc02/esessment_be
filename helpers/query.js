@@ -1,5 +1,6 @@
 const pg = require('pg')
 const { database, databasePool } = require('../config/database')
+const logger = require('./logger')
 
 const _defaultCallbackTrans = async (db = databasePool) => {};
 
@@ -14,7 +15,8 @@ module.exports = {
         whereCond = "";
       }
       let q = `SELECT ${selectedCols} FROM ${table} ${whereCond}`;
-      console.log(q);
+      //console.log(q);
+      logger(q)
       await database
         .query(q)
         .then((result) => {

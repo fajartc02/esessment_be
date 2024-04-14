@@ -4,6 +4,7 @@ const { queryCustom, queryGET } = require("../../helpers/query");
 const response = require("../../helpers/response");
 const moment = require('moment')
 const condDataNotDeleted = `deleted_dt IS NULL`;
+const logger = require("../../helpers/logger.js")
 
 module.exports = {
     graphFinding4s: async (req, res) => {
@@ -55,7 +56,7 @@ module.exports = {
                 "December",
             ];
 
-            let mapLineMonth = await months.map((month, i) => {
+            let mapLineMonth = months.map((month, i) => {
                 return {
                     month: month,
                     idxMonth: i + 1,
@@ -85,7 +86,7 @@ module.exports = {
                     ]
                 );
                 let findingClosed = await queryGET(
-                    table.v_finding_list,
+                    table.v_4s_finding_list,
                     `WHERE ${condDataNotDeleted} AND line_id = '${isLine ? line_id : line.line_id
                     }' AND status_finding = 'closed' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ""
                     } ${isLine
@@ -103,7 +104,7 @@ module.exports = {
                     ]
                 );
                 let findingRemain = await queryGET(
-                    table.v_finding_list,
+                    table.v_4s_finding_list,
                     `WHERE ${condDataNotDeleted} AND line_id = '${isLine ? line_id : line.line_id
                     }' AND status_finding = 'remain' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ""
                     } ${isLine
@@ -147,7 +148,8 @@ module.exports = {
                 return line;
             });
             let waitGraphData = await Promise.all(mapLinesCountFindings);
-            console.log(waitGraphData);
+            //console.log(waitGraphData);
+            
             response.success(res, "Success tp get graph finding 4s", waitGraphData);
         } catch (error)
         {
