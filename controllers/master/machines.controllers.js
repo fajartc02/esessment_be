@@ -62,7 +62,7 @@ module.exports = {
       const machines = await queryCustom(q);
       const totalMachine = await queryCustom(qCountTotal);
       if (machines.rows.length > 0) {
-        ob.rows[0].total_page =
+        machines.rows[0].total_page =
           +totalMachine.rows[0].count > 0
             ? Math.ceil(totalMachine.rows[0].count / +limit)
             : 0;
