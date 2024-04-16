@@ -9,7 +9,7 @@ const {
 
 const response = require("../../helpers/response")
 const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData")
-const { padTwoDigits } = require("../../helpers/formatting")
+const { arrayOrderBy } = require("../../helpers/formatting")
 const moment = require('moment')
 const logger = require('../../helpers/logger')
 
@@ -250,11 +250,11 @@ module.exports = {
             console.log(error)
             response.failed(res, "Error to get om main schedule")
         }
-    }, 
+    },
     getOmSubSchedule: async (req, res) => {
         try
         {
-            const { om_main_schedule_id, freq_id, om_item_check_kanban_id, line_id, group_id, month_year_num } = req.query
+            const { om_main_schedule_id, freq_id, machine_id, om_item_check_kanban_id, line_id, group_id, month_year_num } = req.query
 
             if (
                 !om_main_schedule_id ||
@@ -323,6 +323,10 @@ module.exports = {
             if (group_id && group_id != null && group_id != "")
             {
                 filterCondition.push(` group_id = '${group_id}' `)
+            }
+            if (machine_id && machine_id != null && machine_id != "")
+            {
+                filterCondition.push(` machine_id = '${machine_id}' `)
             }
 
             if (filterCondition.length > 0)
@@ -429,6 +433,7 @@ module.exports = {
                     return await queryCustom(
                         `
                             select 
+                                '${om_main_schedule_id}' as om_main_schedule_id,
                                 uuid as sign_checker_id,
                                 sign,
                                 start_date,
@@ -447,10 +452,52 @@ module.exports = {
                     )
                 }
 
-                const signGl = await signCheckerQuery('gl')
+                const holidayTemp = []
+                const signGl = (await signCheckerQuery('gl')).rows.map((item) => {
+                    item.is_holiday = false
+                    return item
+                })
+
+                for (let i = 0; i < signGl.length; i++)
+                {
+                    if (signGl[i + 1])
+                    {
+                        const holidaySchedule = await queryCustom(
+                            `
+                                select 
+                                    * 
+                                from 
+                                    ${table.tb_m_schedules} 
+                                where 
+                                    is_holiday = true 
+                                    and date between '${signGl[i].end_date}' and '${signGl[i + 1].start_date}'
+                            `
+                        )
+                        
+                        for (let j = 0; j < holidaySchedule.rows.length; j++)
+                        {
+                            holidayTemp.push({
+                                index: i + 1,
+                                om_main_schedule_id: om_main_schedule_id,
+                                sign_checker_id: null,
+                                sign: null,
+                                start_date: holidaySchedule.rows[j].date,
+                                end_date: holidaySchedule.rows[j].date,
+                                col_span: 1,
+                                is_holiday: true,
+                            })
+                        }
+                    }
+                }
+
+                for (let i = 0; i < holidayTemp.length; i++)
+                {
+                    delete holidayTemp[i].index
+                    signGl.splice(holidayTemp[i].index, 0, holidayTemp[i])
+                }
 
                 result.schedule = await Promise.all(scheduleRows)
-                result.sign_checker_gl = signGl.rows
+                result.sign_checker_gl = arrayOrderBy(signGl, (gl) => gl.start_date)
             }
 
             response.success(res, "Success to get om sub schedule", result)
@@ -465,7 +512,7 @@ module.exports = {
         {
             const sub_schedule_uuid = req.params.id
 
-            const subScheduleSql = 
+            const subScheduleSql =
                 `
                     select 
                         ${selectSubScheduleSql}
@@ -522,7 +569,8 @@ module.exports = {
             delete subScheduleQuery.om_main_schedule_uuid
 
             response.success(res, "Success to get detail om sub schedule", subScheduleQuery)
-        } catch (error) {
+        } catch (error)
+        {
             console.log(error)
             response.failed(res, "Error to get om sub schedule")
         }
@@ -592,20 +640,10 @@ module.exports = {
             {
                 body.pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.pic_id}') `
             }
-
-            if (req.body.actual_pic_id)
-            {
-                body.actual_pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.actual_pic_id}') `
-            }
-
-            if (req.body.actual_date)
-            {
-                body.actual_time = req.body.actual_date
-            }
-
+            
             await queryTransaction(async (db) => {
                 const attrsUpdate = await attrsUserUpdateData(req, body)
-                const updateCondition = 
+                const updateCondition =
                     `
                         om_main_schedule_id = '${schedulRow.om_main_schedule_id}' 
                         and freq_id = '${schedulRow.freq_id}' 
@@ -619,6 +657,30 @@ module.exports = {
                     attrsUpdate,
                     `WHERE ${updateCondition}`
                 )
+
+                let whereActual = []
+                if (req.body.actual_pic_id)
+                {
+                    whereActual.push(` actual_pic_id = (select user_id from ${table.tb_m_users} where uuid = '${req.body.actual_pic_id}') `)
+                }
+                if (req.body.actual_date)
+                {
+                    whereActual.push(` actual_time = '${req.body.actual_date}' `)
+                }
+
+                if (whereActual.length > 0)
+                {
+                    await db.query(
+                        `
+                            update
+                                ${table.tb_r_om_sub_schedules} 
+                            set 
+                                ${whereActual.join(', ')}
+                            where 
+                                uuid = '${req.params.id}'
+                        `
+                    )
+                }
 
                 if (req.body.plan_date)
                 {

@@ -9,7 +9,7 @@ const {
 
 const response = require("../../helpers/response")
 const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData")
-const { padTwoDigits } = require("../../helpers/formatting")
+const { arrayOrderBy } = require("../../helpers/formatting")
 const moment = require('moment')
 const logger = require('../../helpers/logger')
 
@@ -483,12 +483,56 @@ module.exports = {
             `, false)
         }
 
-        const signGl = await signCheckerQuery('gl')
-        const signSh = await signCheckerQuery('sh')
+        const signGl = (await signCheckerQuery('gl')).rows
+        const signSh = (await signCheckerQuery('sh')).rows
+
+        const addHolidayTemp = async (signArr) => {
+          const holidayTemp = []
+          for (let i = 0; i < signGl.length; i++)
+          {
+            if (signArr[i + 1])
+            {
+              const holidaySchedule = await queryCustom(
+                `
+                                select 
+                                    * 
+                                from 
+                                    ${table.tb_m_schedules} 
+                                where 
+                                    is_holiday = true 
+                                    and date between '${signArr[i].end_date}' and '${signArr[i + 1].start_date}'
+                            `
+              )
+
+              for (let j = 0; j < holidaySchedule.rows.length; j++)
+              {
+                holidayTemp.push({
+                  index: i + 1,
+                  main_schedule_id: main_schedule_id,
+                  sign_checker_id: null,
+                  sign: null,
+                  start_date: holidaySchedule.rows[j].date,
+                  end_date: holidaySchedule.rows[j].date,
+                  col_span: 1,
+                  is_holiday: true,
+                })
+              }
+            }
+          }
+
+          for (let i = 0; i < holidayTemp.length; i++)
+          {
+            delete holidayTemp[i].index
+            signArr.splice(holidayTemp[i].index, 0, holidayTemp[i])
+          }
+
+          return arrayOrderBy(signArr, (s) => s.start_date)
+        }
+       
 
         result.schedule = await Promise.all(scheduleRows)
-        result.sign_checker_gl = signGl.rows
-        result.sign_checker_sh = signSh.rows
+        result.sign_checker_gl = await addHolidayTemp(signGl)
+        result.sign_checker_sh = await addHolidayTemp(signSh)
       }
 
       response.success(res, "Success to get 4s sub schedule", result)
