@@ -46,10 +46,10 @@ module.exports = {
     },
     getObservationScheduleList: async(req, res) => {
         try {
-            let { id, line, month, year, limit, currentPage } = req.query
+            let { id, line, month, year, limit, current_page } = req.query
             let containerQuery = ''
             let qLimit = ``
-            let qOffset = (limit != -1 && limit) && currentPage > 1 ? `OFFSET ${limit * (currentPage - 1)}` : ``
+            let qOffset = (limit != -1 && limit) && current_page > 1 ? `OFFSET ${limit * (current_page - 1)}` : ``
             if (limit != -1 && limit) qLimit = `LIMIT ${limit}`
             if (id) containerQuery += ` AND tro.uuid = '${id}'`
             if (month && year) containerQuery = `AND (EXTRACT(month from  tro.plan_check_dt), EXTRACT('year' from tro.plan_check_dt))=(${+month},${+year})`
@@ -98,6 +98,7 @@ module.exports = {
                 obs.checkers = checkers
                 obs.total_page = +totalRowTable > 0 ? Math.ceil(totalRowTable / +limit) : 0
                 obs.limit = +limit
+                obs.current_page = +current_page
                 obs.total_data = +totalRowTable;
                 obs.plan_check_dt = moment(obs.plan_check_dt).format('YYYY-MM-DD')
                 obs.actual_check_dt = obs.actual_check_dt ? moment(obs.actual_check_dt).format('YYYY-MM-DD') : null
