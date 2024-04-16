@@ -693,7 +693,7 @@ module.exports = {
                             where 
                                 ${updateCondition} 
                                 and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')
-            `
+                        `
                     )
                 }
 
@@ -708,7 +708,21 @@ module.exports = {
                             where 
                                 ${updateCondition} 
                                 and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.before_plan_date}')
-            `
+                        `
+                    )
+                }
+
+                if (req.body.actual_duration)
+                {
+                    await db.query(
+                        `
+                            update 
+                                ${table.tb_r_om_sub_schedules} 
+                            set 
+                                actual_duration = '${actual_duration}'
+                            where 
+                                uuid = '${req.params.id}'
+                        `
                     )
                 }
             })

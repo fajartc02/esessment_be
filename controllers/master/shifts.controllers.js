@@ -1,5 +1,5 @@
 const table = require("../../config/table")
-const { queryPUT, queryCustom, queryPOST, queryTransaction, queryPostTransaction } = require("../../helpers/query")
+const { queryPUT, queryCustom, queryPOST, queryDELETE, queryTransaction, queryPostTransaction } = require("../../helpers/query")
 
 const response = require("../../helpers/response")
 const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData")
@@ -271,18 +271,11 @@ module.exports = {
     deleteShift: async (req, res) => {
         try
         {
-            let obj = {
-                deleted_dt: moment().format().split("+")[0].split("T").join(" "),
-                deleted_by: req.user.fullname,
-            }
-
-            let attrsUserUpdate = await attrsUserUpdateData(req, obj)
-            const result = await queryPUT(
+            await queryDELETE(
                 table.tb_m_shifts,
-                attrsUserUpdate,
                 `WHERE uuid = '${req.params.id}'`
             )
-            response.success(res, "Success to soft delete shift", result.rows)
+            response.success(res, "Success to soft delete shift", [])
         } catch (error)
         {
             console.log(error)
