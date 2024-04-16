@@ -1,5 +1,5 @@
 const table = require("../../config/table")
-const { queryPUT, queryCustom, queryPOST, queryTransaction, queryPostTransaction } = require("../../helpers/query")
+const { queryPUT, queryCustom, queryPOST, queryDELETE, queryTransaction, queryPostTransaction } = require("../../helpers/query")
 
 const response = require("../../helpers/response")
 const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData")
