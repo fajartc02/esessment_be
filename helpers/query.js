@@ -15,8 +15,8 @@ module.exports = {
         whereCond = "";
       }
       let q = `SELECT ${selectedCols} FROM ${table} ${whereCond}`;
-      //console.log(q);
-      logger(q)
+      console.log(q);
+      //logger(q)
       await database
         .query(q)
         .then((result) => {
