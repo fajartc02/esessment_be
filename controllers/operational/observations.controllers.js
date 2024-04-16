@@ -163,12 +163,7 @@ module.exports = {
                 let obserId = await uuidToId(table.tb_r_observations, 'observation_id', obser.observation_id)
                 let checkersData = await queryGET(table.tb_r_obs_checker, `WHERE observation_id = ${obserId}`, ['uuid as obs_checker_id', 'checker_nm'])
                 let qCheckFinding = `
-                    SELECT
-                        trrf.result_finding_id
-                    FROM ${table.tb_r_obs_results} tror
-                    JOIN ${table.tb_r_result_findings} trrf
-                        ON tror.obs_result_id = trrf.obs_result_id
-                    WHERE observation_id = ${obserId}
+                    SELECT * FROM ${table.v_finding_list} WHERE observation_id = '${obserId}'
                 `
                 let findingData = await queryCustom(qCheckFinding);
                 let is_finding = findingData.rows.length > 0
