@@ -92,6 +92,8 @@ module.exports = {
             if (HenkatenData.length > 0) {
                 HenkatenData[0].total_page = +totalPage > 0 ? Math.ceil(totalPage / +limit) : 1
                 HenkatenData[0].limit = +limit
+                HenkatenData[0].total_data = +totalPage;
+                HenkatenData[0].current_page = +currentPage > 0 ? +currentPage : 1;
             }
             response.success(res, 'Success to GET Henkaten', waithenkatenFindings)
         } catch (error) {
