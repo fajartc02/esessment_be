@@ -26,7 +26,7 @@ module.exports = {
             `
 
             current_page = parseInt(current_page ?? 1)
-            limit = parseInt(limit ?? 100)
+            limit = parseInt(limit ?? 366)
 
             let filterCondition = [
                 'tms.deleted_dt is null'

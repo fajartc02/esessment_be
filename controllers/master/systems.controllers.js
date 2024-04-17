@@ -36,6 +36,7 @@ module.exports = {
                     'uuid as id',
                     'system_type',
                     'system_value',
+                    'system_desc',
                     'created_by',
                     'created_dt'
                 ]
