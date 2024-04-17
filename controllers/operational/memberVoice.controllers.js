@@ -130,6 +130,8 @@ module.exports = {
             if (waitMvFindings.length > 0) {
                 waitMvFindings[0].total_page = +totalPage > 0 ? Math.ceil(totalPage / +limit) : 1
                 waitMvFindings[0].limit = +limit
+                waitMvFindings[0].total_data = +totalPage;
+                waitMvFindings[0].current_page = +currentPage > 0 ? +currentPage : 1;
             }
             response.success(res, 'Success to GET member voice', waitMvFindings)
         } catch (error) {

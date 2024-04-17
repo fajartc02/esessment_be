@@ -82,6 +82,8 @@ module.exports = {
             if (FocusThemaData.length > 0) {
                 FocusThemaData[0].total_page = +totalPage > 0 ? Math.ceil(totalPage / +limit) : 1
                 FocusThemaData[0].limit = +limit
+                FocusThemaData[0].total_data = +totalPage;
+                FocusThemaData[0].current_page = +currentPage > 0 ? +currentPage : 1;
             }
             response.success(res, 'Success to GET Focus Thema', waitFtFindings)
         } catch (error) {
