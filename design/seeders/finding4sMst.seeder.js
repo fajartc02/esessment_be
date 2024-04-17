@@ -49,22 +49,22 @@ const migrate = async () => {
             //#region finding4sMst opt_depts schema
             {
                 uuid: uuid(),
-                system_type: '4S_OPT_DEPT',
+                system_type: 'OPT_DEPT',
                 system_value: 'Produksi'
             },
             {
                 uuid: uuid(),
-                system_type: '4S_OPT_DEPT',
+                system_type: 'OPT_DEPT',
                 system_value: 'Kaizen'
             },
             {
                 uuid: uuid(),
-                system_type: '4S_OPT_DEPT',
+                system_type: 'OPT_DEPT',
                 system_value: 'Maintenance'
             },
             {
                 uuid: uuid(),
-                system_type: '4S_OPT_DEPT',
+                system_type: 'OPT_DEPT',
                 system_value: 'Engginering'
             },
             //#endregion

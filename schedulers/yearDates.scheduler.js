@@ -69,7 +69,7 @@ const generateSchedules = async (db) => {
             for (let j = 0; j < currentMonthHolidayData.length; j++)
             {
                 const holiday = currentMonthHolidayData[j];
-                if (currentMonthDay.date == holiday.holiday_date)
+                if (currentMonthDay.date == holiday.holiday_date && holiday.is_national_holiday)
                 {
                     currentMonthDay.is_holiday = true
                     currentMonthDay.holiday_nm = holiday.holiday_name

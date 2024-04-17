@@ -57,6 +57,7 @@ const selectSubScheduleCol = [
     'tmu.fullname as pic_nm',
     'tmu_actual.fullname as actual_pic_nm',
     'tross.actual_time',
+    'tross.actual_duration::real',
     'tmf.freq_nm',
     'trmsc.year_num',
     'trmsc.month_num',
@@ -560,7 +561,7 @@ module.exports = {
             )
 
             subScheduleQuery.om_main_schedule_id = subScheduleQuery.om_main_schedule_uuid
-            subScheduleQuery.findings = findings.rows
+            subScheduleQuery.finding = findings?.rows[0] ?? null
 
             delete subScheduleQuery.freq_real_id
             delete subScheduleQuery.zone_real_id
@@ -667,6 +668,14 @@ module.exports = {
                 {
                     whereActual.push(` actual_time = '${req.body.actual_date}' `)
                 }
+                if (req.body.actual_duration)
+                {
+                    whereActual.push(` actual_duration = '${req.body.actual_duration}' `)
+                }
+                if (req.body.judgment_id)
+                {
+                    whereActual.push(` judgment_id = (select judgment_id from ${table.tb_m_judgments} where uuid = '${req.body.judgment_id}') `)
+                }
 
                 if (whereActual.length > 0)
                 {
@@ -708,20 +717,6 @@ module.exports = {
                             where 
                                 ${updateCondition} 
                                 and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.before_plan_date}')
-                        `
-                    )
-                }
-
-                if (req.body.actual_duration)
-                {
-                    await db.query(
-                        `
-                            update 
-                                ${table.tb_r_om_sub_schedules} 
-                            set 
-                                actual_duration = '${actual_duration}'
-                            where 
-                                uuid = '${req.params.id}'
                         `
                     )
                 }
