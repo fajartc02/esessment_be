@@ -135,6 +135,11 @@ module.exports = {
     editOmFinding: async (req, res) => {
         try
         {
+            if (req.body.finding_id)
+            {
+                delete req.body.finding_id
+            }
+
             const updateBody = {
                 ...req.body,
                 line_id: ` (select line_id from ${table.tb_m_lines} where uuid = '${req.body.line_id}') `,
@@ -145,6 +150,10 @@ module.exports = {
                 finding_pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.finding_pic_id}') `,
             }
 
+            if (req.body.om_sub_schedule_id)
+            {
+                updateBody.om_sub_schedule_id = ` (select om_sub_schedule_id from ${table.tb_r_om_sub_schedules} where uuid = '${req.body.om_sub_schedule_id}') `
+            }
             if (req.body.actual_pic_id)
             {
                 updateBody.actual_pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.actual_pic_id}') `
