@@ -99,7 +99,7 @@ const childrenSubSchedule = async (
                     EXTRACT('Day' FROM tmsc.date)::INTEGER as date_num,
                     tmsc.is_holiday, 
                     case
-                      when finding.finding_date = tmsc.date then
+                      when finding.finding_id is not null then
                         'PROBLEM'
                       when tross.actual_time is not null then
                         'ACTUAL'
@@ -126,10 +126,7 @@ const childrenSubSchedule = async (
                         from
                             v_om_finding_list vofl
                         where
-                              vofl.freq_id = tmf.uuid
-                          and vofl.om_item_check_kanban_id = tmoic.uuid
-                          and vofl.machine_id = tmm.uuid
-                          and vofl.finding_date = tmsc.date
+                          vofl.om_sub_schedule_id = tross.uuid
                           and vofl.deleted_dt is null
                         order by vofl.finding_date desc
                         limit 1
