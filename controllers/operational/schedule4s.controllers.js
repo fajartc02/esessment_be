@@ -170,22 +170,10 @@ const childrenSubSchedule = async (
 }
 
 const subScheduleCacheKey = (
-  main_schedule_id,
-  freq_id,
-  zone_id,
-  kanban_id,
-  line_id,
-  group_id,
-  month_year_num
+  main_schedule_id
 ) => {
   return objToString({
-    main_schedule_id: main_schedule_id,
-    freq_id: freq_id,
-    zone_id: zone_id,
-    kanban_id: kanban_id,
-    line_id: line_id,
-    group_id: group_id,
-    month_year_num: month_year_num
+    main_schedule_id: main_schedule_id
   })
 }
 
@@ -295,7 +283,7 @@ module.exports = {
     try
     {
       const { main_schedule_id, freq_id, zone_id, kanban_id, line_id, group_id, month_year_num } = req.query
-      const cacheKey = subScheduleCacheKey(main_schedule_id, freq_id, zone_id, kanban_id, line_id, group_id, month_year_num);
+      const cacheKey = subScheduleCacheKey(main_schedule_id);
       const cachedSchedule = cacheGet(cacheKey)
 
       if (cachedSchedule)
@@ -771,6 +759,7 @@ module.exports = {
         `
           select 
             tr4ss.*,
+            tr4sm.uuid as main_schedule_uuid,
             tr4sm.group_id,
             tr4sm.line_id,
             tr4sm.year_num ||'-'|| trim(to_char(tr4sm.month_num, '00')) as month_year_num
@@ -856,16 +845,7 @@ module.exports = {
         }
       })
 
-      cacheDelete(
-        subScheduleCacheKey(
-          schedulRow.main_schedule_id, 
-          schedulRow.freq_id, 
-          schedulRow.zone_id, 
-          schedulRow.kanban_id, 
-          schedulRow.line_id, 
-          schedulRow.group_id, 
-          schedulRow.month_year_num
-        )
+      cacheDelete(subScheduleCacheKey(schedulRow.main_schedule_uuid)
       )
 
       response.success(res, "Success to edit 4s schedule plan", [])
@@ -880,16 +860,22 @@ module.exports = {
     {
       const sign_checker_id = req.params.sign_checker_id
 
-      let signCheckerQuery = await queryGET(
-        table.tb_r_4s_schedule_sign_checkers,
-        `where uuid = '${sign_checker_id}'`,
-        [
-          'sign',
-          'is_tl_1',
-          'is_tl_2',
-          'is_gl',
-          'is_sh'
-        ]
+      let signCheckerQuery = await queryCustom(
+        `
+          select
+            tr4ssc.sign,
+            tr4ssc.is_tl_1,
+            tr4ssc.is_tl_2,
+            tr4ssc.is_gl,
+            tr4ssc.is_sh,
+            tr4sm.uuid as main_schedule_uuid
+          from
+            ${table.tb_r_4s_schedule_sign_checkers} tr4ssc
+            join ${table.tb_r_4s_main_schedules} tr4sm on tr4ssc.main_schedule_id = tr4sm.main_schedule_id
+          where 
+            tr4ssc.uuid = '${sign_checker_id}'
+        `,
+        false
       )
 
       if (!signCheckerQuery || signCheckerQuery.length == 0)
@@ -900,7 +886,8 @@ module.exports = {
       let attrsUpdate = await attrsUserUpdateData(req, req.body)
       await queryPUT(table.tb_r_4s_schedule_sign_checkers, attrsUpdate, `WHERE uuid = '${sign_checker_id}'`)
 
-      cacheDelete(signCheckerQuery[0].main_schedule_id, true)
+      cacheDelete(signCheckerQuery.rows[0].main_schedule_uuid)
+
       response.success(res, 'success to sign 4s schedule', [])
     } catch (e)
     {
@@ -931,6 +918,7 @@ module.exports = {
         `
           select 
             tr4ss.*,
+            tr4sm.uuid as main_schedule_uuid,
             tr4sm.group_id,
             tr4sm.line_id,
             tr4sm.year_num ||'-'|| trim(to_char(tr4sm.month_num, '00')) as month_year_num
@@ -974,13 +962,7 @@ module.exports = {
 
       cacheDelete(
         subScheduleCacheKey(
-          subScheduleRow.main_schedule_id,
-          subScheduleRow.freq_id,
-          subScheduleRow.zone_id,
-          subScheduleRow.kanban_id,
-          subScheduleRow.line_id,
-          subScheduleRow.group_id,
-          subScheduleRow.month_year_num
+          subScheduleRow.main_schedule_uuid
         )
       )
 

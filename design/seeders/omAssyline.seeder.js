@@ -91,94 +91,6 @@ const clearRows = async () => {
     console.log('clearing start')
     await queryTransaction(async (db) => {
         await db.query(`SET session_replication_role = 'replica'`)
-        const assyLineQuery = await databasePool.query(`select * from tb_m_lines where line_nm in ('Main Line') limit 1`)
-        const assyLineRow = assyLineQuery.rows[0]
-
-        const json = JSON.parse(await readFile(path.resolve(__dirname, '../json/omAssyline.json'), "utf8"));
-        for (let i = 0; i < json.length; i++)
-        {
-            //#region machine
-            const machineSql = `
-                    select 
-                        machine_id 
-                    from 
-                        ${table.tb_m_machines}
-                    where 
-                        line_id = '${assyLineRow.line_id}' 
-                        and machine_nm = '${json[i].Mesin}' 
-                    limit 1
-                `
-            const machineQuery = await databasePool.query(machineSql)
-            let machineRow = null
-            if (machineQuery.rowCount > 0)
-            {
-                await db.query(`SET session_replication_role = 'replica'`)
-                const deleteMachineSql = `delete from ${table.tb_m_machines} where line_id = '${assyLineRow.line_id}' and machine_nm = '${json[i].Mesin}'`
-                await db.query(deleteMachineSql)
-                await db.query(`SET session_replication_role = 'origin'`)
-
-                machineRow = machineQuery.rows[0]
-            }
-            //#endregion
-
-            //#region freq
-            const { freqNm, precitionVal } = mapFreq(new String(json[i].Periode))
-            const freqSql = `
-                    select 
-                        * 
-                    from 
-                        ${table.tb_m_freqs} 
-                    where 
-                        freq_nm = '${freqNm}'
-                        and precition_val = '${precitionVal}'
-                `
-            const freqQuery = await db.query(freqSql)
-            let freqRow = null
-            if (freqQuery.rowCount > 0)
-            {
-                await db.query(`SET session_replication_role = 'replica'`)
-                const deleteFreqSql = `delete from ${table.tb_m_freqs} where freq_nm = '${freqNm}' and precition_val = '${precitionVal}'`
-                db.query(deleteFreqSql, (error, result) => {
-                    if (error)
-                    {
-                        console.log('deleteFreqSql', error);
-                    }
-                    else
-                    {
-                        freqRow = freqQuery.rows[0]
-                    }
-                })
-                await db.query(`SET session_replication_role = 'origin'`)
-            }
-            //#endregion
-
-            //#region item check
-            const whereItemCheck =
-                ` 
-                    machine_id = '${machineRow.machine_id}'
-                    and freq_id = '${freqRow.freq_id}'
-                    and item_check_nm = '${json[i].Item}'
-                    and location_nm = '${json[i].Location}'
-                    and method_nm = '${json[i].Methode}'
-                    and standart_nm = '${json[i].Standart}'
-            `
-
-            const itemCheckExisting = await db.query(
-                `
-                    select 
-                        * 
-                    from 
-                        ${table.tb_m_om_item_check_kanbans}
-                    where
-                        ${whereItemCheck}
-                `
-            )
-            if (itemCheckExisting.rowCount > 0)
-            {
-                await db.query(`delete from ${table.tb_m_om_item_check_kanbans} where ${whereItemCheck} cascade`)
-            }
-            //#endregion
-        }
         await db.query(`SET session_replication_role = 'origin'`)
         console.log('delete and reset count complete')
     })
@@ -204,27 +116,26 @@ const migrate = async () => {
                     limit 1
                 `
             const machineQuery = await databasePool.query(machineSql)
+            let machineId = null
             if (machineQuery.rowCount > 0)
             {
-                await db.query(`SET session_replication_role = 'replica'`)
-                const deleteMachineSql = `delete from ${table.tb_m_machines} where line_id = '${assyLineRow.line_id}' and machine_nm = '${json[i].Mesin}'`
-                await db.query(deleteMachineSql)
-                await db.query(`select setval('tb_m_machines_machine_id_seq', (select max(machine_id) from tb_m_machines))`)
-                await db.query(`SET session_replication_role = 'origin'`)
+                machineId = machineQuery.rows[0].machine_id
             }
+            else
+            {
+                const lastRowMachineQuery = await db.query(`select * from ${table.tb_m_machines} order by machine_id desc limit 1`)
+                const lastRowMachineRow = lastRowMachineQuery.rows[0]
 
-            const lastRowMachineQuery = await db.query(`select * from ${table.tb_m_machines} order by machine_id desc limit 1`)
-            const lastRowMachineRow = lastRowMachineQuery.rows[0]
-
-            const newMachineSql = `
+                const newMachineSql = `
                     insert into ${table.tb_m_machines} 
                         (machine_id, uuid, line_id, machine_nm, op_no)
                     values 
                         (${lastRowMachineRow.machine_id + 1},'${uuid()}', '${assyLineRow.line_id}', '${json[i].Mesin}', '-') 
                     returning *
                 `
-            let newMachineQuery = await db.query(newMachineSql)
-            newMachineQuery = newMachineQuery.rows[0]
+                const newMachineQuery = await db.query(newMachineSql)
+                machineId = newMachineQuery.rows[0].machine_id
+            }
             //#endregion
 
             //#region freq
@@ -239,33 +150,32 @@ const migrate = async () => {
                         and precition_val = '${precitionVal}'
                 `
             const freqQuery = await db.query(freqSql)
-            const maxFreqId = await db.query(`select max(freq_id) from ${table.tb_m_freqs}`)
+
+            let freqId = null
             if (freqQuery.rowCount > 0)
             {
-                await db.query(`SET session_replication_role = 'replica'`)
-                const deleteFreqSql = `delete from ${table.tb_m_freqs} where freq_nm = '${freqNm}' and precition_val = '${precitionVal}'`
-                await db.query(deleteFreqSql)
-                await db.query(`SET session_replication_role = 'origin'`)
+                freqId = freqQuery.rows[0].freq_id
             }
-
-            await db.query(`ALTER TABLE ${table.tb_m_freqs} ALTER COLUMN freq_id RESTART WITH ${maxFreqId.rows[0].max + 1}`)
-            const newFreqSql = `
+            else
+            {
+                const newFreqSql = `
                     insert into ${table.tb_m_freqs} 
                         (uuid, freq_nm, precition_val)
                     values
                         ('${uuid()}', '${freqNm}', '${precitionVal}')
                     returning *
                 `
-            //console.log('newFreqSql', newFreqSql);
-            let newFreqQuery = await db.query(newFreqSql)
-            newFreqQuery = newFreqQuery.rows[0]
+
+                const newFreqQuery = await db.query(newFreqSql)
+                freqId = newFreqQuery.rows[0].freq_id
+            }
             //#endregion
 
             //#region item check
             const whereItemCheck =
                 ` 
-                    machine_id = '${newMachineQuery.machine_id}'
-                    and freq_id = '${newFreqQuery.freq_id}'
+                    machine_id = '${machineId}'
+                    and freq_id = '${freqId}'
                     and item_check_nm = '${json[i].Item}'
                     and location_nm = '${json[i].Location}'
                     and method_nm = '${json[i].Methode}'
@@ -282,20 +192,17 @@ const migrate = async () => {
                         ${whereItemCheck}
                 `
             )
-            if (itemCheckExisting.rowCount > 0)
+            if (itemCheckExisting.rowCount == 0)
             {
-                await db.query(`delete from ${table.tb_m_om_item_check_kanbans} where ${whereItemCheck} cascade`)
-                await db.query(`select setval('tb_m_om_item_check_kanbans_om_item_check_kanban_id_seq', 1)`)
-            }
-
-            await db.query(
-                `
+                await db.query(
+                    `
                     insert into ${table.tb_m_om_item_check_kanbans}
                         (uuid, machine_id, freq_id, item_check_nm, location_nm, method_nm, standart_nm, standart_time)
                     values
-                        ('${uuid()}', '${newMachineQuery.machine_id}', '${newFreqQuery.freq_id}', '${json[i].Item}', ${json[i].Location == '' ? null : `'${json[i].Location}'`}, '${json[i].Methode}', '${json[i].Standart}', '${json[i].Duration}')
+                        ('${uuid()}', '${machineId}', '${freqId}', '${json[i].Item}', ${json[i].Location == '' ? null : `'${json[i].Location}'`}, '${json[i].Methode}', '${json[i].Standart}', '${json[i].Duration}')
                 `
-            )
+                )
+            }
             //#endregion
         }
         console.info('Seeder Completed!!!')

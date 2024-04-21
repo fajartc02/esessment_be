@@ -608,8 +608,8 @@ const migrate = async () => {
             { item_check_nm: "Hanger" } */
         ])
 
-        await db.query(`insert into ${table.tb_m_om_item_check_kanbans} (${itemCheckSchema.columns}) VALUES ${itemCheckSchema.values}`)
-        console.log('tb_m_om_item_check_kanbans OM', 'inserted')
+        //await db.query(`insert into ${table.tb_m_om_item_check_kanbans} (${itemCheckSchema.columns}) VALUES ${itemCheckSchema.values}`)
+        //console.log('tb_m_om_item_check_kanbans OM', 'inserted')
         //#endregion
 
         console.log('Seeder Completed!!!')
