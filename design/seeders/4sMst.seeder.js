@@ -76,7 +76,7 @@ const migrate = async () => {
         const freqSchema = await bulkToSchema([
             {
                 uuid: uuid(),
-                freq_nm: 'Day',
+                freq_nm: '1 Day',
                 precition_val: 1,
             },
             {

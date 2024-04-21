@@ -410,6 +410,7 @@ const genSubSchedule = async (shiftRows = []) => {
                         schedule_id: shiftRows[sIndex].schedule_id,
                         shift_type: shiftRows[sIndex].shift_type,
                         plan_time: planTime == dateFormatted(shiftRows[sIndex].date) ? planTime : null, // validate if date plan is equal the date loop
+                        is_holiday: shiftRows[sIndex].is_holiday,
                     })
                 }
             }
@@ -523,6 +524,7 @@ const genSubSchedule = async (shiftRows = []) => {
                         schedule_id: shiftRows[sIndex].schedule_id,
                         shift_type: shiftRows[sIndex].shift_type,
                         plan_time: planTime == dateFormatted(shiftRows[sIndex].date) ? planTime : null, // validate if date plan is equal the date loop
+                        is_holiday: shiftRows[sIndex].is_holiday,
                     })
                 }
             }
@@ -749,7 +751,7 @@ const main = async () => {
         //#region schedulers parent 
         const lineGroups = await lineGroupRows()
         const shiftRows = await shiftByGroupId()
-        console.log('shiftRows length', shiftRows.length)
+        //console.log('shiftRows length', shiftRows.length)
         /*  logger.info('shiftRows', {
              meta: {
                  isJson: true,
@@ -807,6 +809,7 @@ const main = async () => {
                             schedule_id: subScheduleBulkSchema[subIndex].schedule_id,
                             shift_type: subScheduleBulkSchema[subIndex].shift_type,
                             plan_time: subScheduleBulkSchema[subIndex].plan_time,
+                            is_holiday: subScheduleBulkSchema[subIndex].is_holiday,
                         })
                     }
                 }
