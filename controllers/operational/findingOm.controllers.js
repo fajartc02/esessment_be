@@ -5,7 +5,7 @@ const response = require("../../helpers/response")
 const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData")
 const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData")
 const multipleUUidToIds = require("../../helpers/multipleUuidToId")
-
+const logger = require("../../helpers/logger")
 const moment = require("moment")
 const { uuid } = require("uuidv4")
 
@@ -13,7 +13,7 @@ module.exports = {
     getOmFindingList: async (req, res) => {
         try
         {
-            let { id, line_id, group_id, freq_id, om_item_check_kanban_id, limit, current_page } = req.query
+            let { id, line_id, group_id, freq_id, om_item_check_kanban_id, machine_id, limit, current_page } = req.query
             const fromCondition = `  
                 ${table.v_om_finding_list} vofl 
             `
@@ -53,6 +53,10 @@ module.exports = {
             if (freq_id)
             {
                 filterCondition.push(` vofl.freq_id = '${freq_id}' `)
+            }
+            if (machine_id)
+            {
+                filterCondition.push(` vofl.machine_id = '${machine_id}' `)
             }
 
 
@@ -98,6 +102,24 @@ module.exports = {
     postOmFinding: async (req, res) => {
         try
         {
+            delete req.body.finding_id
+            
+            let lastCardNumb = await queryGET(
+                table.tb_r_om_findings,
+                `order by om_finding_id desc limit 1`,
+                [
+                    'card_no'
+                ]
+            )
+            if (lastCardNumb.rowCount > 0)
+            {
+                lastCardNumb = lastCardNumb[0].card_no
+            }
+            else
+            {
+                lastCardNumb = 1
+            }
+
             const insertBody = {
                 ...req.body,
                 uuid: uuid(),
@@ -107,6 +129,7 @@ module.exports = {
                 machine_id: ` (select machine_id from ${table.tb_m_machines} where uuid = '${req.body.machine_id}') `,
                 om_item_check_kanban_id: ` (select om_item_check_kanban_id from ${table.tb_m_om_item_check_kanbans} where uuid = '${req.body.om_item_check_kanban_id}') `,
                 finding_pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.finding_pic_id}') `,
+                card_no: +lastCardNumb + 1
             }
 
             if (req.body.om_sub_schedule_id)
@@ -128,6 +151,7 @@ module.exports = {
             response.success(res, "Success to add om finding", transaction.rows[0])
         } catch (error)
         {
+            logger(error)
             console.log(error)
             response.failed(res, error)
         }
@@ -135,10 +159,7 @@ module.exports = {
     editOmFinding: async (req, res) => {
         try
         {
-            if (req.body.finding_id)
-            {
-                delete req.body.finding_id
-            }
+            delete req.body.finding_id
 
             const updateBody = {
                 ...req.body,

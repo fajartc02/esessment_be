@@ -9,9 +9,10 @@ const {
 
 const response = require("../../helpers/response")
 const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData")
-const { arrayOrderBy } = require("../../helpers/formatting")
+const { arrayOrderBy, objToString } = require("../../helpers/formatting")
 const moment = require('moment')
 const logger = require('../../helpers/logger')
+const { cacheGet, cacheAdd, cacheDelete } = require('../../helpers/cacheHelper')
 
 const fromSubScheduleSql = `
     ${table.tb_r_4s_sub_schedules} tbrcs
@@ -168,6 +169,14 @@ const childrenSubSchedule = async (
   return children.rows
 }
 
+const subScheduleCacheKey = (
+  main_schedule_id
+) => {
+  return objToString({
+    main_schedule_id: main_schedule_id
+  })
+}
+
 module.exports = {
   get4sMainSchedule: async (req, res) => {
     try
@@ -274,6 +283,14 @@ module.exports = {
     try
     {
       const { main_schedule_id, freq_id, zone_id, kanban_id, line_id, group_id, month_year_num } = req.query
+      const cacheKey = subScheduleCacheKey(main_schedule_id);
+      const cachedSchedule = cacheGet(cacheKey)
+
+      if (cachedSchedule)
+      {
+        response.success(res, "Success to get 4s sub schedule", cachedSchedule)
+        return
+      }
 
       if (
         !main_schedule_id ||
@@ -528,11 +545,13 @@ module.exports = {
 
           return arrayOrderBy(signArr, (s) => s.start_date)
         }
-       
+
 
         result.schedule = await Promise.all(scheduleRows)
         result.sign_checker_gl = await addHolidayTemp(signGl)
         result.sign_checker_sh = await addHolidayTemp(signSh)
+
+        cacheAdd(cacheKey, result)
       }
 
       response.success(res, "Success to get 4s sub schedule", result)
@@ -736,12 +755,23 @@ module.exports = {
   edi4sSubSchedule: async (req, res) => {
     try
     {
-      let schedulRow = await queryGET(
-        table.tb_r_4s_sub_schedules,
-        `WHERE sub_schedule_id = (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.params.id}' limit 1)`
+      let schedulRow = await queryCustom(
+        `
+          select 
+            tr4ss.*,
+            tr4sm.uuid as main_schedule_uuid,
+            tr4sm.group_id,
+            tr4sm.line_id,
+            tr4sm.year_num ||'-'|| trim(to_char(tr4sm.month_num, '00')) as month_year_num
+          from 
+            ${table.tb_r_4s_sub_schedules} tr4ss
+            join ${table.tb_r_4s_main_schedules} tr4sm on tr4ss.main_schedule_id = tr4sm.main_schedule_id
+          where 
+            sub_schedule_id = (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.params.id}' limit 1)
+        `
       )
 
-      if (!schedulRow)
+      if (schedulRow.rows.length == 0)
       {
         response.failed(
           res,
@@ -750,8 +780,7 @@ module.exports = {
         return
       }
 
-      schedulRow = schedulRow[0]
-
+      schedulRow = schedulRow.rows[0]
 
       const body = {}
       if (req.body.pic_id)
@@ -816,6 +845,9 @@ module.exports = {
         }
       })
 
+      cacheDelete(subScheduleCacheKey(schedulRow.main_schedule_uuid)
+      )
+
       response.success(res, "Success to edit 4s schedule plan", [])
     } catch (e)
     {
@@ -828,16 +860,22 @@ module.exports = {
     {
       const sign_checker_id = req.params.sign_checker_id
 
-      let signCheckerQuery = await queryGET(
-        table.tb_r_4s_schedule_sign_checkers,
-        `where uuid = '${sign_checker_id}'`,
-        [
-          'sign',
-          'is_tl_1',
-          'is_tl_2',
-          'is_gl',
-          'is_sh'
-        ]
+      let signCheckerQuery = await queryCustom(
+        `
+          select
+            tr4ssc.sign,
+            tr4ssc.is_tl_1,
+            tr4ssc.is_tl_2,
+            tr4ssc.is_gl,
+            tr4ssc.is_sh,
+            tr4sm.uuid as main_schedule_uuid
+          from
+            ${table.tb_r_4s_schedule_sign_checkers} tr4ssc
+            join ${table.tb_r_4s_main_schedules} tr4sm on tr4ssc.main_schedule_id = tr4sm.main_schedule_id
+          where 
+            tr4ssc.uuid = '${sign_checker_id}'
+        `,
+        false
       )
 
       if (!signCheckerQuery || signCheckerQuery.length == 0)
@@ -847,6 +885,9 @@ module.exports = {
 
       let attrsUpdate = await attrsUserUpdateData(req, req.body)
       await queryPUT(table.tb_r_4s_schedule_sign_checkers, attrsUpdate, `WHERE uuid = '${sign_checker_id}'`)
+
+      cacheDelete(signCheckerQuery.rows[0].main_schedule_uuid)
+
       response.success(res, 'success to sign 4s schedule', [])
     } catch (e)
     {
@@ -873,9 +914,20 @@ module.exports = {
   delete4sSubSchedule: async (req, res) => {
     try
     {
-      let subScheduleRow = await queryGET(
-        table.tb_r_4s_sub_schedules,
-        `WHERE uuid = '${req.params.id}'`
+      let subScheduleRow = await queryCustom(
+        `
+          select 
+            tr4ss.*,
+            tr4sm.uuid as main_schedule_uuid,
+            tr4sm.group_id,
+            tr4sm.line_id,
+            tr4sm.year_num ||'-'|| trim(to_char(tr4sm.month_num, '00')) as month_year_num
+          from 
+            ${table.tb_r_4s_sub_schedules} tr4ss
+            join ${table.tb_r_4s_main_schedules} tr4sm on tr4ss.main_schedule_id = tr4sm.main_schedule_id
+          where 
+            tr4ss.uuid = '${req.params.id}'
+        `
       )
 
       if (!subScheduleRow)
@@ -887,7 +939,7 @@ module.exports = {
         return
       }
 
-      subScheduleRow = subScheduleRow[0]
+      subScheduleRow = subScheduleRow.rows[0]
 
       const result = await queryCustom(
         `
@@ -906,6 +958,12 @@ module.exports = {
             and schedule_id = '${subScheduleRow.schedule_id}'
           returning *
         `
+      )
+
+      cacheDelete(
+        subScheduleCacheKey(
+          subScheduleRow.main_schedule_uuid
+        )
       )
 
       response.success(res, 'success to delete 4s sub schedule', result.rows[0])

@@ -6,7 +6,8 @@ require('dotenv').config({ path: envFilePath })
 const { uuid } = require('uuidv4');
 const table = require('../../config/table')
 const { queryTransaction } = require('../../helpers/query')
-const { bulkToSchema } = require('../../helpers/schema')
+const { bulkToSchema } = require('../../helpers/schema');
+const { databasePool } = require('../../config/database');
 
 console.log('env', {
     env: process.env.NODE_ENV,
@@ -110,9 +111,8 @@ const machineArr = [
     "RAKU RAKU"
 ]
 
-
-const migrate = async () => {
-    const clearRows = async (db) => {
+const clearRows = async () => {
+    await queryTransaction(async (db) => {
         console.log('clearing start')
         await db.query(`SET session_replication_role = 'replica'`)
 
@@ -146,8 +146,10 @@ const migrate = async () => {
 
         await db.query(`SET session_replication_role = 'origin'`)
         console.log('clearing succeed')
-    }
+    })
+}
 
+const migrate = async () => {
     await queryTransaction(async (db) => {
         await clearRows(db)
 
@@ -606,8 +608,8 @@ const migrate = async () => {
             { item_check_nm: "Hanger" } */
         ])
 
-        await db.query(`insert into ${table.tb_m_om_item_check_kanbans} (${itemCheckSchema.columns}) VALUES ${itemCheckSchema.values}`)
-        console.log('tb_m_om_item_check_kanbans OM', 'inserted')
+        //await db.query(`insert into ${table.tb_m_om_item_check_kanbans} (${itemCheckSchema.columns}) VALUES ${itemCheckSchema.values}`)
+        //console.log('tb_m_om_item_check_kanbans OM', 'inserted')
         //#endregion
 
         console.log('Seeder Completed!!!')
@@ -620,3 +622,5 @@ const migrate = async () => {
 }
 
 migrate()
+
+//clearRows()

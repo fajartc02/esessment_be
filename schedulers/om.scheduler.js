@@ -371,6 +371,7 @@ const genSubSchedule = async (shiftRows = []) => {
                         freq_id: itemCheckRows[kIndex].freq_id,
                         schedule_id: shiftRows[sIndex].schedule_id,
                         plan_time: planTime == dateFormatted(shiftRows[sIndex].date) ? planTime : null, // validate if date plan is equal the date loop
+                        is_holiday: shiftRows[sIndex].is_holiday,
                     })
                 }
             }
@@ -470,6 +471,7 @@ const genSubSchedule = async (shiftRows = []) => {
                         freq_id: itemCheckRows[kIndex].freq_id,
                         schedule_id: shiftRows[sIndex].schedule_id,
                         plan_time: planTime == dateFormatted(shiftRows[sIndex].date) ? planTime : null, // validate if date plan is equal the date loop
+                        is_holiday: shiftRows[sIndex].is_holiday,
                     })
                 }
             }
@@ -675,6 +677,7 @@ const main = async () => {
                             freq_id: subScheduleBulkSchema[subIndex].freq_id,
                             schedule_id: subScheduleBulkSchema[subIndex].schedule_id,
                             plan_time: subScheduleBulkSchema[subIndex].plan_time,
+                            is_holiday: subScheduleBulkSchema[subIndex].is_holiday,
                         })
                     }
                 }
@@ -743,8 +746,8 @@ const main = async () => {
 //#endregion
 
 const test = async () => {
-    await clearOmRows()
-    const shiftRows = await shiftByGroupId(2)
+    //await clearOmRows()
+    //const shiftRows = await shiftByGroupId()
 }
 
 /* test()
