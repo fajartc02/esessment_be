@@ -16,7 +16,7 @@ const { database } = require('./config/database')
 database.connect()
 console.log('DB Connecttion:');
 console.log({
-    env: process.env.NODE_ENV.trim(),
+    env: process.env.NODE_ENV?.trim(),
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
