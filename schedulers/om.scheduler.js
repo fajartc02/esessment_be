@@ -746,8 +746,8 @@ const main = async () => {
 //#endregion
 
 const test = async () => {
-    await clearOmRows()
-    const shiftRows = await shiftByGroupId(2)
+    //await clearOmRows()
+    //const shiftRows = await shiftByGroupId()
 }
 
 /* test()

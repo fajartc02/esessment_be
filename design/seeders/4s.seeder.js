@@ -23,23 +23,24 @@ console.log('env', {
 
 console.log(`Migration Running ...`)
 
+const clearRows = async (db) => {
+    await Promise.all([
+        db.query(`DELETE FROM ${table.tb_r_4s_main_schedules} CASCADE`),
+        db.query(`DELETE FROM ${table.tb_r_4s_sub_schedules} CASCADE`),
+        db.query(`DELETE FROM ${table.tb_r_4s_schedule_sign_checkers} CASCADE`),
+        db.query(`DELETE FROM ${table.tb_r_4s_schedule_item_check_kanbans} CASCADE`),
+
+        db.query(`ALTER TABLE ${table.tb_r_4s_main_schedules} ALTER COLUMN main_schedule_id RESTART WITH 1`),
+        db.query(`ALTER TABLE ${table.tb_r_4s_sub_schedules} ALTER COLUMN sub_schedule_id RESTART WITH 1`),
+        db.query(`ALTER TABLE ${table.tb_r_4s_schedule_sign_checkers} ALTER COLUMN sign_checker_id RESTART WITH 1`),
+        db.query(`ALTER TABLE ${table.tb_r_4s_schedule_item_check_kanbans} ALTER COLUMN schedule_item_check_kanban_id RESTART WITH 1`),
+    ]).then((res) => {
+        console.log('delete and reset count complete')
+    })
+
+}
+
 const migrate = async () => {
-    const clearRows = async (db) => {
-        await Promise.all([
-            db.query(`DELETE FROM ${table.tb_r_4s_main_schedules} CASCADE`),
-            db.query(`DELETE FROM ${table.tb_r_4s_sub_schedules} CASCADE`),
-            db.query(`DELETE FROM ${table.tb_r_4s_schedule_sign_checkers} CASCADE`),
-            db.query(`DELETE FROM ${table.tb_r_4s_schedule_item_check_kanbans} CASCADE`),
-
-            db.query(`ALTER TABLE ${table.tb_r_4s_main_schedules} ALTER COLUMN main_schedule_id RESTART WITH 1`),
-            db.query(`ALTER TABLE ${table.tb_r_4s_sub_schedules} ALTER COLUMN sub_schedule_id RESTART WITH 1`),
-            db.query(`ALTER TABLE ${table.tb_r_4s_schedule_sign_checkers} ALTER COLUMN sign_checker_id RESTART WITH 1`),
-            db.query(`ALTER TABLE ${table.tb_r_4s_schedule_item_check_kanbans} ALTER COLUMN schedule_item_check_kanban_id RESTART WITH 1`),
-        ]).then((res) => {
-            console.log('delete and reset count complete')
-        })
-
-    }
     await queryTransaction(async (db) => {
         await clearRows(db)
 
@@ -294,4 +295,4 @@ const migrate = async () => {
     })
 }
 
-migrate()
+//migrate()
