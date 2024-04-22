@@ -489,7 +489,6 @@ const genSubSchedule = async (shiftRows = []) => {
                     if (!planTime)
                     {
                         const morningShift = shiftRows.filter((item) => item.shift_type == 'morning_shift');
-                        //console.log('morningShift', morningShift);
                         planTime = morningShift[getRandomInt(0, morningShift.length - 1)].date;
                     }
 
@@ -500,6 +499,7 @@ const genSubSchedule = async (shiftRows = []) => {
                         && item.freq_id == shiftRows[sIndex].freq_id
                         && item.schedule_id == shiftRows[sIndex].schedule_id
                     )
+                    
                     if (exists)
                     {
                         continue

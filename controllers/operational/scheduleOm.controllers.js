@@ -157,6 +157,8 @@ const subScheduleRows = async (
             from
                 ${table.v_om_sub_schedules}
             ${filterCondition.length > 0 ? `where ${filterCondition.join('and')}` : ''}
+            order by
+                created_dt
         `
     let scheduleSql = `${originScheduleSql}`
 
