@@ -221,13 +221,12 @@ const genSubSchedule = async (shiftRows = []) => {
 
     {
         let countSame = 0 // determine steps pattern
-        let skip = false
         let lastWeekNum = 0
         for (let kIndex = 0; kIndex < itemCheckRows.length; kIndex++)
         {
             let planTime = null
             let shouldPlan = false
-            //lastWeekNum = 0
+            lastWeekNum = 0
 
             // determine plan time should only has precition_val * 
             if (
@@ -236,7 +235,6 @@ const genSubSchedule = async (shiftRows = []) => {
             )
             {
                 countSame++
-                skip = false
                 if (countSame > 5)
                 {
                     countSame = 1
@@ -402,19 +400,25 @@ const genSubSchedule = async (shiftRows = []) => {
                             const byDowSql =
                                 `
                                             select 
-                                                tmsc.date 
+                                                tmsc.date,
+                                                non_holiday.day_of_week
                                             from (
                                                 select
-                                                    "date",
-                                                    EXTRACT('DOW' FROM "date"::timestamp) AS day_of_week
+                                                    tms1."date",
+                                                    EXTRACT('DOW' FROM tms1."date"::timestamp) AS day_of_week
                                                 from
-                                                    ${table.tb_m_schedules}
+                                                    ${table.tb_m_schedules} tms1
+                                                    left join tb_m_shifts shift_holiday on
+                                                        tms1.date between shift_holiday.start_date and shift_holiday.end_date
+                                                        and shift_holiday.is_holiday = true
                                                 where
-                                                    is_holiday is null or is_holiday = false
+                                                    (tms1.is_holiday is null or tms1.is_holiday = false)
+                                                    and (shift_holiday.is_holiday is null or shift_holiday.is_holiday = false)
                                             ) non_holiday 
                                             join ${table.tb_m_schedules} tmsc on non_holiday.date = tmsc.date 
                                             where  
-                                                non_holiday.day_of_week = '${countSame}'
+                                                non_holiday.day_of_week >= ${countSame} 
+                                                and non_holiday.day_of_week <= 5
                                                 and date_part('week', tmsc."date") = '${shiftRows[sIndex].week_num}'
                                             order by 
                                                 tmsc.date
@@ -423,9 +427,11 @@ const genSubSchedule = async (shiftRows = []) => {
 
                             const byDow = await databasePool.query(byDowSql)
                             planTimeWeeklyArr.push(dateFormatted(byDow.rows[0].date))
-                            lastWeekNum = shiftRows[sIndex].week_num
-
-                            skip = true
+                            
+                            if (byDow.rows[0].day_of_week != countSame)
+                            {
+                                countSame = byDow.rows[0].day_of_week
+                            }
                         }
 
                         if (lastWeekNum == 0)
@@ -439,10 +445,10 @@ const genSubSchedule = async (shiftRows = []) => {
                 {
                     if (itemCheckRows[kIndex].precition_val == 7)
                     {
-                        if (!shiftRows[sIndex].is_holiday)
+                        if (shiftRows[sIndex].is_holiday)
                         {
                             planTime = null
-                        } 
+                        }
                         else
                         {
                             planTime = planTimeWeeklyArr.find((item) => item == dateFormatted(shiftRows[sIndex].date))
