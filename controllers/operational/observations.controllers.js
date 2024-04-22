@@ -196,6 +196,60 @@ module.exports = {
             response.failed(res, 'Error to get schedule observation')
         }
     },
+    getTodaySchedule: async(req, res) => {
+        try {
+            const { date, line_id, group_id } = req.query
+            let whereCond = ``
+            console.log(req.query);
+            whereCond = `AND tro.plan_check_dt = '${date}'`
+            if (line_id != "0" && line_id && line_id != -1 && line_id != null) whereCond += ` AND tmp.line_id = '${await uuidToId(table.tb_m_lines, 'line_id', line_id)}'`
+            if (group_id && group_id != null) whereCond += ` AND tmg.uuid = '${group_id}'`
+            let observations = await queryCustom(`
+                SELECT 
+                    tro.uuid as observation_id,
+                    tmp.uuid as pos_id,
+                    tml.uuid as line_id,
+                    tml.line_snm,
+                    tmp.pos_nm,
+                    tmm.machine_nm,
+                    tmg.uuid AS group_id,
+                    tmg.group_nm,
+                    tmj.uuid as job_id,
+                    tmj.job_no,
+                    tmj.job_nm,
+                    tmjt.job_type_nm,
+                    tmjt.colors as job_type_color,
+                    member_nm,
+                    tro.plan_check_dt,
+                    tro.actual_check_dt,
+                    EXTRACT('day' from  tro.plan_check_dt) as idxDate,
+                    tro.comment_sh,
+                    tro.comment_ammgr,
+                    tro.deleted_dt
+                FROM ${table.tb_r_observations} tro
+                LEFT JOIN ${table.tb_m_pos} tmp
+                    ON tro.pos_id = tmp.pos_id
+                LEFT JOIN ${table.tb_m_groups} tmg
+                    ON tro.group_id = tmg.group_id
+                LEFT JOIN ${table.tb_m_jobs} tmj
+                    ON tro.job_id = tmj.job_id
+                LEFT JOIN ${table.tb_m_machines} tmm
+                    ON tmj.machine_id = tmm.machine_id
+                LEFT JOIN ${table.tb_m_job_types} tmjt
+                    ON tmj.job_type_id = tmjt.job_type_id
+                LEFT JOIN ${table.tb_m_lines} tml
+                    ON tml.line_id = tmp.line_id
+                WHERE 
+                    ${'tro.' + condDataNotDeleted}
+                    ${whereCond}
+                ORDER BY tml.line_nm,tmp.pos_nm ASC
+            `)
+            response.success(res, 'Success to get today schedule observation', observations.rows)
+        } catch (error) {
+            console.log(error);
+            response.failed(res, 'Error to get today schedule observation')
+        }
+    },
     getDetailObservation: async(req, res) => {
         try {
             let obser = await queryCustom(`
