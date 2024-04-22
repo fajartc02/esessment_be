@@ -24,8 +24,11 @@ module.exports = {
         join ${table.tb_m_lines} tml on tmz.line_id = tml.line_id 
       `
 
-      current_page = parseInt(current_page ?? 1)
-      limit = parseInt(limit ?? 10)
+      if (limit && current_page)
+      {
+        current_page = parseInt(current_page ?? 1)
+        limit = parseInt(limit ?? 10)
+      }
 
       let filterCondition = [
         'tmz.deleted_dt is null'
@@ -62,8 +65,14 @@ module.exports = {
         filterCondition.push(` tmz.zone_nm = '${zone_nm}' `)
       }
 
-      const qOffset = (limit != -1 && limit) && current_page > 1 ? `OFFSET ${limit * (current_page - 1)}` : ``
-      const qLimit = (limit != -1 && limit) ? `LIMIT ${limit}` : ``
+      let qOffset = ``
+      let qLimit = ``
+
+      if (limit && current_page)
+      {
+        qOffset = (limit != -1 && limit) && current_page > 1 ? `OFFSET ${limit * (current_page - 1)}` : ``
+        qLimit = (limit != -1 && limit) ? `LIMIT ${limit}` : ``
+      }
 
       if (filterCondition.length > 0)
       {
@@ -84,13 +93,13 @@ module.exports = {
           const count = await queryCustom(`select count(tmz.zone_id)::integer as count from ${fromCondition} where ${filterCondition}`)
           const countRows = count.rows[0]
           result = {
-            current_page: current_page,
+            current_page: current_page ?? null,
             total_page: +countRows.count > 0 ? Math.ceil(countRows.count / +limit) : 0,
             total_data: countRows.count,
-            limit: limit,
+            limit: limit ?? null,
             list: zones.rows,
           }
-        } 
+        }
         else
         {
           result = result[0]

@@ -439,10 +439,16 @@ const genSubSchedule = async (shiftRows = []) => {
                 {
                     if (itemCheckRows[kIndex].precition_val == 7)
                     {
-                        planTime = planTimeWeeklyArr.find((item) => item == dateFormatted(shiftRows[sIndex].date))
+                        if (!shiftRows[sIndex].is_holiday)
+                        {
+                            planTime = null
+                        } 
+                        else
+                        {
+                            planTime = planTimeWeeklyArr.find((item) => item == dateFormatted(shiftRows[sIndex].date))
+                        }
                     }
-
-                    if (!planTime)
+                    else if (!planTime)
                     {
                         planTime = moment(`${currentYear}-${padTwoDigits(currentMonth)}-${padTwoDigits(getRandomInt(1, 30))}`)
                             .clone()
