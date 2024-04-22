@@ -561,6 +561,17 @@ module.exports = {
       response.failed(res, "Error to get 4s sub schedule")
     }
   },
+  get4sSubScheduleSummary: async (req, res) => {
+    try
+    {
+
+    } 
+    catch (error)
+    {
+      console.log(e)
+      response.failed(res, "Error to delete 4s sub schedule")
+    }
+  },
   get4sSignCheckerBySignCheckerId: async (req, res) => {
     try
     {

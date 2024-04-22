@@ -14,9 +14,6 @@ const { totalDaysOfYear } = require('../../helpers/date')
 const path = require('path');
 const { readFile } = require('fs/promises');
 
-const currentDate = moment()
-const currentYear = currentDate.year()
-
 console.log('env', {
     env: process.env.NODE_ENV,
     user: process.env.DB_USER,
@@ -30,51 +27,33 @@ console.log('env', {
 console.log(`Migration Running ...`)
 
 const mapFreq = (period) => {
-    const splitPeriodic = period.replace(/\s+/g, '').split('')
+    const splitPeriodic = period.split(' ')
     let freqNm = 'Day'
     let precitionVal = 1
 
-    if (splitPeriodic.length >= 2)
+    if (splitPeriodic.length >= 2 && splitPeriodic[1] == 'Month')
     {
-        freqNm = splitPeriodic[1].toLowerCase()
-        switch (freqNm)
-        {
-            case 'd':
-                precitionVal = 1 * splitPeriodic[0]
-                freqNm = `${splitPeriodic[0]} Day`
-                break;
-            case 'w':
-                precitionVal = 7 * splitPeriodic[0]
-                freqNm = `${splitPeriodic[0]} Week`
-                break;
-            case 'm':
-                precitionVal = 30 * splitPeriodic[0]
-                freqNm = `${splitPeriodic[0]} Month`
-                break;
-            case 'y':
-                precitionVal = totalDaysOfYear() * splitPeriodic[0]
-                freqNm = `${splitPeriodic[0]} Year`
-                break;
-        }
+        precitionVal = 30 * splitPeriodic[0]
+        freqNm = period
     }
     else
     {
         freqNm = splitPeriodic[0].toLowerCase()
         switch (freqNm)
         {
-            case 'd':
+            case 'daily':
                 precitionVal = 1
                 freqNm = `1 Day`
                 break;
-            case 'w':
+            case 'weekly':
                 precitionVal = 7
                 freqNm = `1 Week`
                 break;
-            case 'm':
+            case 'monthly':
                 precitionVal = 30
                 freqNm = `1 Month`
                 break;
-            case 'y':
+            case 'yearly':
                 precitionVal = totalDaysOfYear()
                 freqNm = `1 Year`
                 break;
@@ -91,12 +70,6 @@ const clearRows = async () => {
     console.log('clearing start')
     await queryTransaction(async (db) => {
         await db.query(`SET session_replication_role = 'replica'`)
-        db.query(`DELETE FROM ${table.tb_m_om_item_check_kanbans} CASCADE`)
-        db.query(`ALTER TABLE ${table.tb_m_om_item_check_kanbans} ALTER COLUMN om_item_check_kanban_id RESTART WITH 1`)
-
-        db.query(`DELETE FROM ${table.tb_m_machines} where line_id = 8`)
-        db.query(`ALTER TABLE ${table.tb_m_om_item_check_kanbans} ALTER COLUMN om_item_check_kanban_id RESTART WITH 1`)
-
         await db.query(`SET session_replication_role = 'origin'`)
         console.log('delete and reset count complete')
     })
@@ -107,40 +80,38 @@ const migrate = async () => {
         const assyLineQuery = await databasePool.query(`select * from tb_m_lines where line_nm in ('Main Line') limit 1`)
         const assyLineRow = assyLineQuery.rows[0]
 
-        const json = JSON.parse(await readFile(path.resolve(__dirname, '../json/omAssyline.json'), "utf8"));
+        const json = JSON.parse(await readFile(path.resolve(__dirname, '../json/4sAssyline.json'), "utf8"));
         for (let i = 0; i < json.length; i++)
         {
-            //#region machine
-            const machineSql = `
+            //#region zone
+            const zoneSql = `
                     select 
-                        machine_id 
+                        zone_id 
                     from 
-                        ${table.tb_m_machines}
+                        ${table.tb_m_zones}
                     where 
                         line_id = '${assyLineRow.line_id}' 
-                        and machine_nm = '${json[i].Mesin}' 
-                    limit 1
+                        and zone_nm = '${json[i].Zona}' 
                 `
-            const machineQuery = await databasePool.query(machineSql)
-            let machineId = null
-            if (machineQuery.rowCount > 0)
+            console.log('zoneSql', zoneSql);
+            const zoneQuery = await databasePool.query(zoneSql)
+            let zoneId = null
+            if (zoneQuery.rowCount > 0)
             {
-                machineId = machineQuery.rows[0].machine_id
+                zoneId = zoneQuery.rows[0].zone_id
             }
             else
             {
-                const lastRowMachineQuery = await db.query(`select * from ${table.tb_m_machines} order by machine_id desc limit 1`)
-                const lastRowMachineRow = lastRowMachineQuery.rows[0]
-
-                const newMachineSql = `
-                    insert into ${table.tb_m_machines} 
-                        (machine_id, uuid, line_id, machine_nm, op_no)
+                const newZoneSql = `
+                    insert into ${table.tb_m_zones} 
+                        (uuid, line_id, zone_nm)
                     values 
-                        (${lastRowMachineRow.machine_id + 1},'${uuid()}', '${assyLineRow.line_id}', '${json[i].Mesin}', '-') 
+                        ('${uuid()}', '${assyLineRow.line_id}', '${json[i].Zona}') 
                     returning *
                 `
-                const newMachineQuery = await db.query(newMachineSql)
-                machineId = newMachineQuery.rows[0].machine_id
+                console.log('newzonesql', newZoneSql)
+                const newMachineQuery = await db.query(newZoneSql)
+                zoneId = newMachineQuery.rows[0].zone_id
             }
             //#endregion
 
@@ -177,37 +148,24 @@ const migrate = async () => {
             }
             //#endregion
 
-            //#region item check
-            const whereItemCheck =
-                ` 
-                    machine_id = '${machineId}'
+            //#region kanban
+            const kanbanSql = `
+                select * from ${table.tb_m_kanbans}
+                where
+                    zone_id = '${zoneId}'
                     and freq_id = '${freqId}'
-                    and item_check_nm = '${json[i].Item}'
-                    and location_nm = '${json[i].Location}'
-                    and method_nm = '${json[i].Methode}'
-                    and standart_nm = '${json[i].Standart}'
-                `
-
-            const itemCheckExisting = await db.query(
-                `
-                    select 
-                        * 
-                    from 
-                        ${table.tb_m_om_item_check_kanbans}
-                    where
-                        ${whereItemCheck}
-                `
-            )
-            if (itemCheckExisting.rowCount == 0)
+                    and kanban_no = '${json[i].no_kanban}'
+                    and area_nm = '${json[i].Area}'
+            `
+            const kanbanQuery = await db.query(kanbanSql)
+            if (kanbanQuery.rowCount == 0)
             {
-                await db.query(
-                    `
-                    insert into ${table.tb_m_om_item_check_kanbans}
-                        (uuid, machine_id, freq_id, item_check_nm, location_nm, method_nm, standart_nm, standart_time)
+                await db.query(`
+                    insert into ${table.tb_m_kanbans}
+                        (uuid, zone_id, freq_id, kanban_no, area_nm)
                     values
-                        ('${uuid()}', '${machineId}', '${freqId}', '${json[i].Item}', ${json[i].Location == '' ? null : `'${json[i].Location}'`}, '${json[i].Methode}', '${json[i].Standart}', '${json[i].Duration}')
-                `
-                )
+                        ('${uuid()}', '${zoneId}', '${freqId}', '${json[i].no_kanban}', '${json[i].Area}')
+                `)
             }
             //#endregion
         }
