@@ -13,6 +13,7 @@ const table = require('../config/table')
 const { queryTransaction } = require('../helpers/query')
 const { bulkToSchema } = require('../helpers/schema')
 const logger = require('../helpers/logger')
+const { getRandomInt, padTwoDigits } = require('../helpers/formatting')
 
 console.log('env', {
     env: process.env.NODE_ENV,
@@ -98,6 +99,8 @@ const shiftByGroupId = async () => {
                                 line_nm
                             from
                                 tb_m_lines
+                            where 
+                                line_id = 8
                             order by line_id
                         ),
                 shifts as (
@@ -315,7 +318,6 @@ const genSubSchedule = async (shiftRows = []) => {
                     }
                     //#endregion
 
-                    shouldPlan = true
                     if (
                         itemCheckRows[kIndex].precition_val == 30
                     )
@@ -326,6 +328,9 @@ const genSubSchedule = async (shiftRows = []) => {
                     {
                         countSame = 2
                     }
+
+                    //console.log('shouldplan', itemCheckRows[kIndex].freq_id);
+                    shouldPlan = true
                 }
             }
             else
@@ -380,24 +385,22 @@ const genSubSchedule = async (shiftRows = []) => {
             else
             {
                 let planTimeWeeklyArr = []
-                if (shouldPlan)
+                if (shouldPlan && itemCheckRows[kIndex].precition_val == 7)
                 {
                     for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
                     {
-                        if (itemCheckRows[kIndex].precition_val == 7)
+                        if (countSame == 0)
                         {
-                            if (countSame == 0)
-                            {
-                                countSame++
-                            }
+                            countSame++
+                        }
 
-                            if (
-                                lastWeekNum != shiftRows[sIndex].week_num
-                                && !shiftRows[sIndex].is_holiday
-                            )
-                            {
-                                const byDowSql =
-                                    `
+                        if (
+                            lastWeekNum != shiftRows[sIndex].week_num
+                            && !shiftRows[sIndex].is_holiday
+                        )
+                        {
+                            const byDowSql =
+                                `
                                             select 
                                                 tmsc.date 
                                             from (
@@ -418,26 +421,16 @@ const genSubSchedule = async (shiftRows = []) => {
                                             limit 1
                                         `
 
-                                const byDow = await databasePool.query(byDowSql)
-                                planTimeWeeklyArr.push(dateFormatted(byDow.rows[0].date))
-                                lastWeekNum = shiftRows[sIndex].week_num
+                            const byDow = await databasePool.query(byDowSql)
+                            planTimeWeeklyArr.push(dateFormatted(byDow.rows[0].date))
+                            lastWeekNum = shiftRows[sIndex].week_num
 
-                                skip = true
-                            }
-
-                            if (lastWeekNum == 0)
-                            {
-                                lastWeekNum = shiftRows[sIndex].week_num
-                            }
+                            skip = true
                         }
-                        else if (shiftRows[sIndex].is_first_week)
-                        {
-                            planTime = moment(shiftRows[sIndex].date)
-                                .clone()
-                                .weekday(countSame)
-                                .format('YYYY-MM-DD')
 
-                            break;
+                        if (lastWeekNum == 0)
+                        {
+                            lastWeekNum = shiftRows[sIndex].week_num
                         }
                     }
                 }
@@ -447,6 +440,13 @@ const genSubSchedule = async (shiftRows = []) => {
                     if (itemCheckRows[kIndex].precition_val == 7)
                     {
                         planTime = planTimeWeeklyArr.find((item) => item == dateFormatted(shiftRows[sIndex].date))
+                    }
+
+                    if (!planTime)
+                    {
+                        planTime = moment(`${currentYear}-${padTwoDigits(currentMonth)}-${padTwoDigits(getRandomInt(1, 30))}`)
+                            .clone()
+                            .format('YYYY-MM-DD')
                     }
 
                     const exists = result.find((item) =>

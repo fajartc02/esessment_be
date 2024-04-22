@@ -140,7 +140,7 @@ const migrate = async () => {
             //#endregion
 
             //#region seeder kanban
-            let kanbanJSON = JSON.parse(`
+            /* let kanbanJSON = JSON.parse(`
                 [
                     {
                         "zone_id": 1,
@@ -263,12 +263,12 @@ const migrate = async () => {
             }))
             const kanbanSchema = await bulkToSchema(kanbanJSON);
             await db.query(`insert into ${table.tb_m_kanbans} (${kanbanSchema.columns}) VALUES ${kanbanSchema.values} returning *`)
-            console.log('kanbans', 'inserted')
+            console.log('kanbans', 'inserted') */
             //#endregion
 
             //#region seeder item check kanban
 
-            const itemCheckSchema = await bulkToSchema([
+            /* const itemCheckSchema = await bulkToSchema([
                 {
                     uuid: uuid(),
                     kanban_id: 1, // daily
@@ -350,7 +350,7 @@ const migrate = async () => {
             ])
 
             await db.query(`insert into ${table.tb_m_4s_item_check_kanbans} (${itemCheckSchema.columns}) VALUES ${itemCheckSchema.values} returning *`)
-            console.log('item check kanbans', 'inserted')
+            console.log('item check kanbans', 'inserted') */
             //#endregion
         }
     }).then((res) => {

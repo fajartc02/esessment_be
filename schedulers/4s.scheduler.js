@@ -13,6 +13,7 @@ const table = require('../config/table')
 const { queryTransaction } = require('../helpers/query')
 const { bulkToSchema } = require('../helpers/schema')
 const logger = require('../helpers/logger')
+const { getRandomInt, padTwoDigits } = require('../helpers/formatting')
 
 console.log('env', {
     env: process.env.NODE_ENV,
@@ -98,6 +99,8 @@ const shiftByGroupId = async () => {
                                 line_nm
                             from
                                 tb_m_lines
+                            where
+                                line_id = 8
                             order by line_id
                         ),
                 shifts as (
@@ -234,6 +237,8 @@ const genSubSchedule = async (shiftRows = []) => {
                     ${table.tb_m_kanbans} tmk
                     join ${table.tb_m_zones} tmz on tmk.zone_id = tmz.zone_id
                     join ${table.tb_m_freqs} tmf on tmf.freq_id = tmk.freq_id
+                where 
+                    tmz.line_id = 8
             `)
     const kanbanRows = kanbanQuery.rows
     //#endregion
@@ -419,28 +424,26 @@ const genSubSchedule = async (shiftRows = []) => {
             else
             {
                 let planTimeWeeklyArr = []
-                if (shouldPlan)
+                if (shouldPlan && kanbanRows[kIndex].precition_val == 7)
                 {
                     for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
                     {
                         if (shiftRows[sIndex].shift_type == 'morning_shift')
                         {
-                            if (kanbanRows[kIndex].precition_val == 7)
+                            if (countSame == 0)
                             {
-                                if (countSame == 0)
-                                {
-                                    countSame++
-                                }
+                                countSame++
+                            }
 
-                                if (
-                                    lastWeekNum != shiftRows[sIndex].week_num
-                                    && !shiftRows[sIndex].is_holiday
-                                )
-                                {
-                                    //shiftRows[sIndex].total_day_of_week > 1
+                            if (
+                                lastWeekNum != shiftRows[sIndex].week_num
+                                && !shiftRows[sIndex].is_holiday
+                            )
+                            {
+                                //shiftRows[sIndex].total_day_of_week > 1
 
-                                    const byDowSql =
-                                        `
+                                const byDowSql =
+                                    `
                                             select 
                                                 tmsc.date 
                                             from (
@@ -461,35 +464,16 @@ const genSubSchedule = async (shiftRows = []) => {
                                             limit 1
                                         `
 
-                                    const byDow = await databasePool.query(byDowSql)
-                                    planTimeWeeklyArr.push(dateFormatted(byDow.rows[0].date))
-                                    lastWeekNum = shiftRows[sIndex].week_num
+                                const byDow = await databasePool.query(byDowSql)
+                                planTimeWeeklyArr.push(dateFormatted(byDow.rows[0].date))
+                                lastWeekNum = shiftRows[sIndex].week_num
 
-                                    skip = true
-                                }
-
-                                if (lastWeekNum == 0)
-                                {
-                                    lastWeekNum = shiftRows[sIndex].week_num
-                                }
+                                skip = true
                             }
-                            else if (shiftRows[sIndex].is_first_week)
+
+                            if (lastWeekNum == 0)
                             {
-                                /* && (kanbanRows[kIndex].freq_nm.toLowerCase() == 'monthly'
-                                   || kanbanRows[kIndex].freq_nm.toLowerCase() == '2 month'
-                                   || kanbanRows[kIndex].freq_nm.toLowerCase() == '3 month') */
-
-                                planTime = moment(shiftRows[sIndex].date)
-                                    .clone()
-                                    .weekday(countSame)
-                                    .format('YYYY-MM-DD')
-
-                                /*  console.log('plantime monthly', {
-                                     planTime: planTime,
-                                     countSame: countSame
-                                 }) */
-
-                                break;
+                                lastWeekNum = shiftRows[sIndex].week_num
                             }
                         }
                     }
@@ -500,6 +484,13 @@ const genSubSchedule = async (shiftRows = []) => {
                     if (kanbanRows[kIndex].precition_val == 7)
                     {
                         planTime = planTimeWeeklyArr.find((item) => item == dateFormatted(shiftRows[sIndex].date))
+                    }
+
+                    if (!planTime)
+                    {
+                        const morningShift = shiftRows.filter((item) => item.shift_type == 'morning_shift');
+                        //console.log('morningShift', morningShift);
+                        planTime = morningShift[getRandomInt(0, morningShift.length - 1)].date;
                     }
 
                     const exists = result.find((item) =>
