@@ -440,35 +440,42 @@ const genSubSchedule = async (shiftRows = []) => {
                                 && !shiftRows[sIndex].is_holiday
                             )
                             {
-                                //shiftRows[sIndex].total_day_of_week > 1
-
                                 const byDowSql =
                                     `
                                             select 
-                                                tmsc.date 
+                                                tmsc.date,
+                                                non_holiday.day_of_week
                                             from (
                                                 select
-                                                    "date",
-                                                    EXTRACT('DOW' FROM "date"::timestamp) AS day_of_week
+                                                    tms1."date",
+                                                    EXTRACT('DOW' FROM tms1."date"::timestamp) AS day_of_week
                                                 from
-                                                    ${table.tb_m_schedules}
+                                                    ${table.tb_m_schedules} tms1
+                                                    left join tb_m_shifts shift_holiday on
+                                                        tms1.date between shift_holiday.start_date and shift_holiday.end_date
+                                                        and shift_holiday.is_holiday = true
                                                 where
-                                                    is_holiday is null or is_holiday = false
+                                                    (tms1.is_holiday is null or tms1.is_holiday = false)
+                                                    and (shift_holiday.is_holiday is null or shift_holiday.is_holiday = false)
                                             ) non_holiday 
                                             join ${table.tb_m_schedules} tmsc on non_holiday.date = tmsc.date 
                                             where  
-                                                non_holiday.day_of_week = '${countSame}'
+                                                non_holiday.day_of_week >= ${countSame} 
+                                                and non_holiday.day_of_week <= 5
                                                 and date_part('week', tmsc."date") = '${shiftRows[sIndex].week_num}'
                                             order by 
                                                 tmsc.date
                                             limit 1
                                         `
-
+                                //console.log('byDowSql', byDowSql);
                                 const byDow = await databasePool.query(byDowSql)
                                 planTimeWeeklyArr.push(dateFormatted(byDow.rows[0].date))
-                                lastWeekNum = shiftRows[sIndex].week_num
-
                                 skip = true
+
+                                if (byDow.rows[0].day_of_week != countSame)
+                                {
+                                    countSame = byDow.rows[0].day_of_week
+                                }
                             }
 
                             if (lastWeekNum == 0)
@@ -499,7 +506,7 @@ const genSubSchedule = async (shiftRows = []) => {
                         && item.freq_id == shiftRows[sIndex].freq_id
                         && item.schedule_id == shiftRows[sIndex].schedule_id
                     )
-                    
+
                     if (exists)
                     {
                         continue
