@@ -561,15 +561,64 @@ module.exports = {
       response.failed(res, "Error to get 4s sub schedule")
     }
   },
-  get4sSubScheduleSummary: async (req, res) => {
+  get4sSubScheduleTodayPlan: async (req, res) => {
     try
     {
+      const { date, line_id, group_id } = req.query
 
-    } 
-    catch (error)
+      let filterCondition = []
+      let scheduleSql = `
+          select * from (
+            select
+              ${selectSubScheduleSql}  
+              , date(tbrcs.plan_time) as plan_check_dt
+              , date(tbrcs.actual_time) as actual_check_dt
+              , EXTRACT('day' from  tbrcs.plan_time)::real as idxDate
+            from
+              ${fromSubScheduleSql}
+            order by tml.line_nm
+          ) a
+        `
+
+      if (line_id && line_id != null && line_id != "")
+      {
+        filterCondition.push(` line_id = '${line_id}' `)
+      }
+      if (group_id && group_id != null && group_id != "")
+      {
+        filterCondition.push(` line_id = '${group_id}' `)
+      }
+      if (date && date != null && date != "")
+      {
+        filterCondition.push(` plan_check_dt = '${date}' `)
+      }
+
+      if (filterCondition.length > 0)
+      {
+        filterCondition = filterCondition.join(' and ')
+        scheduleSql = scheduleSql.concat(` where ${filterCondition} `)
+      }
+
+
+      const result = (await queryCustom(scheduleSql, false)).rows
+      result.map((item) => {
+        item.main_schedule_id = item.main_schedule_uuid
+
+        delete item.freq_real_id
+        delete item.zone_real_id
+        delete item.kanban_real_id
+        delete item.pic_real_id
+        delete item.main_schedule_uuid
+
+        return item
+      })
+
+      response.success(res, "Success to get today activities 4s sub schedule", result)
+    }
+    catch (e)
     {
       console.log(e)
-      response.failed(res, "Error to delete 4s sub schedule")
+      response.failed(res, "Error to get today activities 4s sub schedule")
     }
   },
   get4sSignCheckerBySignCheckerId: async (req, res) => {

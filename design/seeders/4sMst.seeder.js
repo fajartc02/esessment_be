@@ -12,6 +12,7 @@ const { queryTransaction } = require('../../helpers/query')
 const { generateMonthlyDates } = require('../../helpers/date')
 const { holidayRequest } = require('../../helpers/externalRequest')
 const { bulkToSchema } = require('../../helpers/schema')
+const { getRandomInt } = require('../../helpers/formatting')
 
 const currentDate = moment()
 
@@ -111,7 +112,7 @@ const migrate = async () => {
             const lineGroup = lineGroupRows[index];
 
             //#region zones
-            const zoneSchema = await bulkToSchema([
+            /* const zoneSchema = await bulkToSchema([
                 {
                     uuid: uuid(),
                     zone_nm: 'Zona 4',
@@ -136,7 +137,7 @@ const migrate = async () => {
 
             const zoneQuery = await db.query(`insert into ${table.tb_m_zones} (${zoneSchema.columns}) VALUES ${zoneSchema.values} returning *`)
             const zoneRows = zoneQuery.rows
-            console.log('zones', 'inserted')
+            console.log('zones', 'inserted') */
             //#endregion
 
             //#region seeder kanban
@@ -268,89 +269,89 @@ const migrate = async () => {
 
             //#region seeder item check kanban
 
-            /* const itemCheckSchema = await bulkToSchema([
+            const itemCheckSchema = await bulkToSchema([
                 {
                     uuid: uuid(),
-                    kanban_id: 1, // daily
+                    kanban_id: getRandomInt(1, 30),
                     item_check_nm: 'Pipa M/C Kawata',
                     standart_time: 5
                 },
                 {
                     uuid: uuid(),
-                    kanban_id: 1,// daily
+                    kanban_id: getRandomInt(1, 30),
                     item_check_nm: 'Panel M/C Kawata',
                     standart_time: 5
                 },
                 {
                     uuid: uuid(),
-                    kanban_id: 1,// daily
+                    kanban_id: getRandomInt(1, 30),
                     item_check_nm: 'Lantai',
                     standart_time: 5
                 },
                 {
                     uuid: uuid(),
-                    kanban_id: 2, // Weekly
+                    kanban_id: getRandomInt(1, 30),
                     item_check_nm: 'Roller Oil Pan',
                     standart_time: 5
                 },
                 {
                     uuid: uuid(),
-                    kanban_id: 12,// Weekly
+                    kanban_id: getRandomInt(1, 30),
                     item_check_nm: 'Rotari Table',
                     standart_time: 5
                 },
                 {
                     uuid: uuid(),
-                    kanban_id: 13,// Weekly
+                    kanban_id: getRandomInt(1, 30),
                     item_check_nm: 'Daily Transfer',
                     standart_time: 5
                 },
                 {
                     uuid: uuid(),
-                    kanban_id: 14, // Weekly
+                    kanban_id: getRandomInt(1, 30),
                     item_check_nm: 'Jig Lubang Pin HD',
                     standart_time: 5
                 },
                 {
                     uuid: uuid(),
-                    kanban_id: 15,// Weekly
+                    kanban_id: getRandomInt(1, 30),
                     item_check_nm: 'Lantai',
                     standart_time: 5
                 },
                 {
                     uuid: uuid(),
-                    kanban_id: 9,// Monthly
+                    kanban_id: getRandomInt(1, 30),
                     item_check_nm: 'Jalur Hijau',
                     standart_time: 5
                 },
                 {
                     uuid: uuid(),
-                    kanban_id: 7,// Monthly
+                    kanban_id: getRandomInt(1, 30),
                     item_check_nm: 'Garis Kuning',
                     standart_time: 5
                 },
                 {
                     uuid: uuid(),
-                    kanban_id: 8,// Monthly
+                    kanban_id: getRandomInt(1, 30),
                     item_check_nm: 'Zebra Cross',
                     standart_time: 5
                 },
                 {
                     uuid: uuid(),
-                    kanban_id: 8,// Monthly
+                    kanban_id: getRandomInt(1, 30),
                     item_check_nm: 'Stiker Tunjuk Arah Kanan',
                     standart_time: 5
                 },
                 {
                     uuid: uuid(),
-                    kanban_id: 10,// Monthly
+                    kanban_id: getRandomInt(1, 30),
                     item_check_nm: 'Stiker IN/OUT',
                     standart_time: 5
                 },
             ])
 
             await db.query(`insert into ${table.tb_m_4s_item_check_kanbans} (${itemCheckSchema.columns}) VALUES ${itemCheckSchema.values} returning *`)
-            console.log('item check kanbans', 'inserted') */
+            console.log('item check kanbans', 'inserted')
             //#endregion
         }
     }).then((res) => {

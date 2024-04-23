@@ -459,6 +459,17 @@ const genSubSchedule = async (shiftRows = []) => {
                         planTime = moment(`${currentYear}-${padTwoDigits(currentMonth)}-${padTwoDigits(getRandomInt(1, 30))}`)
                             .clone()
                             .format('YYYY-MM-DD')
+
+                        if (
+                            itemCheckRows[kIndex].precition_val == 30
+                            && moment(planTime).day() != 6
+                        )
+                        {
+                            planTime = moment(planTime)
+                                .clone()
+                                .weekday(6)
+                                .format('YYYY-MM-DD')
+                        }
                     }
 
                     const exists = result.find((item) =>

@@ -76,7 +76,8 @@ const subScheduleCacheKey = (
 const subScheduleRows = async (
     params,
     original = true,
-    isParent = true
+    isParent = true,
+    selectString = null
 ) => {
     let filterCondition = []
 
@@ -144,9 +145,9 @@ const subScheduleRows = async (
     {
         filterCondition.push(` machine_id = '${params.machine_id}' `)
     }
-    if (params.summary_start_date && params.summary_end_date)
+    if (params.date)
     {
-        filterCondition.push(` date between '${params.summary_start_date}' and '${params.summary_end_date}' and judgment_nm is not null `)
+        filterCondition.push(` date(plan_time) = '${params.date}' `)
     }
 
     let paginated = false
@@ -154,6 +155,7 @@ const subScheduleRows = async (
             select
                 ${isParent ? 'distinct on (freq_id, machine_id, om_item_check_kanban_id)' : ''}
                 *
+                ${selectString ? `, ${selectString}` : ''}
             from
                 ${table.v_om_sub_schedules}
             ${filterCondition.length > 0 ? `where ${filterCondition.join('and')}` : ''}   
@@ -503,16 +505,21 @@ module.exports = {
             response.failed(res, "Error to get om sub schedule")
         }
     },
-    getOmSubScheduleSummaryPaginate: async (req, res) => {
+    getOmSubScheduleToday: async (req, res) => {
         try
         {
-            const result = await subScheduleRows(req.query, true, false)
-            response.success(res, "Success to get om sub schedule summary", result)
+            const result = await subScheduleRows(
+                req.query, 
+                true, 
+                false, 
+                "date(plan_time) as plan_check_dt, date(actual_time) as actual_time, EXTRACT('day' from  plan_time)::real as idxDate"
+            )
+            response.success(res, "Success to get today activity om sub schedule", result)
         }
         catch (error)
         {
             console.log(error)
-            response.failed(res, "Error to get om sub schedule summary")
+            response.failed(res, "Error to get today activity om sub schedule summary")
         }
     },
     getDetailOmSubSchedule: async (req, res) => {
