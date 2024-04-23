@@ -35,8 +35,21 @@ module.exports = {
                 group_id != "-1/"
                 ? (isGroup = true)
                 : (isGroup = false);
-            const q = `SELECT uuid as line_id, line_nm, line_snm FROM ${table.tb_m_lines} WHERE ${condDataNotDeleted} ${isLine ? ` AND uuid = '${line_id}'` : ""
-                } `;
+            const q = `
+                SELECT 
+                    uuid as line_id, 
+                    case 
+                        when line_nm like '%Line%' then 
+                            'Assy Line - ' || line_nm 
+                        else line_nm 
+                    end as line_nm, 
+                    line_snm 
+                FROM 
+                    ${table.tb_m_lines} 
+                WHERE 
+                    ${condDataNotDeleted} 
+                    ${isLine ? ` AND uuid = '${line_id}'` : ""} 
+                `;
 
             const rawLines = await queryCustom(q);
             let linesData = rawLines.rows;
