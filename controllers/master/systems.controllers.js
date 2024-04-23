@@ -18,6 +18,10 @@ module.exports = {
             {
                 systemType = req.query.system_type
             }
+            if (systemType == '4S_OPT_DEPT')
+            {
+                systemType = 'OPT_DEPT'
+            }
 
             let whereType = ''
             if (systemType)

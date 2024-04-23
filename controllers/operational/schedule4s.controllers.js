@@ -170,11 +170,44 @@ const childrenSubSchedule = async (
 }
 
 const subScheduleCacheKey = (
-  main_schedule_id
+  main_schedule_id,
+  freq_id = null,
+  zone_id = null,
+  kanban_id = null,
+  line_id = null,
+  group_id = null,
+  month_year_num = null
 ) => {
-  return objToString({
+  const obj = {
     main_schedule_id: main_schedule_id
-  })
+  }
+
+  if (freq_id)
+  {
+    obj.freq_id = freq_id
+  }
+  if (zone_id)
+  {
+    obj.zone_id = zone_id
+  }
+  if (kanban_id)
+  {
+    obj.kanban_id = kanban_id
+  }
+  if (line_id)
+  {
+    obj.line_id = line_id
+  }
+  if (group_id)
+  {
+    obj.group_id = group_id
+  }
+  if (month_year_num)
+  {
+    obj.month_year_num = month_year_num
+  }
+
+  return objToString(obj)
 }
 
 module.exports = {
@@ -283,14 +316,17 @@ module.exports = {
     try
     {
       const { main_schedule_id, freq_id, zone_id, kanban_id, line_id, group_id, month_year_num } = req.query
-      const cacheKey = subScheduleCacheKey(main_schedule_id);
+      const cacheKey = subScheduleCacheKey(main_schedule_id, freq_id, zone_id, kanban_id, line_id, group_id, month_year_num);
       const cachedSchedule = cacheGet(cacheKey)
 
       if (cachedSchedule)
       {
+        console.log('get4sSubSchedule fetch from cached');
         response.success(res, "Success to get 4s sub schedule", cachedSchedule)
         return
       }
+
+      console.log('get4sSubSchedule fetch from query');
 
       if (
         !main_schedule_id ||
@@ -382,7 +418,7 @@ module.exports = {
       )
 
       //console.log('scheduleSql', scheduleSql)
-      //logger(scheduleSql, 'scheduleSql')
+      //logger(scheduleSql, 'schedule')
       const scheduleQuery = await queryCustom(scheduleSql, false)
 
       if (scheduleQuery.rows && scheduleQuery.rows.length > 0)
@@ -518,7 +554,8 @@ module.exports = {
                                 where 
                                     is_holiday = true 
                                     and date between '${signArr[i].end_date}' and '${signArr[i + 1].start_date}'
-                            `
+                            `,
+                false
               )
 
               for (let j = 0; j < holidaySchedule.rows.length; j++)
@@ -678,7 +715,9 @@ module.exports = {
 
       const subScheduleSql = `
           select 
-            ${selectSubScheduleSql}
+            ${selectSubScheduleSql},
+            date(tbrcs.plan_time) as plan_time,
+            date(tbrcs.actual_time) as actual_time
           from
             ${fromSubScheduleSql}
           where
@@ -693,57 +732,6 @@ module.exports = {
       }
 
       subScheduleQuery = subScheduleQuery.rows[0]
-
-      const planningDates = await queryCustom(
-        `
-          select 
-            tms.date
-          from 
-            ${table.tb_r_4s_sub_schedules} trss
-            join ${table.tb_m_schedules} tms on trss.schedule_id = tms.schedule_id
-          where
-            trss.plan_time is not null 
-            and trss.main_schedule_id = '${subScheduleQuery.main_schedule_id}'
-            and trss.freq_id = '${subScheduleQuery.freq_real_id}'
-            and trss.zone_id = '${subScheduleQuery.zone_real_id}'
-            and trss.kanban_id = '${subScheduleQuery.kanban_real_id}'
-        `,
-        false
-      )
-
-      const morningShiftDates = await queryCustom(
-        `
-          select
-            tms.date
-          from
-            ${table.tb_r_4s_sub_schedules} trss
-            join ${table.tb_m_schedules} tms on trss.schedule_id = tms.schedule_id
-          where
-            trss.shift_type = 'morning_shift'
-            and trss.main_schedule_id = '${subScheduleQuery.main_schedule_id}'
-            and trss.freq_id = '${subScheduleQuery.freq_real_id}'
-            and trss.zone_id = '${subScheduleQuery.zone_real_id}'
-            and trss.kanban_id = '${subScheduleQuery.kanban_real_id}'
-        `,
-        false
-      )
-
-      const nightShiftDates = await queryCustom(
-        `
-          select
-            tms.date
-          from
-            ${table.tb_r_4s_sub_schedules} trss
-            join ${table.tb_m_schedules} tms on trss.schedule_id = tms.schedule_id
-          where
-            trss.shift_type = 'night_shift'
-            and trss.main_schedule_id = '${subScheduleQuery.main_schedule_id}'
-            and trss.freq_id = '${subScheduleQuery.freq_real_id}'
-            and trss.zone_id = '${subScheduleQuery.zone_real_id}'
-            and trss.kanban_id = '${subScheduleQuery.kanban_real_id}'
-        `,
-        false
-      )
 
       const itemCheckKanbans = await queryCustom(
         `
@@ -761,7 +749,17 @@ module.exports = {
           from
               ${table.tb_m_4s_item_check_kanbans} tmic
               join ${table.tb_m_kanbans} tmk on tmic.kanban_id = tmk.kanban_id 
-              left join ${table.tb_r_4s_schedule_item_check_kanbans} trsic on tmic.item_check_kanban_id = trsic.schedule_item_check_kanban_id 
+              left join lateral (
+                select 
+                  * 
+                from 
+                  ${table.tb_r_4s_schedule_item_check_kanbans}
+                where 
+                  item_check_kanban_id = tmic.item_check_kanban_id
+                order by
+                  schedule_item_check_kanban_id desc
+                limit 1
+              ) trsic on true
               left join ${table.tb_m_judgments} tmju on trsic.judgment_id = tmju.judgment_id
           where
               tmk.kanban_id = '${subScheduleQuery.kanban_real_id}'
@@ -793,9 +791,6 @@ module.exports = {
       }))
 
       subScheduleQuery.item_check_kanbans = itemCheckKanbans.rows
-      subScheduleQuery.planning_dates = planningDates.rows.map((item) => moment(item.date).format('YYYY-MM-DD'))
-      subScheduleQuery.morning_shift_dates = morningShiftDates.rows.map((item) => moment(item.date).format('YYYY-MM-DD'))
-      subScheduleQuery.night_shift_dates = nightShiftDates.rows.map((item) => moment(item.date).format('YYYY-MM-DD'))
       subScheduleQuery.main_schedule_id = subScheduleQuery.main_schedule_uuid
 
       delete subScheduleQuery.freq_real_id
@@ -905,8 +900,7 @@ module.exports = {
         }
       })
 
-      cacheDelete(subScheduleCacheKey(schedulRow.main_schedule_uuid)
-      )
+      cacheDelete(subScheduleCacheKey(schedulRow.main_schedule_uuid))
 
       response.success(res, "Success to edit 4s schedule plan", [])
     } catch (e)
@@ -1020,11 +1014,7 @@ module.exports = {
         `
       )
 
-      cacheDelete(
-        subScheduleCacheKey(
-          subScheduleRow.main_schedule_uuid
-        )
-      )
+      cacheDelete(subScheduleCacheKey(subScheduleRow.main_schedule_uuid))
 
       response.success(res, 'success to delete 4s sub schedule', result.rows[0])
     } catch (e)

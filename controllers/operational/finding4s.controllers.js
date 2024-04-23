@@ -147,6 +147,17 @@ module.exports = {
     edit4sFinding: async (req, res) => {
         try
         {
+            if (!req.params.id || req.params.id == null || req.params.id == 'null')
+            {
+                throw "finding id not provided"
+            }
+
+            const exists = await queryCustom(`select * from ${table.tb_r_4s_findings} where uuid = '${req.params.id}'`)
+            if (!exists)
+            {
+                throw "Can't find finding data by finding_id provide"
+            }
+
             const updateBody = {
                 ...req.body,
                 schedule_item_check_kanban_id: ` (select schedule_item_check_kanban_id from ${table.tb_r_4s_schedule_item_check_kanbans} where uuid = '${req.body.schedule_item_check_kanban_id}') `,

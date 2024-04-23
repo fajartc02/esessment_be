@@ -248,8 +248,33 @@ module.exports = {
                     item_check_kanban_id: ` (select item_check_kanban_id from ${table.tb_m_4s_item_check_kanbans} where uuid = '${req.body.item_check_kanban_id}') `,
                 }
 
-                const attrInsert = attrsUserInsertData(req, body)
-                return await queryPostTransaction(db, table.tb_r_4s_schedule_item_check_kanbans, attrInsert)
+                let checkExists = await db.query(
+                    `
+                        select 
+                            * 
+                        from 
+                            ${table.tb_r_4s_schedule_item_check_kanbans} 
+                        where
+                            item_check_kanban_id = (select item_check_kanban_id from ${table.tb_m_4s_item_check_kanbans} where uuid = '${req.body.item_check_kanban_id}')
+                            and main_schedule_id = (select main_schedule_id from ${table.tb_r_4s_main_schedules} where uuid = '${req.body.main_schedule_id}')
+                    `
+                )
+
+                if (checkExists.rowCount > 0)
+                {
+                    const attr = attrsUserUpdateData(req, body)
+                    return await queryPutTransaction(
+                        db,
+                        table.tb_r_4s_schedule_item_check_kanbans,
+                        attr,
+                        `where schedule_item_check_kanban_id = '${checkExists.rows[0].schedule_item_check_kanban_id}'`
+                    )
+                }
+                else
+                {
+                    const attrInsert = attrsUserInsertData(req, body)
+                    return await queryPostTransaction(db, table.tb_r_4s_schedule_item_check_kanbans, attrInsert)
+                }
             })
 
             const result = {

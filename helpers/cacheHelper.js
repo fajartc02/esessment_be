@@ -1,5 +1,5 @@
 const cache = require('memory-cache')
-const defaultDissapearTime = 30 * 1000 // 10 minute
+const defaultDissapearTime = 30 * 1000 // 30 minute
 
 const cacheGet = (key) => {
     return cache.get(key);
@@ -14,21 +14,30 @@ const cacheUpdate = (key, value, dissapearTime = defaultDissapearTime) => {
     return cache.put(key, value, dissapearTime);
 }
 
-const cacheDelete = (key, isFind = false) => {
-    if (isFind)
+const cacheDelete = (key) => {
+    let result = cache.del(key)
+    console.log('original key', key);
+    if (!result)
     {
         const cacheData = cache.keys()
-        if (cacheData.includes(key))
+        console.log('cacheKeyBefore', cacheData);
+        if (cacheData.length > 0)
         {
-            key = cacheData.find((item) => item.includes(key))
+            for (let i = 0; i < cacheData.length; i++)
+            {
+                if (cacheData[i].includes(key))
+                {
+                    result = cache.del(cacheData[i])
+                    console.log('finded key', cacheData[i]);
+                }
+            }
         }
+
+        console.log('cacheKeyAfter', cache.keys());
     }
 
-    const cacheData = cache.keys()
-    console.log('cacheData', cacheData);
-    console.log('cachekeydeleted', key);
-    
-    return cache.del(key)
+    console.log('deletedstatus', result);
+    return result
 }
 
 module.exports = {
