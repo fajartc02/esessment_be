@@ -174,13 +174,13 @@ module.exports = {
         try
         {
             // Problem yang belum slesai terhadap close
-            if (!req.start_date)
+            if (!req.query.start_date)
             {
-                req.start_date = moment().format('YYYY-MM-DD')
+                req.query.start_date = moment().format('YYYY-MM-DD')
             }
-            if (!req.end_date)
+            if (!req.query.end_date)
             {
-                req.end_date = moment().format('YYYY-MM-DD')
+                req.query.end_date = moment().format('YYYY-MM-DD')
             }
 
             let conditions = queryCondExacOpAnd(req.query, "finding_date");
