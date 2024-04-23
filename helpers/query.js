@@ -227,7 +227,7 @@ module.exports = {
       let q = `INSERT INTO ${table}(${containerColumn.join(
         ","
       )}) VALUES (${containerValues.join(",")}) RETURNING *`;
-      //console.log(q);
+      console.log(q);
       //logger(q)
       await dbPool
         .query(q)

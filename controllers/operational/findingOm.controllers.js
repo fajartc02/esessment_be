@@ -104,21 +104,13 @@ module.exports = {
         {
             delete req.body.finding_id
             
-            let lastCardNumb = await queryGET(
+            let lastCardNumb = (await queryGET(
                 table.tb_r_om_findings,
                 `order by om_finding_id desc limit 1`,
                 [
                     'card_no'
                 ]
-            )
-            if (lastCardNumb.rowCount > 0)
-            {
-                lastCardNumb = lastCardNumb[0].card_no
-            }
-            else
-            {
-                lastCardNumb = 1
-            }
+            ))[0]?.card_no ?? 1
 
             const insertBody = {
                 ...req.body,
@@ -129,7 +121,7 @@ module.exports = {
                 machine_id: ` (select machine_id from ${table.tb_m_machines} where uuid = '${req.body.machine_id}') `,
                 om_item_check_kanban_id: ` (select om_item_check_kanban_id from ${table.tb_m_om_item_check_kanbans} where uuid = '${req.body.om_item_check_kanban_id}') `,
                 finding_pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.finding_pic_id}') `,
-                card_no: +lastCardNumb + 1
+                card_no: lastCardNumb + 1
             }
 
             if (req.body.om_sub_schedule_id)

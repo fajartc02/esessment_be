@@ -237,12 +237,17 @@ const genSubSchedule = async (shiftRows = []) => {
                 countSame++
                 if (countSame > 5)
                 {
-                    countSame = 1
+                    countSame--
                 }
             }
             else
             {
                 countSame = 0 //reset
+            }
+
+            if (countSame < 0)
+            {
+                countSame = 1
             }
 
             // >= 1 MONTH 
@@ -427,7 +432,7 @@ const genSubSchedule = async (shiftRows = []) => {
 
                             const byDow = await databasePool.query(byDowSql)
                             planTimeWeeklyArr.push(dateFormatted(byDow.rows[0].date))
-                            
+
                             if (byDow.rows[0].day_of_week != countSame)
                             {
                                 countSame = byDow.rows[0].day_of_week
