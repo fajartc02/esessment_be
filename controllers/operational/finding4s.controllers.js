@@ -13,7 +13,7 @@ module.exports = {
     get4sFindingList: async (req, res) => {
         try
         {
-            let { id, line_id, freq_id, zone_id, kanban_id, limit, current_page } = req.query
+            let { id, line_id, freq_id, group_id, zone_id, kanban_id, limit, current_page } = req.query
             const fromCondition = `  
                 ${table.v_4s_finding_list} vfl 
             `
@@ -61,6 +61,10 @@ module.exports = {
             if (freq_id)
             {
                 filterCondition.push(` vfl.freq_id = '${freq_id}' `)
+            }
+            if (group_id)
+            {
+                filterCondition.push(` vfl.group_id = '${group_id}' `)
             }
 
 
