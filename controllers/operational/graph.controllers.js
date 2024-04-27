@@ -5,26 +5,26 @@ const response = require("../../helpers/response");
 const condDataNotDeleted = `deleted_dt IS NULL`;
 
 module.exports = {
-  graphFindingSTW: async (req, res) => {
-    try {
-      let { start_date, end_date, line_id, group_id } = req.query;
-      let isLine = false;
-      let isGroup = false;
-      // end_date To fixing / handler from FE
-      end_date = `${end_date}`.replace("/", "");
-      line_id &&
-      (line_id != "") & (line_id != null) & (line_id != "null") &&
-      line_id != -1 &&
-      line_id != "-1/"
-        ? (isLine = true)
-        : (isLine = false);
-      group_id &&
-      (group_id != "") & (group_id != null) & (group_id != "null") &&
-      group_id != -1 &&
-      group_id != "-1/"
-        ? (isGroup = true)
-        : (isGroup = false);
-      const q = `SELECT uuid as line_id, line_nm, line_snm FROM tb_m_lines WHERE ${condDataNotDeleted} ${
+        graphFindingSTW: async(req, res) => {
+                try {
+                    let { start_date, end_date, line_id, group_id } = req.query;
+                    let isLine = false;
+                    let isGroup = false;
+                    // end_date To fixing / handler from FE
+                    end_date = `${end_date}`.replace("/", "");
+                    line_id &&
+                        (line_id != "") & (line_id != null) & (line_id != "null") &&
+                        line_id != -1 &&
+                        line_id != "-1/" ?
+                        (isLine = true) :
+                        (isLine = false);
+                    group_id &&
+                        (group_id != "") & (group_id != null) & (group_id != "null") &&
+                        group_id != -1 &&
+                        group_id != "-1/" ?
+                        (isGroup = true) :
+                        (isGroup = false);
+                    const q = `SELECT uuid as line_id, line_nm, line_snm FROM tb_m_lines WHERE ${condDataNotDeleted} ${
         isLine ? ` AND uuid = '${line_id}'` : ""
       } `;
 
@@ -431,7 +431,7 @@ module.exports = {
       // Problem yang belum slesai terhadap close
       let conditions = queryCondExacOpAnd(req.query, "finding_date");
       let q = `SELECT 
-                count(finding_id)::int as total,
+                ROUND(count(finding_id)::int) as total,
                 status_finding
             FROM v_finding_list
             WHERE ${condDataNotDeleted}
