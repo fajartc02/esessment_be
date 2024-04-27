@@ -29,7 +29,7 @@ module.exports = {
                 response.success(res, 'Success to get Lines', lines)
                 return
             }
-            const lines = await queryGET(table.tb_m_lines, `WHERE ${condDataNotDeleted}${containerQuery}`, cols)
+            const lines = await queryGET(table.tb_m_lines, `WHERE ${condDataNotDeleted}${containerQuery} ORDER BY idx_line_pos ASC`, cols)
             response.success(res, 'Success to get Lines', lines)
         } catch (error) {
             console.log(error);
