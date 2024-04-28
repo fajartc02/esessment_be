@@ -345,6 +345,8 @@ module.exports = {
         sign_checker_sh: []
       }
 
+      const whereMainSchedule = `(select main_schedule_id from ${table.tb_r_4s_main_schedules} where uuid = '${main_schedule_id}')`
+
       let scheduleSql = `
           select * from (
             select distinct on (tbrcs.freq_id, tbrcs.zone_id, tbrcs.kanban_id)
@@ -352,7 +354,7 @@ module.exports = {
           from
              ${fromSubScheduleSql}
           where
-            tbrcs.main_schedule_id = (select main_schedule_id from ${table.tb_r_4s_main_schedules} where uuid = '${main_schedule_id}')
+            tbrcs.main_schedule_id = ${whereMainSchedule}
           ) a 
           where
             1 = 1
@@ -418,7 +420,7 @@ module.exports = {
       )
 
       //console.log('scheduleSql', scheduleSql)
-      //logger(scheduleSql, 'schedule')
+      logger(scheduleSql, 'schedule')
       const scheduleQuery = await queryCustom(scheduleSql, false)
 
       if (scheduleQuery.rows && scheduleQuery.rows.length > 0)

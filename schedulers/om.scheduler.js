@@ -110,6 +110,7 @@ const shiftByGroupId = async () => {
                                 tms1.date,
                                 tmg.group_id,
                                 date_part('week', date::date) as week_num,
+                                tms1.is_holiday as is_holiday_schedule,
                                 shift_holiday.is_holiday or tms1.is_holiday as is_holiday
                             from
                                 tb_m_schedules tms1
@@ -132,6 +133,7 @@ const shiftByGroupId = async () => {
                                     shifts.date,
                                     to_char(shifts.date::date, 'dd') as date_num,
                                     shifts.is_holiday,
+                                    shifts.is_holiday_schedule,
                                     ceiling(
                                                 (
                                                         date_part(
@@ -226,29 +228,6 @@ const genSubSchedule = async (shiftRows = []) => {
         {
             let planTime = null
             let shouldPlan = false
-            lastWeekNum = 0
-
-            // determine plan time should only has precition_val * 
-            if (
-                itemCheckRows[kIndex - 1]
-                && itemCheckRows[kIndex - 1].freq_id == itemCheckRows[kIndex].freq_id
-            )
-            {
-                countSame++
-                if (countSame > 5)
-                {
-                    countSame--
-                }
-            }
-            else
-            {
-                countSame = 0 //reset
-            }
-
-            if (countSame < 0)
-            {
-                countSame = 1
-            }
 
             // >= 1 MONTH 
             if (itemCheckRows[kIndex].precition_val >= 30)
@@ -390,6 +369,20 @@ const genSubSchedule = async (shiftRows = []) => {
                 let planTimeWeeklyArr = []
                 if (shouldPlan && itemCheckRows[kIndex].precition_val == 7)
                 {
+                    // determine plan time should only has precition_val * 
+                    if (countSame > 5)
+                    {
+                        countSame = 5
+                    }
+                    if (countSame > 5)
+                    {
+                        countSame--
+                    }
+                    if (countSame < 1)
+                    {
+                        countSame = 1
+                    }
+
                     for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
                     {
                         if (countSame == 0)
@@ -422,21 +415,33 @@ const genSubSchedule = async (shiftRows = []) => {
                                             ) non_holiday 
                                             join ${table.tb_m_schedules} tmsc on non_holiday.date = tmsc.date 
                                             where  
-                                                non_holiday.day_of_week >= ${countSame} 
-                                                and non_holiday.day_of_week <= 5
-                                                and date_part('week', tmsc."date") = '${shiftRows[sIndex].week_num}'
+                                                date_part('week', tmsc."date") = '${shiftRows[sIndex].week_num}'
+                                                and date_part('month', tmsc."date") = ${currentMonth}
                                             order by 
                                                 tmsc.date
                                             limit 1
                                         `
 
-                            const byDow = await databasePool.query(byDowSql)
-                            planTimeWeeklyArr.push(dateFormatted(byDow.rows[0].date))
-
-                            if (byDow.rows[0].day_of_week != countSame)
+                            const byDow = (await databasePool.query(byDowSql)).rows
+                            let added = false
+                            for (let dIndex = 0; dIndex < byDow.length; dIndex++)
                             {
-                                countSame = byDow.rows[0].day_of_week
+                                if (byDow[dIndex].day_of_week == countSame)
+                                {
+                                    added = true
+                                    planTimeWeeklyArr.push(dateFormatted(byDow[dIndex].date))
+                                    break;
+                                }
                             }
+
+                            if (!added)
+                            {
+                                const randomDow = byDow[getRandomInt(0, byDow.length - 1)]
+                                planTimeWeeklyArr.push(dateFormatted(randomDow.date))
+                                countSame = randomDow.day_of_week
+                            }
+
+                            lastWeekNum = shiftRows[sIndex].week_num
                         }
 
                         if (lastWeekNum == 0)
@@ -444,22 +449,24 @@ const genSubSchedule = async (shiftRows = []) => {
                             lastWeekNum = shiftRows[sIndex].week_num
                         }
                     }
+
+                    countSame++
+                }
+
+                if (kanbanRows[kIndex].precition_val == 30)
+                {
+                    const holidayWeekEnds = shiftRows.filter((item) => item.is_holiday_schedule);
+                    planTime = holidayWeekEnds[getRandomInt(0, holidayWeekEnds.length - 1)].date;
                 }
 
                 for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
                 {
                     if (itemCheckRows[kIndex].precition_val == 7)
                     {
-                        if (shiftRows[sIndex].is_holiday)
-                        {
-                            planTime = null
-                        }
-                        else
-                        {
-                            planTime = planTimeWeeklyArr.find((item) => item == dateFormatted(shiftRows[sIndex].date))
-                        }
+                        planTime = planTimeWeeklyArr.find((item) => item == dateFormatted(shiftRows[sIndex].date))
                     }
-                    else if (!planTime)
+
+                    if (!planTime)
                     {
                         planTime = moment(`${currentYear}-${padTwoDigits(currentMonth)}-${padTwoDigits(getRandomInt(1, 30))}`)
                             .clone()

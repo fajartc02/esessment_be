@@ -119,6 +119,7 @@ const shiftByGroupId = async () => {
                                     else tmsh.group_id
                                     end                       as group_id,
                                 date_part('week', date::date) as week_num,
+                                tms1.is_holiday as is_holiday_schedule,
                                 shift_holiday.is_holiday or tms1.is_holiday as is_holiday,
                                 case
                                     when shift_holiday.is_holiday or tms1.is_holiday then null
@@ -151,6 +152,7 @@ const shiftByGroupId = async () => {
                                     to_char(shifts.date::date, 'dd') as date_num,
                                     shifts.shift_type,
                                     shifts.is_holiday,
+                                    shifts.is_holiday_schedule,
                                     ceiling(
                                                 (
                                                         date_part(
@@ -239,37 +241,20 @@ const genSubSchedule = async (shiftRows = []) => {
                     join ${table.tb_m_freqs} tmf on tmf.freq_id = tmk.freq_id
                 where 
                     tmz.line_id = 8
+                order by
+                    tmk.group_id
             `)
     const kanbanRows = kanbanQuery.rows
     //#endregion
 
     {
         let countSame = 0 // determine steps pattern
-        let skip = false
         let lastWeekNum = 0
         for (let kIndex = 0; kIndex < kanbanRows.length; kIndex++)
         {
             let planTime = null
             let shouldPlan = false
             //lastWeekNum = 0
-
-            // determine plan time should only has precition_val * 
-            if (
-                kanbanRows[kIndex - 1]
-                && kanbanRows[kIndex - 1].freq_id == kanbanRows[kIndex].freq_id
-            )
-            {
-                countSame++
-                skip = false
-                if (countSame > 5)
-                {
-                    countSame = 1
-                }
-            }
-            else
-            {
-                countSame = 0
-            }
 
             // >= 1 MONTH 
             if (kanbanRows[kIndex].precition_val >= 30)
@@ -426,6 +411,20 @@ const genSubSchedule = async (shiftRows = []) => {
                 let planTimeWeeklyArr = []
                 if (shouldPlan && kanbanRows[kIndex].precition_val == 7)
                 {
+                    // determine plan time should only has precition_val * 
+                    if (countSame > 5)
+                    {
+                        countSame = 5
+                    }
+                    if (countSame > 5)
+                    {
+                        countSame--
+                    }
+                    if (countSame < 1)
+                    {
+                        countSame = 1
+                    }
+
                     for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
                     {
                         if (shiftRows[sIndex].shift_type == 'morning_shift')
@@ -460,22 +459,34 @@ const genSubSchedule = async (shiftRows = []) => {
                                             ) non_holiday 
                                             join ${table.tb_m_schedules} tmsc on non_holiday.date = tmsc.date 
                                             where  
-                                                non_holiday.day_of_week >= ${countSame} 
-                                                and non_holiday.day_of_week <= 5
-                                                and date_part('week', tmsc."date") = '${shiftRows[sIndex].week_num}'
+                                                date_part('week', tmsc."date") = ${shiftRows[sIndex].week_num}
+                                                and date_part('month', tmsc."date") = ${currentMonth}
                                             order by 
                                                 tmsc.date
-                                            limit 1
-                                        `
-                                //console.log('byDowSql', byDowSql);
-                                const byDow = await databasePool.query(byDowSql)
-                                planTimeWeeklyArr.push(dateFormatted(byDow.rows[0].date))
-                                skip = true
+                                    `
 
-                                if (byDow.rows[0].day_of_week != countSame)
+                                //console.log('countSame placed', countSame);
+                                //console.log('byDowSql', byDowSql);
+                                const byDow = (await databasePool.query(byDowSql)).rows
+                                let added = false
+                                for (let dIndex = 0; dIndex < byDow.length; dIndex++)
                                 {
-                                    countSame = byDow.rows[0].day_of_week
+                                    if (byDow[dIndex].day_of_week == countSame)
+                                    {
+                                        added = true
+                                        planTimeWeeklyArr.push(dateFormatted(byDow[dIndex].date))
+                                        break;
+                                    }
                                 }
+
+                                if (!added)
+                                {
+                                    const randomDow = byDow[getRandomInt(0, byDow.length - 1)]
+                                    planTimeWeeklyArr.push(dateFormatted(randomDow.date))
+                                    countSame = randomDow.day_of_week
+                                }
+
+                                lastWeekNum = shiftRows[sIndex].week_num
                             }
 
                             if (lastWeekNum == 0)
@@ -484,6 +495,27 @@ const genSubSchedule = async (shiftRows = []) => {
                             }
                         }
                     }
+
+                    countSame++
+                }
+
+                if (kanbanRows[kIndex].precition_val >= 30)
+                {
+                    const morningShift = shiftRows.filter((item) => {
+                        if (kanbanRows[kIndex].precition_val == 30)
+                        {
+                            return item.is_holiday_schedule
+                        }
+
+                        return item.shift_type == 'morning_shift'
+                    });
+
+                    planTime = morningShift[getRandomInt(0, morningShift.length - 1)].date;
+                }
+
+                if (kanbanRows[kIndex].precition_val == 7)
+                {
+                    console.log('totalplantimeweek', planTimeWeeklyArr);
                 }
 
                 for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
@@ -491,12 +523,17 @@ const genSubSchedule = async (shiftRows = []) => {
                     if (kanbanRows[kIndex].precition_val == 7)
                     {
                         planTime = planTimeWeeklyArr.find((item) => item == dateFormatted(shiftRows[sIndex].date))
-                    }
+                        /* if (
+                            planTime == dateFormatted(shiftRows[sIndex].date)
+                            && shiftRows[sIndex].shift_type == 'night_shift'
+                        )
+                        {
+                            const morningShift = shiftRows.filter((item) => {
+                                return item.shift_type == 'morning_shift' && item.week_num == shiftRows[sIndex].week_num
+                            });
 
-                    if (!planTime)
-                    {
-                        const morningShift = shiftRows.filter((item) => item.shift_type == 'morning_shift');
-                        planTime = morningShift[getRandomInt(0, morningShift.length - 1)].date;
+                            planTime = morningShift[getRandomInt(0, morningShift.length - 1)].date;
+                        } */
                     }
 
                     const exists = result.find((item) =>
