@@ -145,10 +145,7 @@ const childrenSubSchedule = async (
                         from
                             v_4s_finding_list v4sfl
                         where
-                              v4sfl.freq_id = tmf.uuid
-                          and v4sfl.zone_id = tmz.uuid
-                          and v4sfl.kanban_id = tmk.uuid
-                          and v4sfl.finding_date = tmsc.date
+                          v4sfl.sub_schedule_id = tbrcs.uuid
                           and v4sfl.deleted_dt is null
                         order by v4sfl.finding_date desc
                         limit 1
@@ -163,7 +160,7 @@ const childrenSubSchedule = async (
               ) a order by date_num      
            `
   //console.warn('childrensql', childrenSql)
-  //logger(childrenSql, 'childrenSql')
+  logger(childrenSql, 'childrenSql')
   const children = await queryCustom(childrenSql, false)
 
   return children.rows
@@ -420,7 +417,7 @@ module.exports = {
       )
 
       //console.log('scheduleSql', scheduleSql)
-      logger(scheduleSql, 'schedule')
+      //logger(scheduleSql, 'schedule')
       const scheduleQuery = await queryCustom(scheduleSql, false)
 
       if (scheduleQuery.rows && scheduleQuery.rows.length > 0)

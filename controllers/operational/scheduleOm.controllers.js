@@ -512,7 +512,7 @@ module.exports = {
                 req.query, 
                 true, 
                 false, 
-                "date(plan_time) as plan_check_dt, date(actual_time) as actual_time, EXTRACT('day' from  plan_time)::real as idxDate"
+                "date(plan_time) as plan_check_dt, date(actual_time) as actual_check_dt, EXTRACT('day' from  plan_time)::real as idxDate"
             )
             response.success(res, "Success to get today activity om sub schedule", result)
         }

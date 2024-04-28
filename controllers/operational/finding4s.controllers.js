@@ -122,6 +122,7 @@ module.exports = {
             const insertBody = {
                 ...req.body,
                 uuid: uuid(),
+                sub_schedule_id: ` (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}') `,
                 schedule_item_check_kanban_id: ` (select schedule_item_check_kanban_id from ${table.tb_r_4s_schedule_item_check_kanbans} where uuid = '${req.body.schedule_item_check_kanban_id}') `,
                 line_id: ` (select line_id from ${table.tb_m_lines} where uuid = '${req.body.line_id}') `,
                 freq_id: ` (select freq_id from ${table.tb_m_freqs} where uuid = '${req.body.freq_id}') `,
@@ -164,6 +165,7 @@ module.exports = {
 
             const updateBody = {
                 ...req.body,
+                sub_schedule_id: ` (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}') `,
                 schedule_item_check_kanban_id: ` (select schedule_item_check_kanban_id from ${table.tb_r_4s_schedule_item_check_kanbans} where uuid = '${req.body.schedule_item_check_kanban_id}') `,
                 line_id: ` (select line_id from ${table.tb_m_lines} where uuid = '${req.body.line_id}') `,
                 freq_id: ` (select freq_id from ${table.tb_m_freqs} where uuid = '${req.body.freq_id}') `,
