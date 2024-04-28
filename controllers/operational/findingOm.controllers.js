@@ -58,7 +58,10 @@ module.exports = {
             {
                 filterCondition.push(` vofl.machine_id = '${machine_id}' `)
             }
-
+            if (req.query.start_date && req.query.end_date)
+            {
+                filterCondition.push(` vofl.finding_date between '${req.query.start_date}' and '${req.query.end_date}' `)
+            }
 
             const qOffset = (limit != -1 && limit) && current_page > 1 ? `OFFSET ${limit * (current_page - 1)}` : ``
             const qLimit = (limit != -1 && limit) ? `LIMIT ${limit}` : ``

@@ -143,7 +143,7 @@ const childrenSubSchedule = async (
                       left join lateral (
                         select *
                         from
-                            v_4s_finding_list v4sfl
+                            ${table.v_4s_finding_list} v4sfl
                         where
                           v4sfl.sub_schedule_id = tbrcs.uuid
                           and v4sfl.deleted_dt is null
@@ -160,7 +160,7 @@ const childrenSubSchedule = async (
               ) a order by date_num      
            `
   //console.warn('childrensql', childrenSql)
-  logger(childrenSql, 'childrenSql')
+  //logger(childrenSql, 'childrenSql')
   const children = await queryCustom(childrenSql, false)
 
   return children.rows
@@ -755,6 +755,8 @@ module.exports = {
                   ${table.tb_r_4s_schedule_item_check_kanbans}
                 where 
                   item_check_kanban_id = tmic.item_check_kanban_id
+                  and date_part('month', checked_date) = ${subScheduleQuery.month_num}
+                  and date_part('year', checked_date) = ${subScheduleQuery.year_num}
                 order by
                   schedule_item_check_kanban_id desc
                 limit 1
@@ -770,7 +772,10 @@ module.exports = {
         {
           const findings = await queryGET(
             table.v_4s_finding_list,
-            `where deleted_dt is null and schedule_item_check_kanban_id = '${item.schedule_item_check_kanban_id}'`
+            `where 
+              deleted_dt is null 
+              and schedule_item_check_kanban_id = '${item.schedule_item_check_kanban_id}'
+              and sub_schedule_id = '${subScheduleQuery.sub_schedule_id}'`
           )
           if (findings.length > 0)
           {
