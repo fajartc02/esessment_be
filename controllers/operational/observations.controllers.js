@@ -225,7 +225,12 @@ module.exports = {
                     EXTRACT('day' from  tro.plan_check_dt) as idxDate,
                     tro.comment_sh,
                     tro.comment_ammgr,
-                    tro.deleted_dt
+                    tro.deleted_dt,
+                    CASE
+                        WHEN tro.plan_check_dt < CURRENT_DATE AND tro.actual_check_dt IS NULL THEN '#ff0505'::text
+                        WHEN tro.actual_check_dt IS NULL THEN '#00afef'::text
+                        WHEN tro.actual_check_dt IS NOT NULL THEN '#05ff50'::text
+                    END AS color_status
                 FROM ${table.tb_r_observations} tro
                 LEFT JOIN ${table.tb_m_pos} tmp
                     ON tro.pos_id = tmp.pos_id
