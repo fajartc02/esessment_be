@@ -12,9 +12,10 @@ const moment = require('moment')
 
 
 module.exports = {
-    getGroups: async(req, res) => {
-        try {
-            const groups = await queryGET(table.tb_m_groups, condDataNotDeleted, ['uuid as id', 'group_nm', 'created_by', 'created_dt'])
+        getGroups: async(req, res) => {
+                try {
+                    let { is_active } = req.query
+                    const groups = await queryGET(table.tb_m_groups, `${condDataNotDeleted} ${(is_active && is_active != -1 && is_active != 'null') ? `AND is_active = '${is_active}'` : ''}`, ['uuid as id', 'group_nm', 'created_by', 'created_dt'])
             response.success(res, 'Success to get groups', groups)
         } catch (error) {
             console.log(error);

@@ -8,9 +8,10 @@ const uuidToId = require('../../helpers/uuidToId')
 const attrsUserInsertData = require('../../helpers/addAttrsUserInsertData')
 const attrsUserUpdateData = require('../../helpers/addAttrsUserUpdateData')
 const condDataNotDeleted = `WHERE tmp.deleted_dt IS NULL`
-const orderBy = `ORDER BY tmp.pos_nm ASC`
+const orderBy = `ORDER BY cast(NULLIF(regexp_replace(pos_nm, '\\D', '', 'g'), '') AS integer)`
 
 const fs = require('fs')
+const { arrayOrderBy } = require('../../helpers/formatting')
 
 
 module.exports = {
@@ -38,6 +39,7 @@ module.exports = {
                 ${orderBy}
             `
             const pos = await queryCustom(q)
+
             response.success(res, 'Success to get pos', pos.rows)
         } catch (error) {
             console.log(error);
