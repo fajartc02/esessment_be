@@ -66,11 +66,34 @@ const childrenSubSchedule = async (
 }
 
 const subScheduleCacheKey = (
-    om_main_schedule_id
+    om_main_schedule_id,
+    limit = null,
+    current_page = null,
+    freq_id = null,
+    machine_id = null
 ) => {
-    return objToString({
+    const obj = {
         main_schedule_id: om_main_schedule_id
-    })
+    }
+
+    if (limit)
+    {
+        obj.limit = limit
+    }
+    if (current_page)
+    {
+        obj.current_page = current_page
+    }
+    if (freq_id)
+    {
+        obj.freq_id = freq_id
+    }
+    if (machine_id)
+    {
+        obj.machine_id = machine_id   
+    }
+
+    return objToString(obj)
 }
 
 const subScheduleRows = async (
@@ -171,7 +194,12 @@ const subScheduleRows = async (
         const qLimit = (params.limit != -1 && params.limit) ? `LIMIT ${params.limit}` : ``
 
         paginated = true
-        scheduleSql = scheduleSql.concat(` order by changed_dt ${qLimit} ${qOffset} `)
+        scheduleSql = `
+            select row_number () over (
+                            order by
+                            freq_nm
+                        )::integer as no, * from ( ${originScheduleSql} ) a order by freq_nm ${qLimit} ${qOffset}
+        `
     }
 
     //console.log('scheduleSql', scheduleSql)
@@ -194,7 +222,7 @@ const subScheduleRows = async (
 
     if (paginated)
     {
-        const count = await queryCustom(`select count(*)::integer as count from ( ${originScheduleSql} ) a `)
+        const count = await queryCustom(`select count(*)::integer as count from ( ${originScheduleSql} ) a `, false)
 
         const countRows = count.rows[0]
         return {
@@ -324,9 +352,9 @@ module.exports = {
     getOmSubSchedule: async (req, res) => {
         try
         {
-            const { om_main_schedule_id } = req.query
+            const { om_main_schedule_id, limit, current_page, freq_id, machine_id } = req.query
 
-            const cacheKey = subScheduleCacheKey(req.query.om_main_schedule_id);
+            const cacheKey = subScheduleCacheKey(om_main_schedule_id, limit, current_page, freq_id, machine_id);
             const cachedSchedule = cacheGet(cacheKey)
 
             if (cachedSchedule)
@@ -353,10 +381,11 @@ module.exports = {
 
             const scheduleQuery = await subScheduleRows(req.query)
 
-            if (scheduleQuery && scheduleQuery.length > 0)
+            if (scheduleQuery)
             {
                 const mainScheduleIdRawSql = ` (select om_main_schedule_id from ${table.tb_r_om_main_schedules} where uuid = '${om_main_schedule_id}') `;
-                const scheduleRows = scheduleQuery.map(async (item) => {
+                const listOrRows = scheduleQuery.list ? scheduleQuery.list : scheduleQuery;
+                const scheduleRows = listOrRows.map(async (item) => {
                     const freqIdRawSql = ` (select freq_id from ${table.tb_m_freqs} where uuid = '${item.freq_id}') `
 
                     const countRowSpanSql =
@@ -492,7 +521,17 @@ module.exports = {
                     signGl.splice(holidayTemp[i].index, 0, holidayTemp[i])
                 }
 
-                result.schedule = await Promise.all(scheduleRows)
+                if (scheduleQuery.list)
+                {
+                    result.schedule = {
+                        ...scheduleQuery,
+                        list: await Promise.all(scheduleRows)
+                    }
+                } else
+                {
+                    result.schedule = await Promise.all(scheduleRows)
+                }
+
                 result.sign_checker_gl = arrayOrderBy(signGl, (gl) => gl.start_date)
 
                 cacheAdd(cacheKey, result)
@@ -509,9 +548,9 @@ module.exports = {
         try
         {
             const result = await subScheduleRows(
-                req.query, 
-                true, 
-                false, 
+                req.query,
+                true,
+                false,
                 "date(plan_time) as plan_check_dt, date(actual_time) as actual_check_dt, EXTRACT('day' from  plan_time)::real as idxDate"
             )
             response.success(res, "Success to get today activity om sub schedule", result)
