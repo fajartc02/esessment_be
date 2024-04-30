@@ -160,11 +160,11 @@ module.exports = {
                     ${whereCond}
                 ORDER BY tml.line_nm,tmp.pos_nm ASC
             `)
-            let mapObs = observations.rows.map(async obser => {
+            let mapObs = await observations.rows.map(async obser => {
                 let obserId = await uuidToId(table.tb_r_observations, 'observation_id', obser.observation_id)
                 let checkersData = await queryGET(table.tb_r_obs_checker, `WHERE observation_id = ${obserId}`, ['uuid as obs_checker_id', 'checker_nm'])
                 let qCheckFinding = `
-                    SELECT * FROM ${table.v_finding_list} WHERE observation_id = '${obserId}'
+                    SELECT * FROM ${table.v_finding_list} WHERE observation_id = '${obser.observation_id}'
                 `
                 let findingData = await queryCustom(qCheckFinding);
                 let is_finding = findingData.rows.length > 0
