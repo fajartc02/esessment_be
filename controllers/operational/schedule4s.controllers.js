@@ -105,7 +105,7 @@ const childrenSubSchedule = async (
                     case
                       when finding.finding_id is not null then
                         'PROBLEM'
-                      when tbrcs.actual_time is not null then
+                      when tbrcs.actual_time is not null or item_check.total_checked > 0 then
                         'ACTUAL'
                       when tbrcs.shift_type = 'night_shift' then
                         'NIGHT_SHIFT'
@@ -150,6 +150,14 @@ const childrenSubSchedule = async (
                         order by v4sfl.finding_date desc
                         limit 1
                       ) finding on true
+                      left join lateral (
+                        select 
+                          count(*) as total_checked
+                        from 
+                          ${table.tb_r_4s_schedule_item_check_kanbans}
+                        where
+                          item_check_kanban_id in (select item_check_kanban_id from ${table.tb_m_4s_item_check_kanbans} where kanban_id = '${kanbanRealId}')
+                      ) item_check on true
                   where
                       tbrcs.deleted_dt is null
                       and tbrcs.main_schedule_id = ${mainScheduleRealId}
