@@ -11,7 +11,7 @@ const condDataNotDeleted = `WHERE tmp.deleted_dt IS NULL`
 const orderBy = `ORDER BY cast(NULLIF(regexp_replace(pos_nm, '\\D', '', 'g'), '') AS integer)`
 
 const fs = require('fs')
-const { arrayOrderBy } = require('../../helpers/formatting')
+const { arrayOrderBy, orderAscString } = require('../../helpers/formatting')
 
 
 module.exports = {
@@ -39,7 +39,7 @@ module.exports = {
                 ${orderBy}
             `
             const pos = await queryCustom(q)
-
+            orderAscString(pos.rows, 'pos_nm')
             response.success(res, 'Success to get pos', pos.rows)
         } catch (error) {
             console.log(error);
