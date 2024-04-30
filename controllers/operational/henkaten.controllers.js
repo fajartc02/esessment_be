@@ -74,7 +74,7 @@ module.exports = {
             const queryhenkaten = await queryCustom(q)
             const HenkatenData = queryhenkaten.rows
             const henkatenFindingsData = HenkatenData.map(async henkaten => {
-                henkaten.findings = await queryGET(table.v_finding_list, `WHERE finding_henkaten_id = '${henkaten.uuid}'`)
+                henkaten.findings = await queryGET(table.v_finding_list, `WHERE finding_henkaten_id = '${henkaten.uuid}' ORDER BY finding_date DESC`)
                 return henkaten
             })
             const waithenkatenFindings = await Promise.all(henkatenFindingsData)

@@ -53,6 +53,8 @@ module.exports = {
                         tmk.kanban_no,
                         tmic.item_check_nm,
                         tmic.standart_time,
+                        tmic.method,
+                        tmic.control_point,
                         tmic.ilustration_imgs,
                         tmic.created_by,
                         tmic.created_dt
