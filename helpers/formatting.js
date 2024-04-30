@@ -8,6 +8,7 @@ module.exports = {
     },
     orderAscString: (array, column, mode = 'ASC') => {
         array.sort((a, b) => (a[column] > b[column]) - (a[column] < b[column]))
+        return array
     },
     arrayOrderBy: (arr, selector, desc = false) => {
         return [...arr].sort((a, b) => {

@@ -39,8 +39,8 @@ module.exports = {
                 ${orderBy}
             `
             const pos = await queryCustom(q)
-            orderAscString(pos.rows, 'pos_nm')
-            response.success(res, 'Success to get pos', pos.rows)
+
+            response.success(res, 'Success to get pos', orderAscString(pos.rows, 'pos_nm'))
         } catch (error) {
             console.log(error);
             response.failed(res, 'Error to get pos')
