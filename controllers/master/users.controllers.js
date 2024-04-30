@@ -11,6 +11,7 @@ const attrsUserUpdateData = require('../../helpers/addAttrsUserUpdateData')
 const condDataNotDeleted = `deleted_dt IS NULL`
 
 const moment = require('moment')
+const { orderAscString } = require('../../helpers/formatting')
 
 module.exports = {
     getUsersOpts: async(req, res) => {
@@ -41,7 +42,7 @@ module.exports = {
             }
             const users = await queryGET(table.tb_m_users, `WHERE ${condDataNotDeleted}${containerQuery}`, cols)
 
-            response.success(res, 'Success to get users', users)
+            response.success(res, 'Success to get users', orderAscString(users, 'fullname'))
 
         } catch (error) {
             console.log(error);
