@@ -8,7 +8,7 @@ const uuidToId = require('../../helpers/uuidToId')
 const attrsUserInsertData = require('../../helpers/addAttrsUserInsertData')
 const attrsUserUpdateData = require('../../helpers/addAttrsUserUpdateData')
 const condDataNotDeleted = `WHERE tmp.deleted_dt IS NULL`
-const orderBy = `ORDER BY cast(NULLIF(regexp_replace(pos_nm, '\D', '', 'g'), '') AS integer)`
+const orderBy = `ORDER BY cast(NULLIF(regexp_replace(pos_nm, '\\D', '', 'g'), '') AS integer)`
 
 const fs = require('fs')
 const { arrayOrderBy } = require('../../helpers/formatting')
