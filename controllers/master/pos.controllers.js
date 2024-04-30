@@ -40,7 +40,7 @@ module.exports = {
             `
             const pos = await queryCustom(q)
 
-            response.success(res, 'Success to get pos', arrayOrderBy(pos.rows, pos => pos.pos_nm))
+            response.success(res, 'Success to get pos', pos.rows)
         } catch (error) {
             console.log(error);
             response.failed(res, 'Error to get pos')
