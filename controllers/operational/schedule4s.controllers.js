@@ -103,7 +103,7 @@ const childrenSubSchedule = async (
                     EXTRACT('Day' FROM tmsc.date)::INTEGER as date_num,
                     tmsc.is_holiday or tbrcs.shift_type is null as is_holiday, -- null of shift_type was set as holiday from monthly scheduler 
                     case
-                      when finding.finding_date = tmsc.date then
+                      when finding.finding_id is not null then
                         'PROBLEM'
                       when tbrcs.actual_time is not null then
                         'ACTUAL'
