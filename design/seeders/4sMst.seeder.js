@@ -28,82 +28,90 @@ console.log('env', {
 
 console.log(`Migration Running ...`)
 
+const clearRows = async (db) => {
+    await db.query(`SET session_replication_role = 'replica'`)
+
+    await db.query(`DELETE FROM ${table.tb_r_4s_findings} CASCADE`)
+    await db.query(`ALTER TABLE ${table.tb_r_4s_findings} ALTER COLUMN finding_id RESTART WITH 1`)
+    
+    await db.query(`DELETE FROM ${table.tb_r_4s_schedule_item_check_kanbans} CASCADE`)
+    await db.query(`ALTER TABLE ${table.tb_r_4s_schedule_item_check_kanbans} ALTER COLUMN schedule_item_check_kanban_id RESTART WITH 1`)
+
+    await db.query(`DELETE FROM ${table.tb_m_kanbans} CASCADE`)
+    await db.query(`DELETE FROM ${table.tb_m_zones} CASCADE`)
+    await db.query(`DELETE FROM ${table.tb_m_freqs} CASCADE`)
+    await db.query(`DELETE FROM ${table.tb_m_4s_item_check_kanbans} CASCADE`)
+
+    await db.query(`ALTER TABLE ${table.tb_m_kanbans} ALTER COLUMN kanban_id RESTART WITH 1`)
+    await db.query(`ALTER TABLE ${table.tb_m_zones} ALTER COLUMN zone_id RESTART WITH 1`)
+    await db.query(`ALTER TABLE ${table.tb_m_freqs} ALTER COLUMN freq_id RESTART WITH 1`)
+    await db.query(`ALTER TABLE ${table.tb_m_4s_item_check_kanbans} ALTER COLUMN item_check_kanban_id RESTART WITH 1`)
+
+    console.log('delete and reset count complete')
+
+    await db.query(`SET session_replication_role = 'origin'`)
+}
 
 const migrate = async () => {
-    const clearRows = async (db) => {
-        await Promise.all([
-            db.query(`DELETE FROM ${table.tb_m_kanbans} CASCADE`),
-            db.query(`DELETE FROM ${table.tb_m_zones} CASCADE`),
-            db.query(`DELETE FROM ${table.tb_m_freqs} CASCADE`),
-            db.query(`DELETE FROM ${table.tb_m_4s_item_check_kanbans} CASCADE`),
-
-            db.query(`ALTER TABLE ${table.tb_m_kanbans} ALTER COLUMN kanban_id RESTART WITH 1`),
-            db.query(`ALTER TABLE ${table.tb_m_zones} ALTER COLUMN zone_id RESTART WITH 1`),
-            db.query(`ALTER TABLE ${table.tb_m_freqs} ALTER COLUMN freq_id RESTART WITH 1`),
-            db.query(`ALTER TABLE ${table.tb_m_4s_item_check_kanbans} ALTER COLUMN item_check_kanban_id RESTART WITH 1`),
-        ]).then((res) => {
-            console.log('delete and reset count complete')
-        })
-    }
 
     await queryTransaction(async (db) => {
         await clearRows(db)
 
         //#region lines
         //die casting
-        const lineGroups = await db.query(`
-            select * from 
-            (
-                select
-                    line_id,
-                    line_nm
-                from
-                    ${table.tb_m_lines}  
-                where line_id = 4 -- DIE CASTING
-            ) tml,
-            (
-                select
-                    group_id,
-                    group_nm
-                from
-                    ${table.tb_m_groups}  
-                where group_id = 3 -- WHITE
-            ) tmg
-        `)
-        const lineGroupRows = lineGroups.rows
-        //#endregion
-
-        //#region freq
-        const freqSchema = await bulkToSchema([
-            {
-                uuid: uuid(),
-                freq_nm: '1 Day',
-                precition_val: 1,
-            },
-            {
-                uuid: uuid(),
-                freq_nm: '1 Week',
-                precition_val: 7,
-            },
-            {
-                uuid: uuid(),
-                freq_nm: '1 Month',
-                precition_val: 30,
-            },
-            {
-                uuid: uuid(),
-                freq_nm: '2 Month',
-                precition_val: 60,
-            },
-            {
-                uuid: uuid(),
-                freq_nm: '3 Month',
-                precition_val: 90,
-            },
-        ])
-        const freqQuery = await db.query(`insert into ${table.tb_m_freqs} (${freqSchema.columns}) VALUES ${freqSchema.values} returning *`)
-        const freqRows = freqQuery.rows
-        console.log('freqs', 'inserted')
+        /*  const lineGroups = await db.query(`
+             select * from 
+             (
+                 select
+                     line_id,
+                     line_nm
+                 from
+                     ${table.tb_m_lines}  
+                 where line_id = 4 -- DIE CASTING
+             ) tml,
+             (
+                 select
+                     group_id,
+                     group_nm
+                 from
+                     ${table.tb_m_groups}  
+                 where group_id = 3 -- WHITE
+             ) tmg
+         `)
+         const lineGroupRows = lineGroups.rows
+         //#endregion
+ 
+         //#region freq
+         const freqSchema = await bulkToSchema([
+             {
+                 uuid: uuid(),
+                 freq_nm: '1 Day',
+                 precition_val: 1,
+             },
+             {
+                 uuid: uuid(),
+                 freq_nm: '1 Week',
+                 precition_val: 7,
+             },
+             {
+                 uuid: uuid(),
+                 freq_nm: '1 Month',
+                 precition_val: 30,
+             },
+             {
+                 uuid: uuid(),
+                 freq_nm: '2 Month',
+                 precition_val: 60,
+             },
+             {
+                 uuid: uuid(),
+                 freq_nm: '3 Month',
+                 precition_val: 90,
+             },
+         ])
+         const freqQuery = await db.query(`insert into ${table.tb_m_freqs} (${freqSchema.columns}) VALUES ${freqSchema.values} returning *`)
+         const freqRows = freqQuery.rows
+         console.log('freqs', 'inserted') */
         //#endregion
 
 
@@ -269,7 +277,7 @@ const migrate = async () => {
 
             //#region seeder item check kanban
 
-            const itemCheckSchema = await bulkToSchema([
+            /* const itemCheckSchema = await bulkToSchema([
                 {
                     uuid: uuid(),
                     kanban_id: getRandomInt(1, 30),
@@ -351,7 +359,7 @@ const migrate = async () => {
             ])
 
             await db.query(`insert into ${table.tb_m_4s_item_check_kanbans} (${itemCheckSchema.columns}) VALUES ${itemCheckSchema.values} returning *`)
-            console.log('item check kanbans', 'inserted')
+            console.log('item check kanbans', 'inserted') */
             //#endregion
         }
     }).then((res) => {
@@ -361,4 +369,11 @@ const migrate = async () => {
     })
 }
 
-migrate()
+//migrate()
+
+clearRows(databasePool).then(() => process.exit()).catch((err) => {
+    console.log('====================================');
+    console.log('clear rows failed', err);
+    console.log('====================================');
+    process.exit()
+})
