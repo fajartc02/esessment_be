@@ -79,7 +79,7 @@ module.exports = {
                 JOIN ${table.tb_m_job_types} tmjt ON tmjt.job_type_id = tmj.job_type_id
                 JOIN ${table.tb_m_groups} tmg ON tmg.group_id = tro.group_id
                 WHERE tro.${condDataNotDeleted}
-                ${containerQuery} ${qLimit} ${qOffset}
+                ${containerQuery} ORDER BY tro.plan_check_dt DESC ${qLimit} ${qOffset}
             `)
             let countTotal = await queryCustom(`SELECT 
             count(tro.observation_id) as total
@@ -160,11 +160,11 @@ module.exports = {
                     ${whereCond}
                 ORDER BY tml.line_nm,tmp.pos_nm ASC
             `)
-            let mapObs = observations.rows.map(async obser => {
+            let mapObs = await observations.rows.map(async obser => {
                 let obserId = await uuidToId(table.tb_r_observations, 'observation_id', obser.observation_id)
                 let checkersData = await queryGET(table.tb_r_obs_checker, `WHERE observation_id = ${obserId}`, ['uuid as obs_checker_id', 'checker_nm'])
                 let qCheckFinding = `
-                    SELECT * FROM ${table.v_finding_list} WHERE observation_id = '${obserId}'
+                    SELECT * FROM ${table.v_finding_list} WHERE observation_id = '${obser.observation_id}'
                 `
                 let findingData = await queryCustom(qCheckFinding);
                 let is_finding = findingData.rows.length > 0

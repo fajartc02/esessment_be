@@ -32,14 +32,14 @@ module.exports = {
             let cols = ['uuid as id', 'noreg', 'fullname as text', 'created_by', 'created_dt']
             if (isForm) {
                 cols = ['uuid as id', 'line_id', 'group_id', 'noreg', 'fullname', 'password', 'phone_number']
-                const users = await queryGET(table.tb_m_users, `WHERE ${condDataNotDeleted}${containerQuery}`, cols)
+                const users = await queryGET(table.tb_m_users, `WHERE ${condDataNotDeleted}${containerQuery} ORDER BY fullname ASC`, cols)
                 users[0].line_id = await idToUuid(table.tb_m_lines, 'line_id', users[0].line_id)
                 users[0].group_id = await idToUuid(table.tb_m_groups, 'group_id', users[0].group_id)
                 console.log(users);
                 response.success(res, 'Success to get users', users)
                 return;
             }
-            const users = await queryGET(table.tb_m_users, `WHERE ${condDataNotDeleted}${containerQuery}`, cols)
+            const users = await queryGET(table.tb_m_users, `WHERE ${condDataNotDeleted}${containerQuery} ORDER BY fullname ASC`, cols)
 
             response.success(res, 'Success to get users', users)
 

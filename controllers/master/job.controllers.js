@@ -14,7 +14,7 @@ const getLastIdData = require("../../helpers/getLastIdData");
 const uuidToId = require("../../helpers/uuidToId");
 const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData");
 const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData");
-const { arrayOrderBy } = require("../../helpers/formatting");
+const { arrayOrderBy, orderAscString } = require("../../helpers/formatting");
 const condDataNotDeleted = `WHERE tmj.deleted_dt IS NULL`;
 const orderBy = `ORDER BY tmj.job_nm ASC`;
 
@@ -84,7 +84,7 @@ module.exports = {
                 job.rows[0].currentPage = currentPage;
             }
 
-            response.success(res, "Success to get job", arrayOrderBy(job.rows, (s) => s.job_nm));
+            response.success(res, "Success to get job", orderAscString(job.rows, 'job_nm'));
         } catch (error) {
             console.log(error);
             response.failed(res, "Error to get job");
