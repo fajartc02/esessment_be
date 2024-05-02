@@ -48,6 +48,7 @@ module.exports = {
                 tmm.op_no,
                 tml.uuid as line_id,
                 tml.line_nm,
+                tmm.category_type,
                 tmm.created_by,
                 tmm.created_dt
             FROM ${table.tb_m_machines} tmm
