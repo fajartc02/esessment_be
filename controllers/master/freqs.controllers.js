@@ -37,7 +37,7 @@ module.exports = {
         {
             const freqs = await queryGET(
                 table.tb_m_freqs,
-                `where deleted_dt is null order by freq_nm`,
+                `where deleted_dt is null order by precition_val`,
                 [
                     `row_number () over (
                             order by
