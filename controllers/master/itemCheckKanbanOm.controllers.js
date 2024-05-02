@@ -153,7 +153,8 @@ module.exports = {
             limit = parseInt(limit ?? 10)
 
             let filterCondition = [
-                'tmm.deleted_dt is null'
+                'tmm.deleted_dt is null',
+                `tmm.category_type = 'TPM'`
             ]
 
             let itemCheckQuery = `
