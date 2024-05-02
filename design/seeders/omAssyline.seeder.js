@@ -91,27 +91,41 @@ const clearRows = async () => {
     console.log('clearing start')
     await queryTransaction(async (db) => {
         await db.query(`SET session_replication_role = 'replica'`)
-        db.query(`DELETE FROM ${table.tb_m_om_item_check_kanbans} CASCADE`)
-        db.query(`ALTER TABLE ${table.tb_m_om_item_check_kanbans} ALTER COLUMN om_item_check_kanban_id RESTART WITH 1`)
 
-        db.query(`DELETE FROM ${table.tb_m_machines} where line_id = 8`)
-        db.query(`ALTER TABLE ${table.tb_m_om_item_check_kanbans} ALTER COLUMN om_item_check_kanban_id RESTART WITH 1`)
+        await db.query(`DELETE FROM ${table.tb_r_om_findings} CASCADE`)
+        await db.query(`ALTER TABLE ${table.tb_r_om_findings} ALTER COLUMN om_finding_id RESTART WITH 1`)
 
+        await db.query(`DELETE FROM ${table.tb_r_om_schedule_sign_checkers} CASCADE`)
+        await db.query(`ALTER TABLE ${table.tb_r_om_schedule_sign_checkers} ALTER COLUMN om_sign_checker_id RESTART WITH 1`)
+
+        await db.query(`DELETE FROM ${table.tb_r_om_sub_schedules} CASCADE`)
+        await db.query(`ALTER TABLE ${table.tb_r_om_sub_schedules} ALTER COLUMN om_sub_schedule_id RESTART WITH 1`)
+
+        await db.query(`DELETE FROM ${table.tb_r_om_main_schedules} CASCADE`)
+        await db.query(`ALTER TABLE ${table.tb_r_om_main_schedules} ALTER COLUMN om_main_schedule_id RESTART WITH 1`)
+
+        await db.query(`DELETE FROM ${table.tb_m_om_item_check_kanbans} CASCADE`)
+        await db.query(`ALTER TABLE ${table.tb_m_om_item_check_kanbans} ALTER COLUMN om_item_check_kanban_id RESTART WITH 1`)
+
+        await db.query(`DELETE FROM ${table.tb_m_machines} where category_type = 'TPM'`)
+        
         await db.query(`SET session_replication_role = 'origin'`)
         console.log('delete and reset count complete')
     })
 }
 
 const migrate = async () => {
-    await queryTransaction(async (db) => {
-        const assyLineQuery = await databasePool.query(`select * from tb_m_lines where line_nm in ('Main Line') limit 1`)
-        const assyLineRow = assyLineQuery.rows[0]
+    await clearRows()
 
-        const json = JSON.parse(await readFile(path.resolve(__dirname, '../json/omAssyline.json'), "utf8"));
-        for (let i = 0; i < json.length; i++)
-        {
-            //#region machine
-            const machineSql = `
+    const db = databasePool
+    const assyLineQuery = await databasePool.query(`select * from tb_m_lines where line_nm in ('Main Line') limit 1`)
+    const assyLineRow = assyLineQuery.rows[0]
+
+    const json = JSON.parse(await readFile(path.resolve(__dirname, '../json/omMainLine.json'), "utf8"));
+    for (let i = 0; i < json.length; i++)
+    {
+        //#region machine
+        const machineSql = `
                     select 
                         machine_id 
                     from 
@@ -119,34 +133,37 @@ const migrate = async () => {
                     where 
                         line_id = '${assyLineRow.line_id}' 
                         and machine_nm = '${json[i].Mesin}' 
+                        and category_type = 'TPM'
                     limit 1
                 `
-            const machineQuery = await databasePool.query(machineSql)
-            let machineId = null
-            if (machineQuery.rowCount > 0)
-            {
-                machineId = machineQuery.rows[0].machine_id
-            }
-            else
-            {
-                const lastRowMachineQuery = await db.query(`select * from ${table.tb_m_machines} order by machine_id desc limit 1`)
-                const lastRowMachineRow = lastRowMachineQuery.rows[0]
+        console.log('machineSql', machineSql);
+        const machineQuery = await databasePool.query(machineSql)
+        let machineId = null
+        if (machineQuery.rowCount > 0)
+        {
+            machineId = machineQuery.rows[0].machine_id
+        }
+        else
+        {
+            const lastRowMachineQuery = await db.query(`select * from ${table.tb_m_machines} order by machine_id desc limit 1`)
+            const lastRowMachineRow = lastRowMachineQuery.rows[0]
 
-                const newMachineSql = `
+            const newMachineSql = `
                     insert into ${table.tb_m_machines} 
-                        (machine_id, uuid, line_id, machine_nm, op_no)
+                        (machine_id, uuid, line_id, machine_nm, op_no, category_type, created_by, changed_by)
                     values 
-                        (${lastRowMachineRow.machine_id + 1},'${uuid()}', '${assyLineRow.line_id}', '${json[i].Mesin}', '-') 
+                        (${lastRowMachineRow.machine_id + 1},'${uuid()}', '${assyLineRow.line_id}', '${json[i].Mesin}', '-', 'TPM', 'SEEDER', 'SEEDER') 
                     returning *
                 `
-                const newMachineQuery = await db.query(newMachineSql)
-                machineId = newMachineQuery.rows[0].machine_id
-            }
-            //#endregion
+            console.log('newMachineSql', newMachineSql)
+            const newMachineQuery = await db.query(newMachineSql)
+            machineId = newMachineQuery.rows[0].machine_id
+        }
+        //#endregion
 
-            //#region freq
-            const { freqNm, precitionVal } = mapFreq(new String(json[i].Periode))
-            const freqSql = `
+        //#region freq
+        const { freqNm, precitionVal } = mapFreq(new String(json[i].Periode))
+        const freqSql = `
                     select 
                         * 
                     from 
@@ -155,41 +172,57 @@ const migrate = async () => {
                         freq_nm = '${freqNm}'
                         and precition_val = '${precitionVal}'
                 `
-            const freqQuery = await db.query(freqSql)
+        console.log('freqSql', freqSql);
+        const freqQuery = await db.query(freqSql)
 
-            let freqId = null
-            if (freqQuery.rowCount > 0)
-            {
-                freqId = freqQuery.rows[0].freq_id
-            }
-            else
-            {
-                const newFreqSql = `
+        let freqId = null
+        if (freqQuery.rowCount > 0)
+        {
+            freqId = freqQuery.rows[0].freq_id
+        }
+        else
+        {
+            const newFreqSql = `
                     insert into ${table.tb_m_freqs} 
-                        (uuid, freq_nm, precition_val)
+                        (uuid, freq_nm, precition_val, created_by, changed_by)
                     values
-                        ('${uuid()}', '${freqNm}', '${precitionVal}')
+                        ('${uuid()}', '${freqNm}', '${precitionVal}', 'SEEDER', 'SEEDER')
                     returning *
                 `
+            console.log('newFreqSql', newFreqSql)
+            const newFreqQuery = await db.query(newFreqSql)
+            freqId = newFreqQuery.rows[0].freq_id
+        }
+        //#endregion
 
-                const newFreqQuery = await db.query(newFreqSql)
-                freqId = newFreqQuery.rows[0].freq_id
-            }
-            //#endregion
+        //#region fetch group
+        const groupSql = `select * from ${table.tb_m_groups} where group_nm = '${json[i].Group}'`
+        let groupRow = await db.query(groupSql)
+        if (groupRow.rowCount > 0)
+        {
+            groupRow = groupRow.rows[0]
+        }
+        else
+        {
+            console.log('====================================');
+            console.log('Group Not Found: ', json[i]);
+            console.log('====================================');
+        }
+        //#endregion
 
-            //#region item check
-            const whereItemCheck =
-                ` 
+        //#region item check
+        const whereItemCheck =
+            ` 
                     machine_id = '${machineId}'
                     and freq_id = '${freqId}'
-                    and item_check_nm = '${json[i].Item}'
-                    and location_nm = '${json[i].Location}'
+                    and item_check_nm = '${json[i]['Item Check']}'
+                    -- and location_nm = '${json[i].Location}'
                     and method_nm = '${json[i].Methode}'
-                    and standart_nm = '${json[i].Standart}'
+                    and standart_nm = '${json[i].Standard}'
                 `
 
-            const itemCheckExisting = await db.query(
-                `
+        const itemCheckExisting = await db.query(
+            `
                     select 
                         * 
                     from 
@@ -197,28 +230,74 @@ const migrate = async () => {
                     where
                         ${whereItemCheck}
                 `
-            )
-            if (itemCheckExisting.rowCount == 0)
-            {
-                await db.query(
-                    `
-                    insert into ${table.tb_m_om_item_check_kanbans}
-                        (uuid, machine_id, freq_id, item_check_nm, location_nm, method_nm, standart_nm, standart_time)
-                    values
-                        ('${uuid()}', '${machineId}', '${freqId}', '${json[i].Item}', ${json[i].Location == '' ? null : `'${json[i].Location}'`}, '${json[i].Methode}', '${json[i].Standart}', '${json[i].Duration}')
+        )
+        if (itemCheckExisting.rowCount == 0)
+        {
+            await db.query(
                 `
-                )
-            }
-            //#endregion
+                    insert into ${table.tb_m_om_item_check_kanbans}
+                        (uuid, machine_id, freq_id, item_check_nm, method_nm, standart_nm, standart_time, group_id, created_by, changed_by)
+                    values
+                        (
+                            '${uuid()}', 
+                            '${machineId}', 
+                            '${freqId}', 
+                            '${json[i]['Item Check']}', 
+                            -- ${json[i].Location == '' ? null : `'${json[i].Location}'`}, 
+                            '${json[i].Methode}', 
+                            '${json[i].Standard}', 
+                            '${json[i].Duration}', 
+                            '${groupRow.group_id}',
+                            'SEEDER',
+                            'SEEDER'
+                        )
+                `
+            )
         }
-        console.info('Seeder Completed!!!')
-    }).then((res) => {
-        return 0
-    }).catch((err) => {
-        console.error('err', err)
-        return 0
-    })
+        //#endregion
+
+        //#region add to tb_m_systems OM_STANDARD
+        const omStandardSql = `
+            select * from ${table.tb_m_system} where system_type = 'OM_STANDARD' and system_value = '${json[i].Standard}'
+        `
+        const omStandardQuery = await db.query(omStandardSql)
+        if(omStandardQuery.rowCount == 0){
+            const newOmStandardSql = `
+                insert into ${table.tb_m_system}
+                    (uuid, system_type, system_value, created_by, changed_by)
+                values
+                    ('${uuid()}', 'OM_STANDARD', '${json[i].Standard}', 'SEEDER', 'SEEDER')
+            `
+            await db.query(newOmStandardSql)
+        }
+        //#endregion
+
+        //#region add to tb_m_systems OM_METHOD
+        const omMethodSql = `
+            select * from ${table.tb_m_system} where system_type = 'OM_METHOD' and system_value = '${json[i].Methode}'
+        `
+        const omMethodQuery = await db.query(omMethodSql)
+        if (omMethodQuery.rowCount == 0)
+        {
+            const newOmMethodSql = `
+                insert into ${table.tb_m_system}
+                    (uuid, system_type, system_value, created_by, changed_by)
+                values
+                    ('${uuid()}', 'OM_METHOD', '${json[i].Methode}', 'SEEDER', 'SEEDER')
+            `
+            await db.query(newOmMethodSql)
+        }
+        //#endregion
+        
+    }
+    console.info('Seeder Completed!!!')
 }
 
 migrate()
-//clearRows()
+/* clearRows().then(() => 0).catch((e) => {
+    console.log('====================================');
+    console.log('clear rows failed', e);
+    console.log('====================================');
+    return 0
+})
+ */

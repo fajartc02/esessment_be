@@ -17,8 +17,9 @@ const moment = require("moment");
 
 module.exports = {
   getMachines: async (req, res) => {
-    try {
-      const { line_id, id, limit, currentPage, totalPage } = req.query;
+    try
+    {
+      const { line_id, category_type, id, limit, currentPage, totalPage } = req.query;
       let containerQuery = ``;
       let qLimit = ``;
       let qOffset =
@@ -30,9 +31,16 @@ module.exports = {
       if (line_id && line_id != -1 && line_id != "null")
         containerQuery += ` AND tml.uuid = '${line_id}'`;
 
-      if (id) {
+      if (id)
+      {
         containerQuery += ` AND tmm.uuid = '${id}'`;
       }
+
+      if (category_type)
+      {
+        containerQuery += ` AND tmm.category_type = '${category_type}'`;
+      }
+
       let q = `SELECT 
                 row_number() over(order by tmm.uuid DESC) as no, 
                 tmm.uuid as id,
@@ -56,7 +64,8 @@ module.exports = {
                 ${containerQuery}`;
       const machines = await queryCustom(q);
       const totalMachine = await queryCustom(qCountTotal);
-      if (machines.rows.length > 0) {
+      if (machines.rows.length > 0)
+      {
         machines.rows[0].total_page =
           +totalMachine.rows[0].count > 0
             ? Math.ceil(totalMachine.rows[0].count / +limit)
@@ -66,13 +75,15 @@ module.exports = {
         machines.rows[0].currentPage = currentPage;
       }
       response.success(res, "Success to get Machines", machines.rows);
-    } catch (error) {
+    } catch (error)
+    {
       console.log(error);
       response.failed(res, "Error to get Machines");
     }
   },
   postMachine: async (req, res) => {
-    try {
+    try
+    {
       let idLast = (await getLastIdData(table.tb_m_machines, "machine_id")) + 1;
       req.body.machine_id = idLast;
       req.body.uuid = req.uuid();
@@ -85,13 +96,15 @@ module.exports = {
       let attrsUserInsert = await attrsUserInsertData(req, req.body);
       const result = await queryPOST(table.tb_m_machines, attrsUserInsert);
       response.success(res, "Success to add machine", result);
-    } catch (error) {
+    } catch (error)
+    {
       console.log(error);
       response.failed(res, error);
     }
   },
   editMachine: async (req, res) => {
-    try {
+    try
+    {
       let id = await uuidToId(table.tb_m_machines, "machine_id", req.params.id);
       let idLine = await uuidToId(
         table.tb_m_lines,
@@ -107,13 +120,15 @@ module.exports = {
         `WHERE machine_id = '${id}'`
       );
       response.success(res, "Success to edit machine", result);
-    } catch (error) {
+    } catch (error)
+    {
       console.log(error);
       response.failed(res, error);
     }
   },
   deleteMachine: async (req, res) => {
-    try {
+    try
+    {
       let obj = {
         deleted_dt: moment().format().split("+")[0].split("T").join(" "),
         deleted_by: req.user.fullname,
@@ -125,7 +140,8 @@ module.exports = {
         `WHERE uuid = '${req.params.id}'`
       );
       response.success(res, "Success to soft delete machine", result);
-    } catch (error) {
+    } catch (error)
+    {
       console.log(error);
       response.failed(res, error);
     }

@@ -93,22 +93,11 @@ const shiftByGroupId = async () => {
     const shiftSql =
         `
             with
-                lines as (
-                            select
-                                line_id,
-                                line_nm
-                            from
-                                tb_m_lines
-                            where 
-                                line_id = 8
-                            order by line_id
-                        ),
                 shifts as (
                             select distinct on
-                                ( tmg.group_id, tms1.date)
+                                ( tms1.date )
                                 tms1.schedule_id,
                                 tms1.date,
-                                tmg.group_id,
                                 date_part('week', date::date) as week_num,
                                 tms1.is_holiday as is_holiday_schedule,
                                 shift_holiday.is_holiday or tms1.is_holiday as is_holiday
@@ -116,18 +105,15 @@ const shiftByGroupId = async () => {
                                 tb_m_schedules tms1
                                     left join tb_m_shifts shift_holiday on
                                         tms1.date between shift_holiday.start_date and shift_holiday.end_date
-                                        and shift_holiday.is_holiday = true,
-                                tb_m_groups tmg
+                                        and shift_holiday.is_holiday = true
                             where
                                     date_part('month', tms1.date) = ${currentMonth}
                                 and date_part('year', tms1.date) = ${currentYear}
-                                and tmg.is_active = true
                             order by
-                                group_id, date
+                                date
                         ),
                 schedules as (
-                                select distinct on (shifts.group_id, shifts.date)
-                                    shifts.group_id,
+                                select distinct on (shifts.date)
                                     shifts.schedule_id,
                                     shifts.week_num,
                                     shifts.date,
@@ -143,18 +129,16 @@ const shiftByGroupId = async () => {
                                 from
                                     shifts
                                 order by
-                                    shifts.date, shifts.group_id
+                                    shifts.date
                             )
             select
                         row_number()
-                        over (partition by lines.line_id ORDER BY lines.line_id, schedules.group_id, schedules.date )::integer as no,
-                        lines.*,
+                        over (ORDER BY schedules.date )::integer as no,
                         schedules.*
             from
-                schedules,
-                lines
+                schedules
             order by
-                lines.line_id, schedules.group_id, schedules.date
+                schedules.date
         `
     //#endregion    
 
@@ -177,22 +161,14 @@ const shiftByGroupId = async () => {
  * @param {pg.QueryResultRow} lineGroupRows
  * @returns {Promise<Array<mainScheduleBulkSchema>>}
  */
-const genMainSchedule = async (lineGroups) => {
-    const result = []
-
-    for (let lnIndex = 0; lnIndex < lineGroups.length; lnIndex++)
-    {
-        result.push({
-            uuid: uuid(),
-            month_num: lineGroups[lnIndex].month_num,
-            year_num: currentYear,
-            line_id: lineGroups[lnIndex].line_id,
-            group_id: lineGroups[lnIndex].group_id,
-        })
+const genMainSchedule = async (lineGroup) => {
+    return {
+        uuid: uuid(),
+        month_num: lineGroup.month_num,
+        year_num: currentYear,
+        line_id: lineGroup.line_id,
+        group_id: lineGroup.group_id,
     }
-
-    //console.log('mainschedule result', result)
-    return result
 }
 //#endregion
 
@@ -202,7 +178,7 @@ const genMainSchedule = async (lineGroups) => {
  * @param {pg.QueryResultRow} shiftRows 
  * @returns {Promise<Array<subScheduleBulkSchema>>} []
  */
-const genSubSchedule = async (shiftRows = []) => {
+const genSubSchedule = async (lineGroup, shiftRows = []) => {
     const result = []
 
     //#region scheduler fetch all item check
@@ -217,8 +193,15 @@ const genSubSchedule = async (shiftRows = []) => {
                 ${table.tb_m_om_item_check_kanbans} tmoick
                     join ${table.tb_m_machines} tmm on tmoick.machine_id = tmm.machine_id
                     join ${table.tb_m_freqs} tmf on tmoick.freq_id = tmf.freq_id
+            where
+                tmm.line_id = ${lineGroup.line_id}
+                and tmoick.group_id = ${lineGroup.group_id}
         `)
     const itemCheckRows = itemCheckQuery.rows
+    if (itemCheckRows.length == 0)
+    {
+        return result
+    }
     //#endregion
 
     {
@@ -336,8 +319,8 @@ const genSubSchedule = async (shiftRows = []) => {
                     }
 
                     const exists = result.find((item) =>
-                        item.line_id == shiftRows[sIndex].line_id
-                        && item.group_id == shiftRows[sIndex].group_id
+                        item.group_id == lineGroup.group_id
+                        && item.line_id == lineGroup.line_id
                         && item.om_item_check_kanban_id == shiftRows[sIndex].om_item_check_kanban_id
                         && item.machine_id == shiftRows[sIndex].machine_id
                         && item.freq_id == shiftRows[sIndex].freq_id
@@ -351,8 +334,8 @@ const genSubSchedule = async (shiftRows = []) => {
 
                     result.push({
                         main_schedule_id: null,
-                        group_id: shiftRows[sIndex].group_id,
-                        line_id: shiftRows[sIndex].line_id,
+                        group_id: lineGroup.group_id,
+                        line_id: lineGroup.line_id,
                         om_item_check_kanban_id: itemCheckRows[kIndex].om_item_check_kanban_id,
                         machine_id: itemCheckRows[kIndex].machine_id,
                         freq_id: itemCheckRows[kIndex].freq_id,
@@ -453,7 +436,7 @@ const genSubSchedule = async (shiftRows = []) => {
                     countSame++
                 }
 
-                if (kanbanRows[kIndex].precition_val == 30)
+                if (itemCheckRows[kIndex].precition_val == 30)
                 {
                     const holidayWeekEnds = shiftRows.filter((item) => item.is_holiday_schedule);
                     planTime = holidayWeekEnds[getRandomInt(0, holidayWeekEnds.length - 1)].date;
@@ -485,8 +468,8 @@ const genSubSchedule = async (shiftRows = []) => {
                     }
 
                     const exists = result.find((item) =>
-                        item.line_id == shiftRows[sIndex].line_id
-                        && item.group_id == shiftRows[sIndex].group_id
+                        item.line_id == lineGroup.line_id
+                        && item.group_id == lineGroup.group_id
                         && item.om_item_check_kanban_id == shiftRows[sIndex].om_item_check_kanban_id
                         && item.machine_id == shiftRows[sIndex].machine_id
                         && item.freq_id == shiftRows[sIndex].freq_id
@@ -499,8 +482,8 @@ const genSubSchedule = async (shiftRows = []) => {
 
                     result.push({
                         main_schedule_id: null,
-                        group_id: shiftRows[sIndex].group_id,
-                        line_id: shiftRows[sIndex].line_id,
+                        group_id: lineGroup.group_id,
+                        line_id: lineGroup.line_id,
                         om_item_check_kanban_id: itemCheckRows[kIndex].om_item_check_kanban_id,
                         machine_id: itemCheckRows[kIndex].machine_id,
                         freq_id: itemCheckRows[kIndex].freq_id,
@@ -525,7 +508,7 @@ const genSubSchedule = async (shiftRows = []) => {
  * 
  * @param {pg.QueryResultRow} shiftRows 
  */
-const genSignCheckers = async (shiftRows = []) => {
+const genSignCheckers = async (lineGroup, shiftRows = []) => {
     const result = {
         tl: [],
         gl: [],
@@ -539,8 +522,8 @@ const genSignCheckers = async (shiftRows = []) => {
             {
                 result.tl.push({
                     main_schedule_id: null,
-                    group_id: shiftRows[sIndex].group_id,
-                    line_id: shiftRows[sIndex].line_id,
+                    group_id: lineGroup.group_id,
+                    line_id: lineGroup.line_id,
                     is_tl: true,
                     start_date: moment(shiftRows[sIndex].date, 'YYYY-MM-DD').format('YYYY-MM-DD'),
                     end_date: moment(shiftRows[sIndex].date, 'YYYY-MM-DD').format('YYYY-MM-DD')
@@ -629,7 +612,7 @@ const genSignCheckers = async (shiftRows = []) => {
 
             for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
             {
-                const exists = result.gl.find((g) => g.group_id == shiftRows[sIndex].group_id && g.line_id == shiftRows[sIndex].line_id)
+                const exists = result.gl.find((g) => g.group_id == lineGroup.group_id && g.line_id == lineGroup.line_id)
                 if (exists)
                 {
                     continue
@@ -639,8 +622,8 @@ const genSignCheckers = async (shiftRows = []) => {
                 {
                     result.gl.push({
                         main_schedule_id: null,
-                        group_id: shiftRows[sIndex].group_id,
-                        line_id: shiftRows[sIndex].line_id,
+                        group_id: lineGroup.group_id,
+                        line_id: lineGroup.line_id,
                         start_date: dateFormatted(glSignQuery.rows[glIndex].start_non_holiday),
                         end_date: dateFormatted(glSignQuery.rows[glIndex].end_non_holiday),
                         col_span: glSignQuery.rows[glIndex].col_span,
@@ -670,15 +653,27 @@ const main = async () => {
         //#region schedulers parent 
         const lineGroups = await lineGroupRows()
         const shiftRows = await shiftByGroupId()
-        //console.log('shiftRows length', shiftRows.length)
-        //#endregion
+        const mainScheduleBulkSchema = []
+        const subScheduleBulkSchema = []
+        const signCheckerTl1BulkSchema = []
+        const signChckerGlBulkSchema = []
 
-        //#region scheduler bulk temp var
-        const mainScheduleBulkSchema = await genMainSchedule(lineGroups)
-        const subScheduleBulkSchema = await genSubSchedule(shiftRows)
-        const signCheckers = await genSignCheckers(shiftRows)
-        const signCheckerTl1BulkSchema = signCheckers.tl
-        const signChckerGlBulkSchema = signCheckers.gl
+        for (let lgIndex = 0; lgIndex < lineGroups.length; lgIndex++)
+        {
+            //#region scheduler bulk temp var
+            const mainScheduleBulk = await genMainSchedule(lineGroups[lgIndex])
+            const subScheduleBulk = await genSubSchedule(lineGroups[lgIndex], shiftRows)
+            const signCheckers = await genSignCheckers(lineGroups[lgIndex], shiftRows)
+
+            mainScheduleBulkSchema.push(mainScheduleBulk)
+            subScheduleBulkSchema.push(...subScheduleBulk)
+            if (subScheduleBulk.length > 0)
+            {
+                signCheckerTl1BulkSchema.push(...signCheckers.tl)
+                signChckerGlBulkSchema.push(...signCheckers.gl)
+            }
+            //#endregion
+        }
         //#endregion
 
 

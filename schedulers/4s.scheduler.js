@@ -355,7 +355,8 @@ const genSubSchedule = async (lineGroup, shiftRows = []) => {
                     }
 
                     const exists = result.find((item) =>
-                        item.group_id == shiftRows[sIndex].group_id
+                        item.group_id == lineGroup.group_id
+                        && item.line_id == lineGroup.line_id
                         && item.kanban_id == shiftRows[sIndex].kanban_id
                         && item.zone_id == shiftRows[sIndex].zone_id
                         && item.freq_id == shiftRows[sIndex].freq_id
@@ -557,7 +558,7 @@ var ii = 0
  * 
  * @param {pg.QueryResultRow} shiftRows 
  */
-const genSignCheckers = async (line_id, group_id, shiftRows = []) => {
+const genSignCheckers = async (lineGroup, shiftRows = []) => {
     const result = {
         tl1: [],
         tl2: [],
@@ -573,8 +574,8 @@ const genSignCheckers = async (line_id, group_id, shiftRows = []) => {
             {
                 result.tl1.push({
                     main_schedule_id: null,
-                    group_id: group_id,
-                    line_id: line_id,
+                    group_id: lineGroup.group_id,
+                    line_id: lineGroup.line_id,
                     is_tl_1: true,
                     start_date: moment(shiftRows[sIndex].date, 'YYYY-MM-DD').format('YYYY-MM-DD'),
                     end_date: moment(shiftRows[sIndex].date, 'YYYY-MM-DD').format('YYYY-MM-DD')
@@ -582,8 +583,8 @@ const genSignCheckers = async (line_id, group_id, shiftRows = []) => {
 
                 result.tl2.push({
                     main_schedule_id: null,
-                    group_id: group_id,
-                    line_id: line_id,
+                    group_id: lineGroup.group_id,
+                    line_id: lineGroup.line_id,
                     is_tl_2: true,
                     start_date: moment(shiftRows[sIndex].date, 'YYYY-MM-DD').format('YYYY-MM-DD'),
                     end_date: moment(shiftRows[sIndex].date, 'YYYY-MM-DD').format('YYYY-MM-DD')
@@ -672,7 +673,7 @@ const genSignCheckers = async (line_id, group_id, shiftRows = []) => {
 
             for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
             {
-                const exists = result.gl.find((g) => g.group_id == group_id && g.line_id == line_id)
+                const exists = result.gl.find((g) => g.group_id == lineGroup.group_id && g.line_id == lineGroup.line_id)
                 if (exists)
                 {
                     continue
@@ -682,8 +683,8 @@ const genSignCheckers = async (line_id, group_id, shiftRows = []) => {
                 {
                     result.gl.push({
                         main_schedule_id: null,
-                        group_id: group_id,
-                        line_id: line_id,
+                        group_id: lineGroup.group_id,
+                        line_id: lineGroup.line_id,
                         start_date: dateFormatted(glSignQuery.rows[glIndex].start_non_holiday),
                         end_date: dateFormatted(glSignQuery.rows[glIndex].end_non_holiday),
                         col_span: glSignQuery.rows[glIndex].col_span,
@@ -777,7 +778,7 @@ const main = async () => {
             //#region scheduler bulk temp var
             const mainScheduleBulk = await genMainSchedule(lineGroups[lgIndex])
             const subScheduleBulk = await genSubSchedule(lineGroups[lgIndex], shiftRows)
-            const signCheckers = await genSignCheckers(lineGroups[lgIndex].line_id, lineGroups[lgIndex].group_id, shiftRows)
+            const signCheckers = await genSignCheckers(lineGroups[lgIndex], shiftRows)
             const signCheckerTl1 = signCheckers.tl1
             const signCheckerTl2 = signCheckers.tl2
             const signChckerGl = signCheckers.gl
