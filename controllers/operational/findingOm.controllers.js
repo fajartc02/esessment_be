@@ -199,27 +199,17 @@ module.exports = {
     uploadOmImageFinding: async (req, res) => {
         try
         {
-            if (req.file)
-            {
-                req.body.finding_img = `./${req.file.path}`
-            }
+            const finding_img = `./uploads/${req.body.dest}/${req.file.path}`
+            const attrsUserUpdate = await attrsUserUpdateData(req, {
+                finding_img: finding_img
+            })
 
-            if (req.body.before_path != null && req.body.before_path != 'null' && req.body.before_path)
-            {
-                removeFileIfExist(req.body.before_path)
-            }
-
-            const findingUuid = req.body.finding_id
-
-            delete req.body.dest
-            delete req.body.finding_id
-            delete req.body.before_path
-
-            await queryPUT(table.tb_r_om_findings, req.body, `WHERE finding_id = '${findingUuid}'`);
+            await queryPUT(table.tb_r_om_findings, attrsUserUpdate, `WHERE uuid = '${req.body.om_finding_id}'`);
             response.success(res, 'Success to upload om image finding', req.body.finding_img);
-        } catch (error)
+        }
+         catch (error)
         {
-            response.failed(res, 'Error to upload om image finding')
+            response.failed(res, 'Error to upload om image finding ' + error?.message ?? '')
         }
     },
     deleteOmFinding: async (req, res) => {
