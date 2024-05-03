@@ -199,7 +199,7 @@ module.exports = {
     uploadOmImageFinding: async (req, res) => {
         try
         {
-            const finding_img = `./uploads/${req.body.dest}/${req.file.path}`
+            const finding_img = `./${req.file.path}`
             const attrsUserUpdate = await attrsUserUpdateData(req, {
                 finding_img: finding_img
             })
