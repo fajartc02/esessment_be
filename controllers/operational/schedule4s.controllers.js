@@ -105,7 +105,7 @@ const childrenSubSchedule = async (
                     case
                       when finding.finding_id is not null then
                         'PROBLEM'
-                      when tbrcs.actual_time is not null or item_check.total_checked > 0 then
+                      when item_check.total_checked > 0 and tbrcs.plan_time is not null then
                         'ACTUAL'
                       when tbrcs.shift_type = 'night_shift' then
                         'NIGHT_SHIFT'
@@ -156,7 +156,14 @@ const childrenSubSchedule = async (
                         from 
                           ${table.tb_r_4s_schedule_item_check_kanbans}
                         where
-                          item_check_kanban_id in (select item_check_kanban_id from ${table.tb_m_4s_item_check_kanbans} where kanban_id = '${kanbanRealId}')
+                          item_check_kanban_id in (
+                                                    select 
+                                                      item_check_kanban_id 
+                                                    from 
+                                                      ${table.tb_m_4s_item_check_kanbans} 
+                                                    where 
+                                                      kanban_id = '${kanbanRealId}')
+                                                      and main_schedule_id = tbrcs.main_schedule_id
                       ) item_check on true
                   where
                       tbrcs.deleted_dt is null

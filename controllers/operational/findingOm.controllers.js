@@ -143,7 +143,9 @@ module.exports = {
             })
 
 
-            response.success(res, "Success to add om finding", transaction.rows[0])
+            response.success(res, "Success to add om finding", {
+                om_finding_id: transaction.rows[0].uuid
+            })
         } catch (error)
         {
             logger(error)
@@ -175,7 +177,7 @@ module.exports = {
                 updateBody.actual_pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.actual_pic_id}') `
             }
 
-            const transaction = await queryTransaction(async (db) => {
+            await queryTransaction(async (db) => {
                 const attrsUserUpdate = await attrsUserUpdateData(req, updateBody)
                 return await queryPutTransaction(
                     db,
@@ -185,7 +187,9 @@ module.exports = {
                 )
             })
 
-            response.success(res, "Success to edit om finding", transaction)
+            response.success(res, "Success to edit om finding", {
+                om_finding_id: req.params.id
+            })
         } catch (error)
         {
             console.log(error)

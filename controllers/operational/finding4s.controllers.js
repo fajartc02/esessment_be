@@ -141,7 +141,9 @@ module.exports = {
             })
 
 
-            response.success(res, "Success to add 4s finding", transaction.rows)
+            response.success(res, "Success to add 4s finding", {
+                finding_id: transaction.uuid
+            })
         } catch (error)
         {
             console.log(error)
@@ -184,7 +186,9 @@ module.exports = {
                 )
             })
 
-            response.success(res, "Success to edit 4s finding", transaction)
+            response.success(res, "Success to edit 4s finding", {
+                finding_id: req.params.id
+            })
         } catch (error)
         {
             console.log(error)
@@ -210,7 +214,7 @@ module.exports = {
             delete req.body.finding_id
             delete req.body.before_path
 
-            await queryPUT(table.tb_r_4s_findings, req.body, `WHERE finding_id = '${findingUuid}'`);
+            await queryPUT(table.tb_r_4s_findings, req.body, `WHERE uuid = '${findingUuid}'`);
             response.success(res, 'Success to upload 4s image finding', req.body.finding_img);
         } catch (error)
         {
