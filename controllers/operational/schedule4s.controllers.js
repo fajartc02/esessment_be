@@ -761,7 +761,8 @@ module.exports = {
               tmic.standart_time::REAL as standart_time,
               trsic.actual_time::REAL actual_time,
               trsic.checked_date,
-              tmju.judgment_nm
+              tmju.judgment_nm,
+              tmju.is_abnormal
           from
               ${table.tb_m_4s_item_check_kanbans} tmic
               join ${table.tb_m_kanbans} tmk on tmic.kanban_id = tmk.kanban_id 
