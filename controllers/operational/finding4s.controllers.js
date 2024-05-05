@@ -124,7 +124,7 @@ module.exports = {
     post4sFinding: async (req, res) => {
         try
         {
-            
+
             const insertBody = {
                 ...req.body,
                 uuid: uuid(),
@@ -144,7 +144,7 @@ module.exports = {
             })
 
             response.success(res, "Success to add 4s finding", {
-                finding_id: transaction.uuid
+                finding_id: transaction.rows[0].uuid
             })
         } 
         catch (error)
