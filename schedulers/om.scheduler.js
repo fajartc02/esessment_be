@@ -196,6 +196,8 @@ const genSubSchedule = async (lineGroup, shiftRows = []) => {
             where
                 tmm.line_id = ${lineGroup.line_id}
                 and tmoick.group_id = ${lineGroup.group_id}
+            order by
+                tmf.precition_val
         `)
     const itemCheckRows = itemCheckQuery.rows
     if (itemCheckRows.length == 0)
@@ -378,7 +380,7 @@ const genSubSchedule = async (lineGroup, shiftRows = []) => {
                             && !shiftRows[sIndex].is_holiday
                         )
                         {
-                            const byDowSql =
+                            /* const byDowSql =
                                 `
                                             select 
                                                 tmsc.date,
@@ -422,8 +424,9 @@ const genSubSchedule = async (lineGroup, shiftRows = []) => {
                                 const randomDow = byDow[getRandomInt(0, byDow.length - 1)]
                                 planTimeWeeklyArr.push(dateFormatted(randomDow.date))
                                 countSame = randomDow.day_of_week
-                            }
-
+                            } */
+                            const nonHolidayWeekEnds = shiftRows.filter((item) => !item.is_holiday && shiftRows[sIndex].week_num == item.week_num);
+                            planTimeWeeklyArr.push(dateFormatted(nonHolidayWeekEnds[getRandomInt(0, nonHolidayWeekEnds.length - 1)].date))
                             lastWeekNum = shiftRows[sIndex].week_num
                         }
 
@@ -449,7 +452,7 @@ const genSubSchedule = async (lineGroup, shiftRows = []) => {
                         planTime = planTimeWeeklyArr.find((item) => item == dateFormatted(shiftRows[sIndex].date))
                     }
 
-                    if (!planTime)
+                    if (!planTime && itemCheckRows[kIndex].precition_val != 7)
                     {
                         planTime = moment(`${currentYear}-${padTwoDigits(currentMonth)}-${padTwoDigits(getRandomInt(1, 30))}`)
                             .clone()
