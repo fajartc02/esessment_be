@@ -36,7 +36,7 @@ module.exports = {
                         )::integer as no,
                         *,
                         case when finding_img is not null then
-                            '${process.env.IMAGE_URL}/file?path=' || finding_img
+                            finding_img
                         end as finding_img
                     from
                        ${fromCondition}
