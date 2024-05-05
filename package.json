@@ -5,6 +5,7 @@
     "scripts": {
         "start": "node ./bin/www",
         "dev": "SET NODE_ENV=local && nodemon ./bin/www",
+        "dev-mac": "export NODE_ENV=local && nodemon ./bin/www",
         "dev-vps": "SET NODE_ENV=dev && pm2 start ./bin/www --name=eas-dev",
         "seeder-4s": "SET NODE_ENV=local && node ./design/seeders/4s.seeder.js",
         "mst-seeder-4s": "SET NODE_ENV=dev && node ./design/seeders/4sMst.seeder.js",
