@@ -79,7 +79,7 @@ module.exports = {
                 JOIN ${table.tb_m_job_types} tmjt ON tmjt.job_type_id = tmj.job_type_id
                 JOIN ${table.tb_m_groups} tmg ON tmg.group_id = tro.group_id
                 WHERE tro.${condDataNotDeleted}
-                ${containerQuery} ORDER BY tro.plan_check_dt DESC ${qLimit} ${qOffset}
+                ${containerQuery} ORDER BY tro.created_dt DESC ${qLimit} ${qOffset}
             `)
             let countTotal = await queryCustom(`SELECT 
             count(tro.observation_id) as total
