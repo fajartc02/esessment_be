@@ -34,7 +34,7 @@ module.exports = {
                         )::integer as no,
                         *,
                         case when finding_img is not null then 
-                            '${process.env.IMAGE_URL}/file?path=' || finding_img
+                            'http://mt-system.id:3200/api/v1/file?path='::text || finding_img
                         end as finding_img
                     from
                        ${fromCondition}    
