@@ -588,7 +588,10 @@ module.exports = {
             const findings = await queryCustom(
                 `
                     select 
-                        * 
+                        *,
+                        case when finding_img is not null then
+                            'http://mt-system.id:3200/api/v1/file?path='::text || finding_img
+                        end as finding_img
                     from 
                         ${table.v_om_finding_list} 
                     where
