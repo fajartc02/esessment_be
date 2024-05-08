@@ -893,6 +893,22 @@ module.exports = {
 
         if (req.body.plan_date)
         {
+          const findNightShift = await db.query(`
+            select 
+              * 
+            from 
+              ${table.tb_r_4s_sub_schedules} 
+            where 
+              ${updateCondition} 
+              and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')
+              and shift_type = 'night_shift'
+          `)
+
+          if (findNightShift.rowCount > 0)
+          {
+            throw "Can't edit schedule plan on night shift"
+          }
+
           await db.query(
             `
               update 
