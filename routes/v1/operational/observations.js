@@ -13,6 +13,7 @@ const {
   getObservationScheduleList,
   deleteScheduleObservation,
   getTodaySchedule,
+  countTotalSummarySTW,
 } = require("../../../controllers/operational/observations.controllers");
 const auth = require("../../../helpers/auth");
 const upload = require("../../../helpers/upload");
@@ -20,6 +21,7 @@ const upload = require("../../../helpers/upload");
 router.get("/summary", auth.verifyToken, getSummaryObservations);
 router.get("/schedule", auth.verifyToken, getScheduleObservations);
 
+router.get("/schedule/count", auth.verifyToken, countTotalSummarySTW);
 router.get("/schedule/today", auth.verifyToken, getTodaySchedule);
 
 router.get("/schedule/list", auth.verifyToken, getObservationScheduleList);

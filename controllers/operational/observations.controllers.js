@@ -515,4 +515,50 @@ module.exports = {
             response.failed(res, 'Error to delete schedule observation list')
         }
     },
+    countTotalSummarySTW: async(req, res) => {
+        try {
+            console.log(req.query);
+            const {line_id = null, month, year} = req.query
+            let whereLineId = ``
+            if (line_id && line_id != -1) whereLineId = `AND tmp.line_id = (SELECT line_id FROM ${table.tb_m_lines} WHERE uuid = '${line_id}')`
+            let q = `select
+            COUNT(observation_id) as delay
+        from tb_r_observations tro
+        JOIN tb_m_pos tmp ON tro.pos_id = tmp.pos_id
+        where 
+            (EXTRACT(month from  tro.plan_check_dt), EXTRACT('year' from tro.plan_check_dt))=(${+month},${+year})
+            and actual_check_dt IS NULL
+            and plan_check_dt < CURRENT_DATE
+            and tro.deleted_by IS NULL
+            ${whereLineId};
+        select
+            COUNT(observation_id) as progress
+        from tb_r_observations tro
+        JOIN tb_m_pos tmp ON tro.pos_id = tmp.pos_id
+        where 
+            (EXTRACT(month from  tro.plan_check_dt), EXTRACT('year' from tro.plan_check_dt))=(${+month},${+year})
+            and actual_check_dt IS NULL
+            and plan_check_dt > CURRENT_DATE
+            and tro.deleted_by IS NULL
+            ${whereLineId};
+        select
+            COUNT(observation_id) as done
+        from tb_r_observations tro
+        JOIN tb_m_pos tmp ON tro.pos_id = tmp.pos_id
+        where 
+            (EXTRACT(month from  tro.plan_check_dt), EXTRACT('year' from tro.plan_check_dt))=(${+month},${+year})
+            and actual_check_dt IS NOT NULL
+            and tro.deleted_by IS NULL
+            ${whereLineId};`
+            let result = await queryCustom(q)
+            result = result.map(item => {
+                return item.rows[0]
+            })
+            console.log(result);
+            response.success(res, 'Success to count total summary STW', result)
+        } catch (error) {
+            console.log(error);
+            response.failed(res, 'Error to count total summary STW')
+        }
+    }
 }
