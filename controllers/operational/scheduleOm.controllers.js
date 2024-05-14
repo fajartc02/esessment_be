@@ -651,6 +651,74 @@ module.exports = {
             response.failed(res, "Error to get om sign checker")
         }
     },
+    getOmCountTotalSummary: async (req, res) => {
+        try
+        {
+            const { line_id } = req.query
+            let { month, year } = req.query
+
+            if (!month || month == null || month == -1)
+            {
+                month = moment().format('MM')
+            }
+
+            if (!year || year == null || year == -1)
+            {
+                year = moment().format('YYYY')
+            }
+
+            const baseSql = (alias, where) => {
+                const byLineId = (line_id && line_id != -1) ? `and troms.line_id = (SELECT line_id FROM ${table.tb_m_lines} WHERE uuid = '${line_id}')` : ''
+
+                return `
+                select
+                     count(*)::real as ${alias}
+                 from
+                     ${table.tb_r_om_sub_schedules} tross
+                         join ${table.tb_r_om_main_schedules} troms on tross.om_main_schedule_id = troms.om_main_schedule_id
+                 where
+                         (EXTRACT(month from tross.plan_time), EXTRACT(year from tross.plan_time)) = (${+month},${+year})
+                   and   tross.deleted_by IS NULL
+                   ${byLineId}
+                   ${where}
+              `
+            }
+
+            const delay = baseSql(
+                'delay',
+                `and actual_time is null and date(tross.plan_time) < current_date`
+            )
+
+            const progress = baseSql(
+                'progress',
+                `and actual_time is null and date(tross.actual_time) >= current_date`
+            )
+
+            const done = baseSql(
+                'done',
+                `and actual_time is not null and date(tross.actual_time) >= current_date`
+            )
+
+            $sql = `with delay as (${delay}), progress as (${progress}), done as (${done}) select * from delay, progress, done`
+
+            let result = (await queryCustom($sql, false)).rows
+            if (result.length > 0)
+            {
+                result = result[0]
+            }
+            else 
+            {
+                result = {}
+            }
+
+            response.success(res, 'Success to count total summary om', result)
+        }
+        catch (error)
+        {
+            console.log(error)
+            response.failed(res, error)
+        }
+    },
     ediOmSubSchedule: async (req, res) => {
         try
         {

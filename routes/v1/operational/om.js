@@ -5,6 +5,7 @@ const {
     getOmSignCheckerBySignCheckerId,
     getDetailOmSubSchedule,
     getOmSubScheduleToday,
+    getOmCountTotalSummary,
     ediOmSubSchedule,
     signOmSchedule,
     deleteOmSubSchedule,
@@ -21,6 +22,7 @@ router.delete("/main-schedule/delete/:id", auth.verifyToken, deleteOmMainSchedul
 
 router.get("/sub-schedule", auth.verifyToken, getOmSubSchedule)
 router.get("/sub-schedule/today", auth.verifyToken, getOmSubScheduleToday)
+router.get("/sub-schedule/count", auth.verifyToken, getOmCountTotalSummary)
 router.get('/sub-schedule/sign/:sign_checker_id', auth.verifyToken, getOmSignCheckerBySignCheckerId)
 router.get("/sub-schedule/:id", auth.verifyToken, getDetailOmSubSchedule)
 

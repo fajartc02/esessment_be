@@ -829,6 +829,80 @@ module.exports = {
       response.failed(res, error)
     }
   },
+  get4sCountTotalSummary: async (req, res) => {
+    try
+    {
+      const { line_id } = req.query
+      let { month, year } = req.query
+
+      if (!month || month == null || month == -1)
+      {
+        month = moment().format('MM')
+      }
+
+      if (!year || year == null || year == -1)
+      {
+        year = moment().format('YYYY')
+      }
+
+      const baseSql = (alias, where) => {
+        const byLineId = (line_id && line_id != -1) ? `and tr4sms.line_id = (SELECT line_id FROM ${table.tb_m_lines} WHERE uuid = '${line_id}')` : ''
+
+        return `
+                select
+                     count(*)::real as ${alias}
+                 from
+                     ${table.tb_r_4s_sub_schedules} tr4sss
+                         join ${table.tb_r_4s_main_schedules} tr4sms on tr4sss.main_schedule_id = tr4sms.main_schedule_id
+                 where
+                         (EXTRACT(month from tr4sss.plan_time), EXTRACT(year from tr4sss.plan_time)) = (${+month},${+year})
+                   and   tr4sss.deleted_by IS NULL
+                   ${byLineId}
+                   ${where}
+              `
+      }
+
+      const delay = baseSql(
+        'delay',
+        `and actual_time is null and date(tr4sss.plan_time) < current_date`
+      )
+
+      const progress = baseSql(
+        'progress',
+        `and actual_time is null and date(tr4sss.actual_time) >= current_date`
+      )
+
+      const done = baseSql(
+        'done',
+        `and actual_time is not null and date(tr4sss.actual_time) >= current_date`
+      )
+
+      $sql = `
+        with 
+          delay as (${delay}),
+          progress as (${progress}),
+          done as (${done})
+        select * from delay, progress, done
+      `
+
+      let result = (await queryCustom($sql, false)).rows
+      if (result.length > 0)
+      {
+        result = result[0]
+      }
+      else 
+      {
+        result = {}
+      }
+
+      response.success(res, 'Success to count total summary 4s', result)
+    }
+    catch (error)
+    {
+      console.log(error)
+      response.failed(res, error)
+    }
+  },
   edi4sSubSchedule: async (req, res) => {
     try
     {

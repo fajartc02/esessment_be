@@ -5,6 +5,7 @@ const {
   get4sSubScheduleTodayPlan,
   get4sSignCheckerBySignCheckerId,
   getDetail4sSubSchedule,
+  get4sCountTotalSummary,
   edi4sSubSchedule,
   sign4sSchedule,
   delete4sSubSchedule,
@@ -22,6 +23,7 @@ router.delete("/main-schedule/delete/:id", auth.verifyToken, delete4sMainSchedul
 
 router.get("/sub-schedule", auth.verifyToken, get4sSubSchedule)
 router.get("/sub-schedule/today", auth.verifyToken, get4sSubScheduleTodayPlan)
+router.get("/sub-schedule/count", auth.verifyToken, get4sCountTotalSummary);
 router.get('/sub-schedule/sign/:sign_checker_id', auth.verifyToken, get4sSignCheckerBySignCheckerId)
 router.get("/sub-schedule/:id", auth.verifyToken, getDetail4sSubSchedule)
 
