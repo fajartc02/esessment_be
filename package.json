@@ -19,6 +19,7 @@
         "om-assyline": "SET NODE_ENV=dev && node ./design/seeders/omAssyline.seeder.js",
         "4s-assyline": "SET NODE_ENV=local && node ./design/seeders/4sAssyline.seeder.js",
         "4s-assyline-white": "SET NODE_ENV=dev && node ./design/seeders/4sAssylineWhite.seeder.js",
+        "om-lowpreassure-white": "SET NODE_ENV=dev && node ./design/seeders/omLowPreassureWhite.seeder.js",
         "4s-clear-transaction": "SET NODE_ENV=dev && node ./design/seeders/4sClearTransaction.seeder.js",
         "om-clear-transaction": "SET NODE_ENV=dev && node ./design/seeders/omClearTransaction.seeder.js"
     },

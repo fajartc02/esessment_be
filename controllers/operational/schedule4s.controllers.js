@@ -889,6 +889,13 @@ module.exports = {
       if (result.length > 0)
       {
         result = result[0]
+        /* const copy = []
+        for (var key of Object.keys(result))
+        {
+          copy.push({ [key]: result[key] })
+        }
+
+        result = copy */
       }
       else 
       {
