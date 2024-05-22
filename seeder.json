@@ -1,0 +1,15 @@
+{
+    "om-assyline": "SET NODE_ENV=dev && node ./design/seeders/omAssyline.seeder.js",
+    "4s-assyline": "SET NODE_ENV=local && node ./design/seeders/4sAssyline.seeder.js",
+    "4s-assyline-white": "SET NODE_ENV=dev && node ./design/seeders/4sAssylineWhite.seeder.js",
+    "om-lowpreassure-white": "SET NODE_ENV=dev && node ./design/seeders/omLowPreassureWhite.seeder.js",
+    "seeder-4s": "SET NODE_ENV=local && node ./design/seeders/4s.seeder.js",
+    "mst-seeder-4s": "SET NODE_ENV=dev && node ./design/seeders/4sMst.seeder.js",
+    "mstFinding-seeder-4s": "SET NODE_ENV=local && node ./design/seeders/finding4sMst.seeder.js",
+    "finding-seeder-4s": "SET NODE_ENV=local && node ./design/seeders/finding4s.seeder.js",
+    "shift-seeder": "SET NODE_ENV=dev && node ./design/seeders/shifts.seeder.js",
+    "omMst-seeder": "SET NODE_ENV=dev && node ./design/seeders/omMst.seeder.js",
+    "4s-clear-transaction": "SET NODE_ENV=dev && node ./design/seeders/4sClearTransaction.seeder.js",
+    "om-clear-transaction": "SET NODE_ENV=dev && node ./design/seeders/omClearTransaction.seeder.js",
+    "4s-cylinder-block-red-white": "SET NODE_ENV=dev && node ./design/seeders/4sCylinderBlockRedWhite.seeder.js"
+}
