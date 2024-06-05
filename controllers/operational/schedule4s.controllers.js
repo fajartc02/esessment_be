@@ -15,7 +15,9 @@ const moment = require('moment')
 const logger = require('../../helpers/logger')
 const { cacheGet, cacheAdd, cacheDelete } = require('../../helpers/cacheHelper')
 const { uuid } = require("uuidv4")
-const { generateMonthlyDates } = require('../../helpers/date')
+const { shiftByGroupId } = require('../../services/shift.services')
+const { genSingleMonthlySubScheduleSchema, singleSignCheckerSqlFromSchema } = require('../../services/4s.services')
+const { bulkToSchema } = require('../../helpers/schema')
 
 const fromSubScheduleSql = `
     ${table.tb_r_4s_sub_schedules} tbrcs
@@ -988,6 +990,7 @@ module.exports = {
           //#endregion
 
           let newMainScheduleSet = ''
+          let newMainScheduleRealId = null
           if (planDateUpdate.month() > previousDate.month())
           {
             const checkHeaderNextMonth = await db.query(`
@@ -1023,13 +1026,51 @@ module.exports = {
               `);
 
               newMainScheduleSet = `, main_schedule_id = '${newMainSchedule.rows[0].main_schedule_id}'`
+              newMainScheduleRealId = newMainSchedule.rows[0].main_schedule_id
             }
             else
             {
               newMainScheduleSet = `, main_schedule_id = '${checkHeaderNextMonth.rows[0].main_schedule_id}'`
+              newMainScheduleRealId = checkHeaderNextMonth.rows[0].main_schedule_id
             }
           }
 
+          const byScheduleIdPlanDateSql = `and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')`
+          const byScheduleIdPreviousDateSql = `and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.before_plan_date}')`
+
+          const sqlUpdateNewPlanDate = (newMainScheduleSet = '') => {
+            const s = `
+              update 
+                ${table.tb_r_4s_sub_schedules} 
+              set 
+                plan_time = '${req.body.plan_date}'
+                ${newMainScheduleSet} 
+              where 
+                ${updateCondition} 
+                ${byScheduleIdPlanDateSql}   
+            `
+
+            console.log('sqlUpdateNewPlanDate', s);
+            return s
+          }
+
+          const sqlUpdateOldPlanDate = () => {
+            const s = `
+              update 
+                ${table.tb_r_4s_sub_schedules} 
+              set 
+                plan_time = null
+              where 
+                ${updateCondition} 
+                ${byScheduleIdPreviousDateSql}
+            `
+
+            console.log('sqlUpdateOldPlanDate', s);
+            return s
+          }
+
+          // updating previous plan date
+          await db.query(sqlUpdateOldPlanDate())
 
           if (newMainScheduleSet == '')
           {
@@ -1050,36 +1091,8 @@ module.exports = {
               throw "Can't edit schedule plan on night shift"
             }
 
-            const byScheduleIdPlanDateSql = `and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')`
-            const byScheduleIdPreviousDateSql = `and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.before_plan_date}')`
-
             // updating new plan date
-            const sqlUpdateNewPlanDate = `
-              update 
-                ${table.tb_r_4s_sub_schedules} 
-              set 
-                plan_time = '${req.body.plan_date}'
-                ${newMainScheduleSet} 
-              where 
-                ${updateCondition} 
-                ${byScheduleIdPlanDateSql}
-                
-            `
-            console.log('sqlUpdateNewPlanDate', sqlUpdateNewPlanDate);
-            await db.query(sqlUpdateNewPlanDate)
-
-            // updating previous plan date
-            const sqlUpdateOldPlanDate = `
-              update 
-                ${table.tb_r_4s_sub_schedules} 
-              set 
-                plan_time = null
-              where 
-                ${updateCondition} 
-                ${byScheduleIdPreviousDateSql}
-            `
-            console.log('sqlUpdateOldPlanDate', sqlUpdateOldPlanDate);
-            await db.query(sqlUpdateOldPlanDate)
+            await db.query(sqlUpdateNewPlanDate())
             //#endregion
           }
           else
@@ -1107,13 +1120,53 @@ module.exports = {
 
             if (monthlyPlanQuery.rowCount == 0)
             {
-              const currentMonthDays = generateMonthlyDates(planDateUpdate.year(), planDateUpdate.month())
-              for (let i = 0; i < currentMonthDays.length; i++)
-              {
-                
-              }
-            }
+              const currentMonthDays = await shiftByGroupId(planDateUpdate.year(), planDateUpdate.month() + 1, schedulRow.line_id, schedulRow.group_id)
+              const singleKanbanSchedule = await bulkToSchema(genSingleMonthlySubScheduleSchema(
+                {
+                  kanban_id: schedulRow.kanban_id,
+                  zone_id: schedulRow.zone_id,
+                  freq_id: schedulRow.freq_id,
+                  main_schedule_id: newMainScheduleRealId
+                },
+                {
+                  line_id: schedulRow.line_id,
+                  group_id: schedulRow.group_id,
+                },
+                currentMonthDays,
+                moment(planDateUpdate).format('YYYY-MM-DD')
+              ))
 
+              const signCheckerScheduleSchema = await singleSignCheckerSqlFromSchema(
+                planDateUpdate.year(),
+                planDateUpdate.month() + 1,
+                {
+                  line_id: schedulRow.line_id,
+                  group_id: schedulRow.group_id,
+                },
+                currentMonthDays,
+                newMainScheduleRealId
+              )
+
+              const sqlInSubSchedule = `insert into ${table.tb_r_4s_sub_schedules} (${singleKanbanSchedule.columns}) values ${singleKanbanSchedule.values}`
+              console.log('sqlInSubSchedule', sqlInSubSchedule);
+              await db.query(sqlInSubSchedule)
+
+              const sqlInSignChecker = `insert into ${table.tb_r_4s_schedule_sign_checkers} (${signCheckerScheduleSchema.columns}) values ${signCheckerScheduleSchema.values}`
+              console.log('sqlInSignChecker', sqlInSignChecker);
+              await db.query(sqlInSignChecker)
+            }
+            else
+            {
+              updateCondition = `
+                main_schedule_id = '${newMainScheduleRealId}' 
+                and freq_id = '${schedulRow.freq_id}' 
+                and zone_id = '${schedulRow.zone_id}' 
+                and kanban_id = '${schedulRow.kanban_id}'
+              `
+
+              // updating new plan date
+              await db.query(sqlUpdateNewPlanDate(newMainScheduleSet))
+            }
           }
         }
       })

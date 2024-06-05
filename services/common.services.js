@@ -1,8 +1,13 @@
 const pg = require('pg')
 const { databasePool } = require('../config/database')
+const moment = require('moment')
 
 module.exports = {
-    lineGroupRows: async (onlySql = false) => {
+    /**
+     * 
+     * @returns {Promise<pg.QueryResultRow>}
+     */
+    lineGroupRows: async (currentYear, currentMonth, onlySql = false) => {
         const lineGroupQuery =
             `
                 select 
@@ -22,4 +27,4 @@ module.exports = {
         const lgQuery = await databasePool.query(lineGroupQuery)
         return lgQuery.rows
     }
-}
+}   
