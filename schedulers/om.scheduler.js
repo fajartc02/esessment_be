@@ -200,7 +200,7 @@ const test = async () => {
         return 0
     }) */
 
-clearOmTransactionRows()
+/* clearOmTransactionRows()
     .then((r) => {
         main()
             .then((r) => {
@@ -219,7 +219,7 @@ clearOmTransactionRows()
             data: e
         })
         return 0
-    })
+    }) */
 
 
 /* main()
@@ -233,3 +233,5 @@ clearOmTransactionRows()
         })
         process.exit()
     }) */
+
+module.exports = main

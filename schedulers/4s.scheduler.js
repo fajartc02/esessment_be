@@ -319,10 +319,12 @@ const test = async () => {
         return 0
     }) */
 
-main()
+/* main()
     .then((result) => {
         process.exit()
     })
     .catch((error) => {
         process.exit()
-    })
+    }) */
+
+module.exports = main
