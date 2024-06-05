@@ -15,6 +15,7 @@ const moment = require('moment')
 const logger = require('../../helpers/logger')
 const { cacheGet, cacheAdd, cacheDelete } = require('../../helpers/cacheHelper')
 const { uuid } = require("uuidv4")
+const { generateMonthlyDates } = require('../../helpers/date')
 
 const fromSubScheduleSql = `
     ${table.tb_r_4s_sub_schedules} tbrcs
@@ -960,7 +961,7 @@ module.exports = {
 
       await queryTransaction(async (db) => {
         const attrsUpdate = await attrsUserUpdateData(req, body)
-        const updateCondition = `
+        let updateCondition = `
             main_schedule_id = '${schedulRow.main_schedule_id}' 
             and freq_id = '${schedulRow.freq_id}' 
             and zone_id = '${schedulRow.zone_id}' 
@@ -984,26 +985,10 @@ module.exports = {
           {
             throw "Can't edit schedule plan on previous date"
           }
-
-          const findNightShift = await db.query(`
-            select 
-              * 
-            from 
-              ${table.tb_r_4s_sub_schedules} 
-            where 
-              ${updateCondition} 
-              and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')
-              and shift_type = 'night_shift'
-          `)
-
-          if (findNightShift.rowCount > 0)
-          {
-            throw "Can't edit schedule plan on night shift"
-          }
           //#endregion
 
           let newMainScheduleSet = ''
-          if (planDateUpdate.month() != previousDate.month())
+          if (planDateUpdate.month() > previousDate.month())
           {
             const checkHeaderNextMonth = await db.query(`
               select 
@@ -1012,7 +997,7 @@ module.exports = {
                 ${table.tb_r_4s_main_schedules} 
               where 
                 year_num = '${planDateUpdate.year()}' 
-                and month_num = '${planDateUpdate.month()}'
+                and month_num = '${planDateUpdate.month() + 1}'
                 and line_id = '${schedulRow.line_id}'
                 and group_id = '${schedulRow.group_id}'
               `)
@@ -1028,13 +1013,13 @@ module.exports = {
                   '${schedulRow.line_id}', 
                   '${schedulRow.group_id}', 
                   '${planDateUpdate.year()}', 
-                  '${planDateUpdate.month()}',
+                  '${planDateUpdate.month() + 1}',
                   '${req.user.fullname}', 
                   '${moment().format('YYYY-MM-DD HH:mm:ss')}', 
                   '${req.user.fullname}', 
                   '${moment().format('YYYY-MM-DD HH:mm:ss')}'
                 )
-                returnng *
+                returning *
               `);
 
               newMainScheduleSet = `, main_schedule_id = '${newMainSchedule.rows[0].main_schedule_id}'`
@@ -1043,12 +1028,33 @@ module.exports = {
             {
               newMainScheduleSet = `, main_schedule_id = '${checkHeaderNextMonth.rows[0].main_schedule_id}'`
             }
-
           }
 
-          // updating new plan date
-          await db.query(
-            `
+
+          if (newMainScheduleSet == '')
+          {
+            //#region  update plan_date and previous plan_date
+            const findNightShift = await db.query(`
+            select 
+              * 
+            from 
+              ${table.tb_r_4s_sub_schedules} 
+            where 
+              ${updateCondition} 
+              and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')
+              and shift_type = 'night_shift'
+          `)
+
+            if (findNightShift.rowCount > 0)
+            {
+              throw "Can't edit schedule plan on night shift"
+            }
+
+            const byScheduleIdPlanDateSql = `and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')`
+            const byScheduleIdPreviousDateSql = `and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.before_plan_date}')`
+
+            // updating new plan date
+            const sqlUpdateNewPlanDate = `
               update 
                 ${table.tb_r_4s_sub_schedules} 
               set 
@@ -1056,22 +1062,59 @@ module.exports = {
                 ${newMainScheduleSet} 
               where 
                 ${updateCondition} 
-                and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')
+                ${byScheduleIdPlanDateSql}
+                
             `
-          )
+            console.log('sqlUpdateNewPlanDate', sqlUpdateNewPlanDate);
+            await db.query(sqlUpdateNewPlanDate)
 
-          // updating previous plan date
-          await db.query(
-            `
+            // updating previous plan date
+            const sqlUpdateOldPlanDate = `
               update 
                 ${table.tb_r_4s_sub_schedules} 
               set 
                 plan_time = null
               where 
                 ${updateCondition} 
-                and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.before_plan_date}')
+                ${byScheduleIdPreviousDateSql}
             `
-          )
+            console.log('sqlUpdateOldPlanDate', sqlUpdateOldPlanDate);
+            await db.query(sqlUpdateOldPlanDate)
+            //#endregion
+          }
+          else
+          {
+            //#region check month and year updated plan_date by mandatory id
+            const monthlyPlanSql = `
+              select 
+                * 
+              from 
+                ${table.tb_r_4s_sub_schedules} 
+              where 
+                ${updateCondition} 
+                and schedule_id in (
+                    select 
+                      schedule_id 
+                    from 
+                      ${table.tb_m_schedules} 
+                    where 
+                      date_part('year', date) = '${planDateUpdate.year()}' 
+                      and date_part('month', date) = '${planDateUpdate.month() + 1}'
+                )
+              `
+            const monthlyPlanQuery = await db.query(monthlyPlanSql)
+            //#endregion
+
+            if (monthlyPlanQuery.rowCount == 0)
+            {
+              const currentMonthDays = generateMonthlyDates(planDateUpdate.year(), planDateUpdate.month())
+              for (let i = 0; i < currentMonthDays.length; i++)
+              {
+                
+              }
+            }
+
+          }
         }
       })
 
