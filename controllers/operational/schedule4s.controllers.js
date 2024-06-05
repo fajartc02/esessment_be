@@ -4,7 +4,8 @@ const {
   queryGET,
   queryPUT,
   queryTransaction,
-  queryPutTransaction
+  queryPutTransaction,
+  queryPostTransaction
 } = require("../../helpers/query")
 
 const response = require("../../helpers/response")
@@ -13,6 +14,7 @@ const { arrayOrderBy, objToString } = require("../../helpers/formatting")
 const moment = require('moment')
 const logger = require('../../helpers/logger')
 const { cacheGet, cacheAdd, cacheDelete } = require('../../helpers/cacheHelper')
+const { uuid } = require("uuidv4")
 
 const fromSubScheduleSql = `
     ${table.tb_r_4s_sub_schedules} tbrcs
@@ -972,8 +974,17 @@ module.exports = {
           `WHERE ${updateCondition}`
         )
 
-        if (req.body.plan_date)
+        if (req.body.plan_date && req.body.before_plan_date)
         {
+          //#region update plan_date validation
+          const planDateUpdate = moment(req.body.plan_date, 'YYYY-MM-DD')
+          const previousDate = moment(req.body.before_plan_date, 'YYYY-MM-DD')
+
+          if (planDateUpdate.month() < previousDate.month() || planDateUpdate.year() < previousDate.year())
+          {
+            throw "Can't edit schedule plan on previous date"
+          }
+
           const findNightShift = await db.query(`
             select 
               * 
@@ -989,22 +1000,67 @@ module.exports = {
           {
             throw "Can't edit schedule plan on night shift"
           }
+          //#endregion
 
+          let newMainScheduleSet = ''
+          if (planDateUpdate.month() != previousDate.month())
+          {
+            const checkHeaderNextMonth = await db.query(`
+              select 
+                * 
+              from 
+                ${table.tb_r_4s_main_schedules} 
+              where 
+                year_num = '${planDateUpdate.year()}' 
+                and month_num = '${planDateUpdate.month()}'
+                and line_id = '${schedulRow.line_id}'
+                and group_id = '${schedulRow.group_id}'
+              `)
+
+            if (checkHeaderNextMonth.rowCount == 0)
+            {
+              const newMainSchedule = await db.query(`
+                insert into ${table.tb_r_4s_main_schedules}
+                (uuid, line_id, group_id, year_num, month_num, created_by, created_dt, changed_by, changed_dt)
+                values
+                (
+                  '${uuid()}', 
+                  '${schedulRow.line_id}', 
+                  '${schedulRow.group_id}', 
+                  '${planDateUpdate.year()}', 
+                  '${planDateUpdate.month()}',
+                  '${req.user.fullname}', 
+                  '${moment().format('YYYY-MM-DD HH:mm:ss')}', 
+                  '${req.user.fullname}', 
+                  '${moment().format('YYYY-MM-DD HH:mm:ss')}'
+                )
+                returnng *
+              `);
+
+              newMainScheduleSet = `, main_schedule_id = '${newMainSchedule.rows[0].main_schedule_id}'`
+            }
+            else
+            {
+              newMainScheduleSet = `, main_schedule_id = '${checkHeaderNextMonth.rows[0].main_schedule_id}'`
+            }
+
+          }
+
+          // updating new plan date
           await db.query(
             `
               update 
                 ${table.tb_r_4s_sub_schedules} 
               set 
-                plan_time = '${req.body.plan_date}' 
+                plan_time = '${req.body.plan_date}'
+                ${newMainScheduleSet} 
               where 
                 ${updateCondition} 
                 and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')
             `
           )
-        }
 
-        if (req.body.before_plan_date)
-        {
+          // updating previous plan date
           await db.query(
             `
               update 
@@ -1025,7 +1081,7 @@ module.exports = {
     } catch (e)
     {
       console.log(e)
-      response.failed(res, "Error to edit 4s schedule plan")
+      response.failed(res, e)
     }
   },
   sign4sSchedule: async (req, res) => {
