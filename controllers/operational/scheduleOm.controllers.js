@@ -9,10 +9,14 @@ const {
 
 const response = require("../../helpers/response")
 const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData")
-const { arrayOrderBy, objToString } = require("../../helpers/formatting")
+const { arrayOrderBy, objToString, padTwoDigits } = require("../../helpers/formatting")
 const moment = require('moment')
 const logger = require('../../helpers/logger')
 const { cacheGet, cacheAdd, cacheDelete } = require('../../helpers/cacheHelper')
+const { shiftByGroupId, nonShift } = require('../../services/shift.services')
+const { genSingleMonthlySubScheduleSchemaOM, singleSignCheckerSqlFromSchemaOM } = require('../../services/om.services')
+const { bulkToSchema } = require('../../helpers/schema')
+const { uuid } = require('uuidv4')
 
 /**
  * @typedef {Object} ChildrenSubSchedule
@@ -359,6 +363,9 @@ module.exports = {
 
             if (cachedSchedule)
             {
+                console.log('====================================');
+                console.log('fetch from cache');
+                console.log('====================================');
                 response.success(res, "Success to get om sub schedule", cachedSchedule)
                 return
             }
@@ -461,9 +468,22 @@ module.exports = {
                                 '${om_main_schedule_id}' as om_main_schedule_id,
                                 uuid as sign_checker_id,
                                 sign,
-                                start_date,
+                                case 
+                                    when date_part('month', start_date) < date_part('month', end_date) then
+                                        (date_part('year', end_date) || '-' || trim(to_char(date_part('month', end_date), '00')) ||  '-01')::date
+                                    else
+                                        start_date
+                                end as start_date,
                                 end_date,
-                                (end_date - start_date)::integer + 1 as col_span
+                                case 
+                                    when date_part('month', start_date) = date_part('month', end_date) then
+                                        (end_date - start_date)::integer + 1
+                                     when date_part('month', start_date) < date_part('month', end_date) then
+                                        (end_date - (date_part('year', end_date) || '-' || trim(to_char(date_part('month', end_date), '00')) ||  '-01')::date)::integer 
+                                    else 
+                                        (end_date - (date_part('year', end_date) || '-' || trim(to_char(date_part('month', end_date), '00')) ||  '-01')::date)::integer + 1
+                                    
+                                end as col_span
                             from 
                                 ${table.tb_r_om_schedule_sign_checkers} 
                             where 
@@ -483,35 +503,63 @@ module.exports = {
                     return item
                 })
 
+                const findHolidaySignChecker = async (dateBetwenStr, i, first = false) => {
+                    const holidaySchedule = await queryCustom(
+                        `
+                                select 
+                                     tms.*
+                                from 
+                                    ${table.tb_m_schedules} tms
+                                    left join ${table.tb_m_shifts} shift_holiday on
+                                        tms.date between shift_holiday.start_date and shift_holiday.end_date
+                                            and shift_holiday.is_holiday = true
+                                where 
+                                    (tms.is_holiday = true or shift_holiday.is_holiday = true)
+                                    and ${dateBetwenStr}
+                            `
+                    )
+
+                    for (let j = 0; j < holidaySchedule.rows.length; j++)
+                    {
+                        holidayTemp.push({
+                            index: first ? i : i + 1,
+                            om_main_schedule_id: om_main_schedule_id,
+                            sign_checker_id: null,
+                            sign: null,
+                            start_date: holidaySchedule.rows[j].date,
+                            end_date: holidaySchedule.rows[j].date,
+                            col_span: 1,
+                            is_holiday: true,
+                        })
+                    }
+                }
+
                 for (let i = 0; i < signGl.length; i++)
                 {
+                    if (i == 0)
+                    {
+                        await findHolidaySignChecker(`date between 
+                                        (date_part('year', '${signGl[i].end_date}'::date) || '-' || trim(to_char(date_part('month', '${signGl[i].end_date}'::date), '00')) ||  '-01')::date
+                                        and '${signGl[i].end_date}'`, i, true)
+                    }
+
                     if (signGl[i + 1])
                     {
-                        const holidaySchedule = await queryCustom(
-                            `
-                                select 
-                                    * 
-                                from 
-                                    ${table.tb_m_schedules} 
-                                where 
-                                    is_holiday = true 
-                                    and date between '${signGl[i].end_date}' and '${signGl[i + 1].start_date}'
-                            `
-                        )
+                        await findHolidaySignChecker(`date between '${signGl[i].end_date}' and '${signGl[i + 1].start_date}'`, i)
+                    }
 
-                        for (let j = 0; j < holidaySchedule.rows.length; j++)
-                        {
-                            holidayTemp.push({
-                                index: i + 1,
-                                om_main_schedule_id: om_main_schedule_id,
-                                sign_checker_id: null,
-                                sign: null,
-                                start_date: holidaySchedule.rows[j].date,
-                                end_date: holidaySchedule.rows[j].date,
-                                col_span: 1,
-                                is_holiday: true,
-                            })
-                        }
+                    if (i == signGl.length - 1)
+                    {
+                        await findHolidaySignChecker(`date between 
+                                        '${signGl[i].end_date}'
+                                        and (
+                                            date_part('year', '${signGl[i].end_date}'::date) 
+                                                || '-' 
+                                                || trim(to_char(date_part('month', '${signGl[i].end_date}'::date), '00')) 
+                                                ||  '-' 
+                                                || 
+                                                date_part('day', (date_trunc('month', '${signGl[i].end_date}'::date) + interval '1 month - 1 day')::date)
+                                            )::date`, i)
                     }
                 }
 
@@ -766,7 +814,7 @@ module.exports = {
 
             await queryTransaction(async (db) => {
                 const attrsUpdate = await attrsUserUpdateData(req, body)
-                const updateCondition =
+                let updateCondition =
                     `
                         om_main_schedule_id = '${schedulRow.om_main_schedule_id}' 
                         and freq_id = '${schedulRow.freq_id}' 
@@ -826,7 +874,8 @@ module.exports = {
                     //#endregion
 
                     let newMainScheduleSet = ''
-                    if (planDateUpdate.month() != previousDate.month())
+                    let newMainScheduleRealId = null
+                    if (planDateUpdate.month() > previousDate.month())
                     {
                         const checkHeaderNextMonth = await db.query(`
                             select 
@@ -835,11 +884,11 @@ module.exports = {
                                 ${table.tb_r_om_main_schedules} 
                             where 
                                 year_num = '${planDateUpdate.year()}' 
-                                and month_num = '${planDateUpdate.month()}'
+                                and month_num = '${planDateUpdate.month() + 1}'
                                 and line_id = '${schedulRow.line_id}'
                                 and group_id = '${schedulRow.group_id}'
                         `)
-                        
+
                         if (checkHeaderNextMonth.rowCount == 0)
                         {
                             const newMainSchedule = await db.query(`
@@ -851,7 +900,7 @@ module.exports = {
                                     '${schedulRow.line_id}', 
                                     '${schedulRow.group_id}', 
                                     '${planDateUpdate.year()}', 
-                                    '${planDateUpdate.month()}',
+                                    '${planDateUpdate.month() + 1}',
                                     '${req.user.fullname}', 
                                     '${moment().format('YYYY-MM-DD HH:mm:ss')}', 
                                     '${req.user.fullname}', 
@@ -861,16 +910,17 @@ module.exports = {
                             `);
 
                             newMainScheduleSet = `, om_main_schedule_id = '${newMainSchedule.rows[0].om_main_schedule_id}'`
+                            newMainScheduleRealId = newMainSchedule.rows[0].om_main_schedule_id
                         }
                         else
                         {
                             newMainScheduleSet = `, om_main_schedule_id = '${checkHeaderNextMonth.rows[0].om_main_schedule_id}'`
+                            newMainScheduleRealId = checkHeaderNextMonth.rows[0].om_main_schedule_id
                         }
-
                     }
 
-                    await db.query(
-                        `
+                    const sqlUpdateNewPlanDate = (newMainScheduleSet = '') => {
+                        const s = `
                             update 
                                 ${table.tb_r_om_sub_schedules} 
                             set 
@@ -880,10 +930,13 @@ module.exports = {
                                 ${updateCondition} 
                                 and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')
                         `
-                    )
 
-                    await db.query(
-                        `
+                        console.log('sqlUpdateNewPlanDate', s);
+                        return s
+                    }
+
+                    const sqlUpdateOldPlanDate = () => {
+                        const s = `
                             update 
                                 ${table.tb_r_om_sub_schedules} 
                             set 
@@ -892,7 +945,93 @@ module.exports = {
                                 ${updateCondition} 
                                 and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.before_plan_date}')
                         `
-                    )
+
+                        console.log('sqlUpdateOldPlanDate', s);
+                        return s
+                    }
+
+
+                    // updating previous plan date
+                    await db.query(sqlUpdateOldPlanDate())
+
+                    if (newMainScheduleSet == '')
+                    {
+                        await db.query(sqlUpdateNewPlanDate())
+                    }
+                    else
+                    {
+                        updateCondition = `
+                                om_main_schedule_id = '${newMainScheduleRealId}' 
+                                and freq_id = '${schedulRow.freq_id}' 
+                                and om_item_check_kanban_id = '${schedulRow.om_item_check_kanban_id}' 
+                                and machine_id = '${schedulRow.machine_id}'
+                            `
+
+                        //#region check month and year updated plan_date by mandatory id
+                        const monthlyPlanSql = `
+                            select 
+                                * 
+                            from 
+                                ${table.tb_r_om_sub_schedules} 
+                            where 
+                                ${updateCondition} 
+                                and schedule_id in (
+                                    select 
+                                        schedule_id 
+                                    from 
+                                        ${table.tb_m_schedules} 
+                                    where 
+                                        date_part('year', date) = '${planDateUpdate.year()}' 
+                                        and date_part('month', date) = '${planDateUpdate.month() + 1}'
+                                )
+                        `
+                        console.log('monthlyPlanSql', monthlyPlanSql);
+                        const monthlyPlanQuery = await db.query(monthlyPlanSql)
+                        //#endregion
+
+                        if (monthlyPlanQuery.rowCount == 0)
+                        {
+                            const currentMonthDays = await nonShift(planDateUpdate.year(), planDateUpdate.month() + 1)
+                            const singleKanbanSchedule = await bulkToSchema(genSingleMonthlySubScheduleSchemaOM(
+                                {
+                                    om_item_check_kanban_id: schedulRow.om_item_check_kanban_id,
+                                    machine_id: schedulRow.machine_id,
+                                    freq_id: schedulRow.freq_id,
+                                    om_main_schedule_id: newMainScheduleRealId
+                                },
+                                {
+                                    line_id: schedulRow.line_id,
+                                    group_id: schedulRow.group_id,
+                                },
+                                currentMonthDays,
+                                moment(planDateUpdate).format('YYYY-MM-DD')
+                            ))
+
+                            const signCheckerScheduleSchema = await singleSignCheckerSqlFromSchemaOM(
+                                planDateUpdate.year(),
+                                planDateUpdate.month() + 1,
+                                {
+                                    line_id: schedulRow.line_id,
+                                    group_id: schedulRow.group_id,
+                                },
+                                currentMonthDays,
+                                newMainScheduleRealId
+                            )
+
+                            const sqlInSubSchedule = `insert into ${table.tb_r_om_sub_schedules} (${singleKanbanSchedule.columns}) values ${singleKanbanSchedule.values}`
+                            console.log('sqlInSubSchedule', sqlInSubSchedule);
+                            await db.query(sqlInSubSchedule)
+
+                            const sqlInSignChecker = `insert into ${table.tb_r_om_schedule_sign_checkers} (${signCheckerScheduleSchema.columns}) values ${signCheckerScheduleSchema.values}`
+                            console.log('sqlInSignChecker', sqlInSignChecker);
+                            await db.query(sqlInSignChecker)
+                        }
+                        else
+                        {
+                            // updating new plan date
+                            await db.query(sqlUpdateNewPlanDate(newMainScheduleSet))
+                        }
+                    }
                 }
             })
 

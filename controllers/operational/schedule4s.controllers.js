@@ -112,7 +112,7 @@ const childrenSubSchedule = async (
                         'PROBLEM'
                       when item_check.total_checked > 0 and tbrcs.plan_time is not null then
                         'ACTUAL'
-                      when tbrcs.shift_type = 'night_shift' then
+                      when tbrcs.shift_type = 'night_shift' and tbrcs.plan_time is null then
                         'NIGHT_SHIFT'
                       when tbrcs.plan_time is not null then
                         'PLANNING'
@@ -1097,6 +1097,13 @@ module.exports = {
           }
           else
           {
+            updateCondition = `
+                main_schedule_id = '${newMainScheduleRealId}' 
+                and freq_id = '${schedulRow.freq_id}' 
+                and zone_id = '${schedulRow.zone_id}' 
+                and kanban_id = '${schedulRow.kanban_id}'
+              `
+
             //#region check month and year updated plan_date by mandatory id
             const monthlyPlanSql = `
               select 
@@ -1157,13 +1164,6 @@ module.exports = {
             }
             else
             {
-              updateCondition = `
-                main_schedule_id = '${newMainScheduleRealId}' 
-                and freq_id = '${schedulRow.freq_id}' 
-                and zone_id = '${schedulRow.zone_id}' 
-                and kanban_id = '${schedulRow.kanban_id}'
-              `
-
               // updating new plan date
               await db.query(sqlUpdateNewPlanDate(newMainScheduleSet))
             }

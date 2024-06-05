@@ -24,7 +24,7 @@ const { databasePool } = require('../config/database')
 const pg = require('pg')
 const table = require('../config/table')
 const moment = require('moment')
-const { getRandomInt, padTwoDigits } = require('../helpers/formatting')
+const { getRandomInt } = require('../helpers/formatting')
 const { bulkToSchema } = require('../helpers/schema')
 const { uuid } = require('uuidv4')
 

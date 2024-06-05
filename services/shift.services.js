@@ -88,4 +88,69 @@ module.exports = {
         const shiftQuery = await databasePool.query(shiftSql)
         return shiftQuery.rows
     },
+    /**
+     * 
+     * @param {number} currentYear 
+     * @param {number} currentMonth 
+     * @returns {Promise<Array<*>>}
+     */
+    nonShift: async (currentYear, currentMonth) => {
+        //#region scheduler shiftSql
+        const shiftSql =
+            `
+            with
+                shifts as (
+                            select distinct on
+                                ( tms1.date )
+                                tms1.schedule_id,
+                                tms1.date,
+                                date_part('week', date::date) as week_num,
+                                tms1.is_holiday as is_holiday_schedule,
+                                shift_holiday.is_holiday or tms1.is_holiday as is_holiday
+                            from
+                                tb_m_schedules tms1
+                                    left join tb_m_shifts shift_holiday on
+                                        tms1.date between shift_holiday.start_date and shift_holiday.end_date
+                                        and shift_holiday.is_holiday = true
+                            where
+                                    date_part('month', tms1.date) = ${currentMonth}
+                                and date_part('year', tms1.date) = ${currentYear}
+                            order by
+                                date
+                        ),
+                schedules as (
+                                select distinct on (shifts.date)
+                                    shifts.schedule_id,
+                                    shifts.week_num,
+                                    shifts.date,
+                                    to_char(shifts.date::date, 'dd') as date_num,
+                                    shifts.is_holiday,
+                                    shifts.is_holiday_schedule,
+                                    ceiling(
+                                                (
+                                                        date_part(
+                                                                'day', shifts.date) - date_part(
+                                                                'dow', shifts.date)) / 7) =
+                                    1                                as is_first_week
+                                from
+                                    shifts
+                                order by
+                                    shifts.date
+                            )
+            select
+                        row_number()
+                        over (ORDER BY schedules.date )::integer as no,
+                        schedules.*
+            from
+                schedules
+            order by
+                schedules.date
+        `
+        //#endregion    
+
+        //console.log('shiftSql', shiftSql)
+        //logger(shiftSql)
+        const shiftQuery = await databasePool.query(shiftSql)
+        return shiftQuery.rows
+    }
 }

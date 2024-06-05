@@ -1,5 +1,5 @@
 const cache = require('memory-cache')
-const defaultDissapearTime = 30 * 1000 // 30 minute
+const defaultDissapearTime = 5 * 1000 // 30 minute
 
 const cacheGet = (key) => {
     return cache.get(key);

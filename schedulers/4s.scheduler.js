@@ -33,8 +33,6 @@ const currentDate = moment()
 const currentMonth = currentDate.month() + 1 // need +1 to determine current month
 const currentYear = currentDate.year()
 
-//date_part('week', '${currentMonthDay.date}':: date)
-const dateFormatted = (date = '') => (moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD'))
 
 //#region scheduler delete all for testing purpose
 const clear4sRows = async () => {
