@@ -9,6 +9,7 @@ const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData")
 const multipleUUidToIds = require("../../helpers/multipleUuidToId")
 const { queryTransaction } = require('../../helpers/query')
 const removeFileIfExist = require('../../helpers/removeFileIfExist')
+const { mapSchemaPlanKanban4S, genSingleSignCheckerSqlFromSchema } = require('../../services/4s.services')
 
 const uploadDest = (dest = '', fileName = null) => {
     const r = `./uploads/${dest}`
@@ -169,6 +170,23 @@ module.exports = {
                     }
 
                     const attrsInsert = await attrsUserInsertData(req, insertBody)
+
+                    /*  const findLineSql = `select 
+                                             tmz.line_id,
+                                             tmg.group_id
+                                         from 
+                                             ${table.tb_m_zones} tmz
+                                             join ${table.tb_m_lines} tml on tmz.line_id = tml.line_id 
+                                             left join lateral (select * from ${table.tb_m_groups} where is_active = true) tmg on true
+                                         where 
+                                             tmz.uuid = '${req.body.zone_id}'`
+                     const findLineQuery = (await db.query(findLineSql)).rows[0]
+ 
+                     const newScheduleSchema = await mapSchemaPlanKanban4S(
+                         findLineQuery.line_id,
+                     )
+                     const newSignCheckerSchema = await genSingleSignCheckerSqlFromSchema() */
+
                     return await queryPostTransaction(db, table.tb_m_kanbans, attrsInsert)
                 })
 

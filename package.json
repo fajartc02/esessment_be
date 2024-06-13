@@ -4,12 +4,13 @@
     "private": true,
     "scripts": {
         "start": "node ./bin/www",
+        "local": "SET NODE_ENV=local && nodemon ./bin/www",
         "dev": "SET NODE_ENV=dev && nodemon ./bin/www",
         "dev-mac": "export NODE_ENV=dev && nodemon ./bin/www",
         "dev-vps": "SET NODE_ENV=dev && pm2 start ./bin/www --name=eas-dev",
-        "yearly-scheduler": "SET NODE_ENV=dev && node ./schedulers/yearDates.scheduler.js",
-        "4s-scheduler": "SET NODE_ENV=dev && node ./schedulers/4s.scheduler.js",
-        "om-scheduler": "SET NODE_ENV=dev && node ./schedulers/om.scheduler.js"
+        "yearly-scheduler": "SET NODE_ENV=local && node ./schedulers/yearDates.scheduler.js",
+        "4s-scheduler": "SET NODE_ENV=local && node ./schedulers/4s.scheduler.js",
+        "om-scheduler": "SET NODE_ENV=local && node ./schedulers/om.scheduler.js"
     },
     "dependencies": {
         "axios": "^1.4.0",

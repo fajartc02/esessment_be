@@ -12,5 +12,7 @@
     "4s-clear-transaction": "SET NODE_ENV=dev && node ./design/seeders/4sClearTransaction.seeder.js",
     "om-clear-transaction": "SET NODE_ENV=dev && node ./design/seeders/omClearTransaction.seeder.js",
     "4s-cylinder-block-red-white": "SET NODE_ENV=dev && node ./design/seeders/4sCylinderBlockRedWhite.seeder.js",
-    "4s-sub-line-red-white": "SET NODE_ENV=dev && node ./design/seeders/4sSublineRedWhite.seeder.js"
+    "4s-sub-line-red-white": "SET NODE_ENV=dev && node ./design/seeders/4sSublineRedWhite.seeder.js",
+    "4s-low-preassure-red-white": "SET NODE_ENV=dev && node ./design/seeders/4sLowPreassureRedWhite.seeder.js",
+    "4s-manual-update": "SET NODE_ENV=dev && node ./design/seeders/4sManualUpdatePlan.seeder.js"
 }

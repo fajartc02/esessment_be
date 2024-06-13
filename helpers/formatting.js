@@ -1,6 +1,7 @@
 module.exports = {
     padTwoDigits: (number) => {
-        if (number) {
+        if (number)
+        {
             return (parseInt(number) < 10) ? '0' + number.toString() : number.toString();
         }
 
@@ -26,5 +27,13 @@ module.exports = {
         min = Math.ceil(min);
         max = Math.floor(max);
         return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
+    },
+    cleanString: (value) => {
+        if (value)
+        {
+            return value.replace(/ +/g, ' ').trim()
+        }
+
+        return null
+    },
 }

@@ -16,7 +16,7 @@ const logger = require('../../helpers/logger')
 const { cacheGet, cacheAdd, cacheDelete } = require('../../helpers/cacheHelper')
 const { uuid } = require("uuidv4")
 const { shiftByGroupId } = require('../../services/shift.services')
-const { genSingleMonthlySubScheduleSchema, singleSignCheckerSqlFromSchema } = require('../../services/4s.services')
+const { genSingleMonthlySubScheduleSchema, genSingleSignCheckerSqlFromSchema } = require('../../services/4s.services')
 const { bulkToSchema } = require('../../helpers/schema')
 
 const fromSubScheduleSql = `
@@ -1143,7 +1143,7 @@ module.exports = {
                 moment(planDateUpdate).format('YYYY-MM-DD')
               ))
 
-              const signCheckerScheduleSchema = await singleSignCheckerSqlFromSchema(
+              const signCheckerScheduleSchema = await genSingleSignCheckerSqlFromSchema(
                 planDateUpdate.year(),
                 planDateUpdate.month() + 1,
                 {
