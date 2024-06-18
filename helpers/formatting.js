@@ -24,8 +24,9 @@ module.exports = {
         return Object.keys(obj).map(key => obj[key]).join(seperator)
     },
     getRandomInt: (min, max) => {
-        min = Math.ceil(min);
+       /*  min = Math.ceil(min);
         max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min; */
         return Math.floor(Math.random() * (max - min + 1)) + min;
     },
     cleanString: (value) => {

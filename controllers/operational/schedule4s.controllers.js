@@ -67,8 +67,10 @@ const selectSubScheduleCol = [
   'tmich_c.standart_time::REAL as standart_time',
   'tmu.fullname as pic_nm',
   'tmu_actual.fullname as actual_pic_nm',
+  'tbrcs.plan_time',
   'tbrcs.actual_time',
   'tmf.freq_nm',
+  'tmf.precition_val',
   'trmsc.year_num',
   'trmsc.month_num',
 ]
@@ -426,15 +428,7 @@ module.exports = {
         scheduleSql = scheduleSql.concat(` and ${filterCondition} `)
       }
 
-      scheduleSql = scheduleSql.concat(` 
-            order by 
-            case freq_nm 
-              when 'Day' then 1
-              when '1 Week' then 2
-              when '1 Month' then 3
-            end 
-          `
-      )
+      scheduleSql = scheduleSql.concat(`order by precition_val, plan_time`)
 
       //console.log('scheduleSql', scheduleSql)
       //logger(scheduleSql, 'schedule')
@@ -542,17 +536,33 @@ module.exports = {
               select 
                 uuid as sign_checker_id,
                 sign,
-                start_date,
+                case 
+                    when date_part('month', start_date) < date_part('month', end_date) then
+                        (date_part('year', end_date) || '-' || trim(to_char(date_part('month', end_date), '00')) ||  '-01')::date
+                    else
+                        start_date
+                end as start_date,
                 end_date,
-                (end_date - start_date)::integer + 1 as col_span
+                case 
+                    when date_part('month', start_date) = date_part('month', end_date) then
+                        (end_date - start_date)::integer + 1
+                     when date_part('month', start_date) < date_part('month', end_date) then
+                        (end_date - (date_part('year', end_date) || '-' || trim(to_char(date_part('month', end_date), '00')) ||  '-01')::date)::integer 
+                    else 
+                        (end_date - (date_part('year', end_date) || '-' || trim(to_char(date_part('month', end_date), '00')) ||  '-01')::date)::integer + 1
+                    
+                end as col_span,
+                is_gl,
+                is_sh
               from 
                 ${table.tb_r_4s_schedule_sign_checkers} 
               where 
                 main_schedule_id = '${mainScheduleRealId}' 
                 ${whoIs}
               order by
-                start_date
-            `, false)
+                start_date `,
+            false
+          )
         }
 
         const signGl = (await signCheckerQuery('gl')).rows
@@ -560,36 +570,64 @@ module.exports = {
 
         const addHolidayTemp = async (signArr) => {
           const holidayTemp = []
-          for (let i = 0; i < signGl.length; i++)
+
+          const findHolidaySignChecker = async (dateBetwenStr, i, first = false) => {
+            const holidaySchedule = await queryCustom(
+              `
+                                select 
+                                     tms.*
+                                from 
+                                    ${table.tb_m_schedules} tms
+                                    left join ${table.tb_m_shifts} shift_holiday on
+                                        tms.date between shift_holiday.start_date and shift_holiday.end_date
+                                            and shift_holiday.is_holiday = true
+                                where 
+                                    (tms.is_holiday = true or shift_holiday.is_holiday = true)
+                                    and ${dateBetwenStr}
+                            `
+            )
+
+            for (let j = 0; j < holidaySchedule.rows.length; j++)
+            {
+              holidayTemp.push({
+                index: first ? i : i + 1,
+                main_schedule_id: mainScheduleRealId,
+                sign_checker_id: null,
+                sign: null,
+                start_date: holidaySchedule.rows[j].date,
+                end_date: holidaySchedule.rows[j].date,
+                col_span: 1,
+                is_holiday: true,
+              })
+            }
+          }
+
+          for (let i = 0; i < signArr.length; i++)
           {
+            if (i == 0)
+            {
+              await findHolidaySignChecker(`date between 
+                                        (date_part('year', '${signArr[i].end_date}'::date) || '-' || trim(to_char(date_part('month', '${signArr[i].end_date}'::date), '00')) ||  '-01')::date
+                                        and '${signArr[i].end_date}'`, i, true)
+            }
+
             if (signArr[i + 1])
             {
-              const holidaySchedule = await queryCustom(
-                `
-                                select 
-                                    * 
-                                from 
-                                    ${table.tb_m_schedules} 
-                                where 
-                                    is_holiday = true 
-                                    and date between '${signArr[i].end_date}' and '${signArr[i + 1].start_date}'
-                            `,
-                false
-              )
+              await findHolidaySignChecker(`date between '${signArr[i].end_date}' and '${signArr[i + 1].start_date}'`, i)
+            }
 
-              for (let j = 0; j < holidaySchedule.rows.length; j++)
-              {
-                holidayTemp.push({
-                  index: i + 1,
-                  main_schedule_id: main_schedule_id,
-                  sign_checker_id: null,
-                  sign: null,
-                  start_date: holidaySchedule.rows[j].date,
-                  end_date: holidaySchedule.rows[j].date,
-                  col_span: 1,
-                  is_holiday: true,
-                })
-              }
+            if (i == signArr.length - 1 && !signArr[i].is_sh)
+            {
+              await findHolidaySignChecker(`date between 
+                                        '${signArr[i].end_date}'
+                                        and (
+                                            date_part('year', '${signArr[i].end_date}'::date) 
+                                                || '-' 
+                                                || trim(to_char(date_part('month', '${signArr[i].end_date}'::date), '00')) 
+                                                ||  '-' 
+                                                || 
+                                                date_part('day', (date_trunc('month', '${signArr[i].end_date}'::date) + interval '1 month - 1 day')::date)
+                                            )::date`, i)
             }
           }
 
@@ -601,7 +639,6 @@ module.exports = {
 
           return arrayOrderBy(signArr, (s) => s.start_date)
         }
-
 
         result.schedule = await Promise.all(scheduleRows)
         result.sign_checker_gl = await addHolidayTemp(signGl)
@@ -1062,8 +1099,7 @@ module.exports = {
                 plan_time = null
               where 
                 ${updateCondition} 
-                ${byScheduleIdPreviousDateSql}
-            `
+                ${byScheduleIdPreviousDateSql}`
 
             console.log('sqlUpdateOldPlanDate', s);
             return s
@@ -1083,8 +1119,7 @@ module.exports = {
             where 
               ${updateCondition} 
               and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')
-              and shift_type = 'night_shift'
-          `)
+              and shift_type = 'night_shift'`)
 
             if (findNightShift.rowCount > 0)
             {
@@ -1093,16 +1128,32 @@ module.exports = {
 
             // updating new plan date
             await db.query(sqlUpdateNewPlanDate())
+
             //#endregion
           }
           else
           {
-            updateCondition = `
-                main_schedule_id = '${newMainScheduleRealId}' 
+            //find previous 1 month schedule, used previous updatecondition value before reinit
+            const findAvailPlanTimeSql = `select 
+                                            * 
+                                          from 
+                                            ${table.tb_r_4s_sub_schedules} 
+                                          where 
+                                            ${updateCondition}
+                                            and plan_time is not null`
+            console.log('findAvailPlanTimeSql', findAvailPlanTimeSql);
+            const findAvailPlanTimeQuery = await db.query(findAvailPlanTimeSql)
+            console.log('findAvailPlanTime lenght', findAvailPlanTimeQuery.rowCount);
+            if (findAvailPlanTimeQuery.rowCount == 0)
+            {
+              //delete if plan time null
+              await db.query(`delete from ${table.tb_r_4s_sub_schedules} where ${updateCondition}`)
+            }
+
+            updateCondition = `main_schedule_id = '${newMainScheduleRealId}' 
                 and freq_id = '${schedulRow.freq_id}' 
                 and zone_id = '${schedulRow.zone_id}' 
-                and kanban_id = '${schedulRow.kanban_id}'
-              `
+                and kanban_id = '${schedulRow.kanban_id}'`
 
             //#region check month and year updated plan_date by mandatory id
             const monthlyPlanSql = `
@@ -1128,7 +1179,7 @@ module.exports = {
             if (monthlyPlanQuery.rowCount == 0)
             {
               const currentMonthDays = await shiftByGroupId(planDateUpdate.year(), planDateUpdate.month() + 1, schedulRow.line_id, schedulRow.group_id)
-              const singleKanbanSchedule = await bulkToSchema(genSingleMonthlySubScheduleSchema(
+              const singleKanbanSchedule = await genSingleMonthlySubScheduleSchema(
                 {
                   kanban_id: schedulRow.kanban_id,
                   zone_id: schedulRow.zone_id,
@@ -1141,7 +1192,7 @@ module.exports = {
                 },
                 currentMonthDays,
                 moment(planDateUpdate).format('YYYY-MM-DD')
-              ))
+              )
 
               const signCheckerScheduleSchema = await genSingleSignCheckerSqlFromSchema(
                 planDateUpdate.year(),
@@ -1154,16 +1205,25 @@ module.exports = {
                 newMainScheduleRealId
               )
 
-              const sqlInSubSchedule = `insert into ${table.tb_r_4s_sub_schedules} (${singleKanbanSchedule.columns}) values ${singleKanbanSchedule.values}`
-              console.log('sqlInSubSchedule', sqlInSubSchedule);
-              await db.query(sqlInSubSchedule)
+              if (singleKanbanSchedule.columns.length > 0)
+              {
+                const sqlInSubSchedule = `insert into ${table.tb_r_4s_sub_schedules} (${singleKanbanSchedule.columns}) values ${singleKanbanSchedule.values}`
+                console.log('sqlInSubSchedule', sqlInSubSchedule);
+                await db.query(sqlInSubSchedule)
+              }
 
-              const sqlInSignChecker = `insert into ${table.tb_r_4s_schedule_sign_checkers} (${signCheckerScheduleSchema.columns}) values ${signCheckerScheduleSchema.values}`
-              console.log('sqlInSignChecker', sqlInSignChecker);
-              await db.query(sqlInSignChecker)
+              if (signCheckerScheduleSchema.columns.length > 0)
+              {
+                const sqlInSignChecker = `insert into ${table.tb_r_4s_schedule_sign_checkers} (${signCheckerScheduleSchema.columns}) values ${signCheckerScheduleSchema.values}`
+                console.log('sqlInSignChecker', sqlInSignChecker);
+                await db.query(sqlInSignChecker)
+              }
             }
             else
             {
+              // updating previous plan date
+              await db.query(sqlUpdateOldPlanDate())
+
               // updating new plan date
               await db.query(sqlUpdateNewPlanDate(newMainScheduleSet))
             }

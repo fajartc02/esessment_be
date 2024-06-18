@@ -7,14 +7,22 @@ require('dotenv').config({ path: envFilePath })
 const moment = require('moment')
 const { uuid } = require('uuidv4')
 const pg = require('pg')
-const { databasePool } = require('../config/database')
+const { databasePool, database } = require('../config/database')
 const table = require('../config/table')
 const { queryTransaction } = require('../helpers/query')
 const { bulkToSchema } = require('../helpers/schema')
 const logger = require('../helpers/logger')
 const { shiftByGroupId } = require('../services/shift.services')
 const { lineGroupRows } = require('../services/common.services')
-const { genMonthlySubScheduleSchema, genMonthlySignCheckerSchema, findScheduleTransaction4S } = require('../services/4s.services')
+const {
+    genMonthlySubScheduleSchema,
+    genMonthlySignCheckerSchema,
+    findScheduleTransaction4S,
+    findSignCheckerTransaction4S,
+    clear4sTransactionRows
+
+} = require('../services/4s.services')
+const { padTwoDigits } = require('../helpers/formatting')
 
 console.log('env', {
     env: process.env.NODE_ENV,
@@ -29,23 +37,25 @@ console.log('env', {
 console.log(`4S Schedule Date Scheduler Running .....`)
 
 const currentDate = moment()
-const currentMonth = 4//currentDate.month() + 1 // need +1 to determine current month
+const currentMonth = currentDate.month() + 1 // need +1 to determine current month
 const currentYear = currentDate.year()
-
+const flagCreatedBy = `SCHEDULERS ${currentDate.format('YYYY-MM-DD')}`
 
 //#region scheduler main 
 const main = async () => {
     try
     {
+        await database.connect()
+
         //#region schedulers parent 
         const lineGroups = await lineGroupRows(currentYear, currentMonth)
 
-        const mainScheduleBulkSchema = []
-        const subScheduleBulkSchema = []
-        const signCheckerTl1BulkSchema = []
-        const signCheckerTl2BulkSchema = []
-        const signChckerGlBulkSchema = []
-        const signChckerShBulkSchema = []
+        let mainScheduleBulkSchema = []
+        let subScheduleBulkSchema = []
+        let signCheckerTl1BulkSchema = []
+        let signCheckerTl2BulkSchema = []
+        let signChckerGlBulkSchema = []
+        let signChckerShBulkSchema = []
 
         for (let lgIndex = 0; lgIndex < lineGroups.length; lgIndex++)
         {
@@ -67,6 +77,7 @@ const main = async () => {
                     year_num: currentYear,
                     line_id: lineGroups[lgIndex].line_id,
                     group_id: lineGroups[lgIndex].group_id,
+                    created_by: flagCreatedBy,
                 })
             }
 
@@ -99,52 +110,51 @@ const main = async () => {
             }
             //#endregion
         }
-
         //#endregion
 
+        if (mainScheduleBulkSchema.length > 0)
+        {
+            const mSchema = await bulkToSchema(mainScheduleBulkSchema)
+            await database.query(
+                `insert into ${table.tb_r_4s_main_schedules} (${mSchema.columns}) values ${mSchema.values} returning *`)
+            console.log('tb_r_4s_main_schedules', 'inserted')
+        }
 
-        //#region scheduler transaction
-        const transaction = await queryTransaction(async (db) => {
-            //#region scheduler inserted tb_r_4s_main_schedules
-            let mainScheduleInserted = []
-            if (mainScheduleBulkSchema.length > 0)
+        const mainScheduleInserted = await findScheduleTransaction4S(currentYear, currentMonth);
+        console.log('subScheduleBulkSchema length', subScheduleBulkSchema.length);
+        console.log('signCheckerTl1BulkSchema length', signCheckerTl1BulkSchema.length);
+        console.log('signCheckerTl2BulkSchema length', signCheckerTl2BulkSchema.length);
+        console.log('signChckerGlBulkSchema length', signChckerGlBulkSchema.length);
+        console.log('signChckerShBulkSchema length', signChckerShBulkSchema.length);
+
+        let countInsertSub = 0
+        let countInsertSign = 0
+
+        for (let mIndex = 0; mIndex < mainScheduleInserted.length; mIndex++)
+        {
+            //#region scheduler generate main_schedule_id for subScheduleBulkSchema
+            if (subScheduleBulkSchema.length > 0)
             {
-                const mSchema = await bulkToSchema(mainScheduleBulkSchema)
-                mainScheduleInserted = await db.query(
-                    `insert into ${table.tb_r_4s_main_schedules} (${mSchema.columns}) values ${mSchema.values} returning *`)
-                console.log('tb_r_4s_main_schedules', 'inserted')
-                mainScheduleInserted = mainScheduleInserted.rows
-            }
-            else
-            {
-                mainScheduleInserted = await findScheduleTransaction4S(currentYear, currentMonth);
-            }
-
-            //#endregion
-
-            let subScheduleTemp = []
-            let signCheckersTemp = []
-
-            /* logger.info('subScheduleBulkSchema', {
-                meta: {
-                    isJson: true,
-                    message: subScheduleBulkSchema
-                }
-            }) */
-
-            for (let mIndex = 0; mIndex < mainScheduleInserted.length; mIndex++)
-            {
-                //#region scheduler generate main_schedule_id for subScheduleBulkSchema
-                if (subScheduleBulkSchema.length > 0)
+                for (let subIndex = 0; subIndex < subScheduleBulkSchema.length; subIndex++)
                 {
-                    for (let subIndex = 0; subIndex < subScheduleBulkSchema.length; subIndex++)
+                    if (
+                        subScheduleBulkSchema[subIndex].line_id == mainScheduleInserted[mIndex].line_id
+                        && subScheduleBulkSchema[subIndex].group_id == mainScheduleInserted[mIndex].group_id
+                    )
                     {
-                        if (
-                            subScheduleBulkSchema[subIndex].line_id == mainScheduleInserted[mIndex].line_id
-                            && subScheduleBulkSchema[subIndex].group_id == mainScheduleInserted[mIndex].group_id
+                        const checkExisting = await findScheduleTransaction4S(
+                            currentYear,
+                            currentMonth,
+                            mainScheduleInserted[mIndex].line_id,
+                            mainScheduleInserted[mIndex].group_id,
+                            subScheduleBulkSchema[subIndex].freq_id,
+                            subScheduleBulkSchema[subIndex].zone_id,
+                            subScheduleBulkSchema[subIndex].kanban_id,
+                            subScheduleBulkSchema[subIndex].schedule_id
                         )
-                        {
-                            subScheduleTemp.push({
+
+                        const sSchema = await bulkToSchema([
+                            {
                                 uuid: uuid(),
                                 main_schedule_id: mainScheduleInserted[mIndex].main_schedule_id,
                                 kanban_id: subScheduleBulkSchema[subIndex].kanban_id,
@@ -154,23 +164,49 @@ const main = async () => {
                                 shift_type: subScheduleBulkSchema[subIndex].shift_type,
                                 plan_time: subScheduleBulkSchema[subIndex].plan_time,
                                 is_holiday: subScheduleBulkSchema[subIndex].is_holiday,
-                            })
+                                created_by: flagCreatedBy,
+                            }
+                        ])
+
+                        const sqlInSub = `insert into ${table.tb_r_4s_sub_schedules} (${sSchema.columns}) values ${sSchema.values}`
+
+                        if (!checkExisting)
+                        {
+                            //console.log('sqlInSub', sqlInSub);
+                            await database.query(sqlInSub)
+                            countInsertSub += 1
+                        }
+                        else
+                        {
+                            //console.log('skip sub schedule', subScheduleBulkSchema[subIndex]);
                         }
                     }
                 }
-                //#endregion
+            }
+            //#endregion
 
-                //#region scheduler combine all sign checker schema
-                if (signCheckerTl1BulkSchema.length > 0)
+            //#region scheduler combine all sign checker schema
+            if (signCheckerTl1BulkSchema.length > 0)
+            {
+                for (let tl1Index = 0; tl1Index < signCheckerTl1BulkSchema.length; tl1Index++)
                 {
-                    for (let tl1Index = 0; tl1Index < signCheckerTl1BulkSchema.length; tl1Index++)
+                    if (
+                        signCheckerTl1BulkSchema[tl1Index].group_id == mainScheduleInserted[mIndex].group_id
+                        && signCheckerTl1BulkSchema[tl1Index].line_id == mainScheduleInserted[mIndex].line_id
+                    )
                     {
-                        if (
-                            signCheckerTl1BulkSchema[tl1Index].group_id == mainScheduleInserted[mIndex].group_id
-                            && signCheckerTl1BulkSchema[tl1Index].line_id == mainScheduleInserted[mIndex].line_id
+                        const checkExisting = await findSignCheckerTransaction4S(
+                            currentYear,
+                            currentMonth,
+                            mainScheduleInserted[mIndex].line_id,
+                            mainScheduleInserted[mIndex].group_id,
+                            signCheckerTl1BulkSchema[tl1Index].start_date,
+                            signCheckerTl1BulkSchema[tl1Index].end_date,
+                            true
                         )
-                        {
-                            signCheckersTemp.push({
+
+                        const sgSchema = await bulkToSchema([
+                            {
                                 main_schedule_id: mainScheduleInserted[mIndex].main_schedule_id,
                                 uuid: uuid(),
                                 start_date: signCheckerTl1BulkSchema[tl1Index].start_date,
@@ -179,21 +215,61 @@ const main = async () => {
                                 is_tl_2: null,
                                 is_gl: null,
                                 is_sh: null,
-                            })
+                                created_by: flagCreatedBy,
+                            }
+                        ])
+
+                        const sqlInSign = `insert into ${table.tb_r_4s_schedule_sign_checkers} (${sgSchema.columns}) values ${sgSchema.values}`
+
+                        if (!checkExisting || (checkExisting?.length ?? 0) == 0)
+                        {
+
+                            //console.log('sqlInSign', sqlInSign);
+                            await database.query(sqlInSign)
+                            countInsertSign += 1
+                            //console.log('tb_r_4s_schedule_sign_checkers', 'inserted tl1')
                         }
+                        else
+                        {
+                            //console.log('tb_r_4s_schedule_sign_checkers', 'skipped! tl1', sqlInSign)
+                        }
+
+                        /* signCheckersTemp.push({
+                            main_schedule_id: mainScheduleInserted[mIndex].main_schedule_id,
+                            uuid: uuid(),
+                            start_date: signCheckerTl1BulkSchema[tl1Index].start_date,
+                            end_date: signCheckerTl1BulkSchema[tl1Index].end_date,
+                            is_tl_1: true,
+                            is_tl_2: null,
+                            is_gl: null,
+                            is_sh: null,
+                        }) */
                     }
                 }
+            }
 
-                if (signCheckerTl2BulkSchema.length > 0)
+            if (signCheckerTl2BulkSchema.length > 0)
+            {
+                for (let tl2Index = 0; tl2Index < signCheckerTl2BulkSchema.length; tl2Index++)
                 {
-                    for (let tl2Index = 0; tl2Index < signCheckerTl2BulkSchema.length; tl2Index++)
+                    if (
+                        signCheckerTl2BulkSchema[tl2Index].group_id == mainScheduleInserted[mIndex].group_id
+                        && signCheckerTl2BulkSchema[tl2Index].line_id == mainScheduleInserted[mIndex].line_id
+                    )
                     {
-                        if (
-                            signCheckerTl2BulkSchema[tl2Index].group_id == mainScheduleInserted[mIndex].group_id
-                            && signCheckerTl2BulkSchema[tl2Index].line_id == mainScheduleInserted[mIndex].line_id
+                        const checkExisting = await findSignCheckerTransaction4S(
+                            currentYear,
+                            currentMonth,
+                            mainScheduleInserted[mIndex].line_id,
+                            mainScheduleInserted[mIndex].group_id,
+                            signCheckerTl2BulkSchema[tl2Index].start_date,
+                            signCheckerTl2BulkSchema[tl2Index].end_date,
+                            null,
+                            true
                         )
-                        {
-                            signCheckersTemp.push({
+
+                        const sgSchema = await bulkToSchema([
+                            {
                                 main_schedule_id: mainScheduleInserted[mIndex].main_schedule_id,
                                 uuid: uuid(),
                                 start_date: signCheckerTl2BulkSchema[tl2Index].start_date,
@@ -202,21 +278,61 @@ const main = async () => {
                                 is_tl_2: true,
                                 is_gl: null,
                                 is_sh: null,
-                            })
+                                created_by: flagCreatedBy,
+                            }
+                        ])
+                        const sqlInSign = `insert into ${table.tb_r_4s_schedule_sign_checkers} (${sgSchema.columns}) values ${sgSchema.values}`
+
+                        if (!checkExisting || (checkExisting?.length ?? 0) == 0)
+                        {
+
+                            //console.log('sqlInSign', sqlInSign);
+                            await database.query(sqlInSign)
+                            countInsertSign += 1
+                            //console.log('tb_r_4s_schedule_sign_checkers', 'inserted tl2')
                         }
+                        else
+                        {
+                            //console.log('tb_r_4s_schedule_sign_checkers', 'skipped! tl2', sqlInSign)
+                        }
+
+                        /* signCheckersTemp.push({
+                            main_schedule_id: mainScheduleInserted[mIndex].main_schedule_id,
+                            uuid: uuid(),
+                            start_date: signCheckerTl2BulkSchema[tl2Index].start_date,
+                            end_date: signCheckerTl2BulkSchema[tl2Index].end_date,
+                            is_tl_1: null,
+                            is_tl_2: true,
+                            is_gl: null,
+                            is_sh: null,
+                        }) */
                     }
                 }
+            }
 
-                if (signChckerGlBulkSchema.length > 0)
+            if (signChckerGlBulkSchema.length > 0)
+            {
+                for (let glIndex = 0; glIndex < signChckerGlBulkSchema.length; glIndex++)
                 {
-                    for (let glIndex = 0; glIndex < signChckerGlBulkSchema.length; glIndex++)
+                    if (
+                        signChckerGlBulkSchema[glIndex].group_id == mainScheduleInserted[mIndex].group_id
+                        && signChckerGlBulkSchema[glIndex].line_id == mainScheduleInserted[mIndex].line_id
+                    )
                     {
-                        if (
-                            signChckerGlBulkSchema[glIndex].group_id == mainScheduleInserted[mIndex].group_id
-                            && signChckerGlBulkSchema[glIndex].line_id == mainScheduleInserted[mIndex].line_id
+                        const checkExisting = await findSignCheckerTransaction4S(
+                            currentYear,
+                            currentMonth,
+                            mainScheduleInserted[mIndex].line_id,
+                            mainScheduleInserted[mIndex].group_id,
+                            signChckerGlBulkSchema[glIndex].start_date,
+                            signChckerGlBulkSchema[glIndex].end_date,
+                            null,
+                            null,
+                            true
                         )
-                        {
-                            signCheckersTemp.push({
+
+                        const sgSchema = await bulkToSchema([
+                            {
                                 main_schedule_id: mainScheduleInserted[mIndex].main_schedule_id,
                                 uuid: uuid(),
                                 start_date: signChckerGlBulkSchema[glIndex].start_date,
@@ -225,21 +341,62 @@ const main = async () => {
                                 is_tl_2: null,
                                 is_gl: true,
                                 is_sh: null,
-                            })
+                                created_by: flagCreatedBy,
+                            }
+                        ])
+                        const sqlInSign = `insert into ${table.tb_r_4s_schedule_sign_checkers} (${sgSchema.columns}) values ${sgSchema.values}`
+
+                        if (!checkExisting || (checkExisting?.length ?? 0) == 0)
+                        {
+
+                            //console.log('sqlInSign', sqlInSign);
+                            await database.query(sqlInSign)
+                            countInsertSign += 1
+                            //console.log('tb_r_4s_schedule_sign_checkers', 'inserted gl')
                         }
+                        else
+                        {
+                            // console.log('tb_r_4s_schedule_sign_checkers', 'skipped! gl', sqlInSign)
+                        }
+
+                        /* signCheckersTemp.push({
+                            main_schedule_id: mainScheduleInserted[mIndex].main_schedule_id,
+                            uuid: uuid(),
+                            start_date: signChckerGlBulkSchema[glIndex].start_date,
+                            end_date: signChckerGlBulkSchema[glIndex].end_date,
+                            is_tl_1: null,
+                            is_tl_2: null,
+                            is_gl: true,
+                            is_sh: null,
+                        }) */
                     }
                 }
+            }
 
-                if (signChckerShBulkSchema.length > 0)
+            if (signChckerShBulkSchema.length > 0)
+            {
+                for (let shIndex = 0; shIndex < signChckerShBulkSchema.length; shIndex++)
                 {
-                    for (let shIndex = 0; shIndex < signChckerShBulkSchema.length; shIndex++)
+                    if (
+                        signChckerShBulkSchema[shIndex].group_id == mainScheduleInserted[mIndex].group_id
+                        && signChckerShBulkSchema[shIndex].line_id == mainScheduleInserted[mIndex].line_id
+                    )
                     {
-                        if (
-                            signChckerShBulkSchema[shIndex].group_id == mainScheduleInserted[mIndex].group_id
-                            && signChckerShBulkSchema[shIndex].line_id == mainScheduleInserted[mIndex].line_id
+                        const checkExisting = await findSignCheckerTransaction4S(
+                            currentYear,
+                            currentMonth,
+                            mainScheduleInserted[mIndex].line_id,
+                            mainScheduleInserted[mIndex].group_id,
+                            signChckerShBulkSchema[shIndex].start_date,
+                            signChckerShBulkSchema[shIndex].end_date,
+                            null,
+                            null,
+                            null,
+                            true
                         )
-                        {
-                            signCheckersTemp.push({
+
+                        const sgSchema = await bulkToSchema([
+                            {
                                 main_schedule_id: mainScheduleInserted[mIndex].main_schedule_id,
                                 uuid: uuid(),
                                 start_date: signChckerShBulkSchema[shIndex].start_date,
@@ -249,74 +406,60 @@ const main = async () => {
                                 is_tl_2: null,
                                 is_gl: null,
                                 is_sh: true,
-                            })
+                                created_by: flagCreatedBy,
+                            }
+                        ])
+                        const sqlInSign = `insert into ${table.tb_r_4s_schedule_sign_checkers} (${sgSchema.columns}) values ${sgSchema.values}`
+
+                        if (!checkExisting || (checkExisting?.length ?? 0) == 0)
+                        {
+
+                            //console.log('sqlInSign', sqlInSign);
+                            await database.query(sqlInSign)
+                            countInsertSign += 1
+                            //console.log('tb_r_4s_schedule_sign_checkers', 'inserted sh')
                         }
+                        else
+                        {
+                            //console.log('tb_r_4s_schedule_sign_checkers', 'skipped! sh', sqlInSign)
+                        }
+
+                        /* signCheckersTemp.push({
+                            main_schedule_id: mainScheduleInserted[mIndex].main_schedule_id,
+                            uuid: uuid(),
+                            start_date: signChckerShBulkSchema[shIndex].start_date,
+                            end_date: signChckerShBulkSchema[shIndex].end_date,
+                            //end_date: `func (select "date" from tb_m_schedules where "date" between '${signChckerShBulkSchema[shIndex].start_date}' and '${signChckerShBulkSchema[shIndex].end_date}' and (is_holiday is null or is_holiday = false) order by schedule_id desc limit 1)`,
+                            is_tl_1: null,
+                            is_tl_2: null,
+                            is_gl: null,
+                            is_sh: true,
+                        }) */
                     }
                 }
-                //#endregion
             }
-
-            //#region scheduler inserted tb_r_4s_sub_schedules
-
-            if (subScheduleTemp.length > 0)
-            {
-                const sSchema = await bulkToSchema(subScheduleTemp)
-                const sqlInSub = `insert into ${table.tb_r_4s_sub_schedules} (${sSchema.columns}) values ${sSchema.values}`
-                //console.log('sqlInSub', sqlInSub);
-                await db.query(sqlInSub)
-                console.log('tb_r_4s_sub_schedules', 'inserted')
-            }
-            else
-            {
-                console.log('tb_r_4s_sub_schedules', 'skipped!')
-            }
-
             //#endregion
+        }
 
-            //#region scheduler inserted tb_r_4s_schedule_sign_checkers
-            if (signCheckersTemp.length > 0)
-            {
-                const sgSchema = await bulkToSchema(signCheckersTemp)
-                const sqlInSign = `insert into ${table.tb_r_4s_schedule_sign_checkers} (${sgSchema.columns}) values ${sgSchema.values}`
-                //console.log('sqlInSign', sqlInSign);
-                await db.query(sqlInSign)
-                console.log('tb_r_4s_schedule_sign_checkers', 'inserted')
-            }
-            else
-            {
-                console.log('tb_r_4s_schedule_sign_checkers', 'skipped!')
-            }
-
-            //#endregion
-        })
-        //#endregion
-
-        return transaction
-    } catch (error)
+        console.log('countinsert sub', countInsertSub);
+        console.log('countinsert sign', countInsertSign);
+        //return transaction
+    }
+    catch (error)
     {
+        await clear4sTransactionRows(flagCreatedBy)
         console.log('error 4s generate schedule, scheduler running', error)
-        throw error
+    }
+    finally
+    {
+        database.end((e) => {
+            console.log('error database end', e);
+        })
     }
 }
 //#endregion
 
-const test = async () => {
-    const shiftRows = await shiftByGroupId()
-    //const signCheckers = await genSignCheckers(shiftRows)
-    //const signChckerGlBulkSchema = signCheckers.gl
-    //const signChckerShBulkSchema = signCheckers.sh
 
-    //logger(signChckerShBulkSchema.splice(0, 6), '', 'info', true)
-}
-
-/* test()
-    .then((r) => {
-        return 0
-    })
-    .catch((e) => {
-        console.error('test error', e)
-        return 0
-    }) */
 
 /* clear4sRows()
     .then((r) => 0)
@@ -348,6 +491,7 @@ main()
         process.exit()
     })
     .catch((error) => {
+        console.log('error', error);
         process.exit()
     })
 

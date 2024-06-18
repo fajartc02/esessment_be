@@ -1,4 +1,4 @@
-const { databasePool } = require('../config/database')
+const { databasePool, database } = require('../config/database')
 const pg = require('pg')
 const table = require('../config/table')
 const moment = require('moment')
@@ -85,7 +85,7 @@ module.exports = {
 
         //console.log('shiftSql', shiftSql)
         //logger.log('info', shiftSql)
-        const shiftQuery = await databasePool.query(shiftSql)
+        const shiftQuery = await database.query(shiftSql)
         return shiftQuery.rows
     },
     /**
@@ -150,7 +150,7 @@ module.exports = {
 
         //console.log('shiftSql', shiftSql)
         //logger(shiftSql)
-        const shiftQuery = await databasePool.query(shiftSql)
+        const shiftQuery = await database.query(shiftSql)
         return shiftQuery.rows
     }
 }

@@ -5,8 +5,431 @@ const { databasePool } = require('../config/database')
 const { getRandomInt, padTwoDigits } = require('../helpers/formatting')
 const { bulkToSchema } = require('../helpers/schema')
 const { uuid } = require('uuidv4')
+const { nonShift } = require('./shift.services')
 
 const dateFormatted = (date = '') => (moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD'))
+
+const baseMstScheduleQuery4S = async (
+    lineId,
+    groupId
+) => {
+    const mstSql = `select
+                        tmoick.om_item_check_kanban_id,
+                        tmf.freq_id,
+                        tmm.machine_id,
+                        tmf.precition_val
+                    from
+                        ${table.tb_m_om_item_check_kanbans} tmoick
+                            join ${table.tb_m_machines} tmm on tmoick.machine_id = tmm.machine_id
+                            join ${table.tb_m_freqs} tmf on tmoick.freq_id = tmf.freq_id
+                    where
+                        tmm.line_id = ${lineId}
+                        and tmoick.group_id = ${groupId}
+                        and tmoick.deleted_dt is null
+                    order by
+                        tmf.precition_val`                        
+
+    const kanbanQuery = await databasePool.query(mstSql)
+    return kanbanQuery.rows
+}
+
+const findScheduleTransaction4S = async (
+    year,
+    month,
+    lineId = null,
+    groupId = null,
+    freqId = null,
+    zoneId = null,
+    kanbanId = null
+) => {
+    let sql = `select
+                    tr4sms.main_schedule_id,
+                    tr4sms.line_id,
+                    tr4sms.group_id,
+                    tr4sss.freq_id,
+                    tr4sss.zone_id,
+                    tr4sss.kanban_id,
+                    tr4sss.schedule_id,
+                    tms.date,
+                    tr4sss.plan_time,
+                    tr4sss.actual_time,
+                    tmf.precition_val
+                from
+                    tb_r_4s_main_schedules tr4sms
+                        left join tb_r_4s_sub_schedules tr4sss on tr4sms.main_schedule_id = tr4sss.main_schedule_id
+                        left join tb_m_schedules tms on tr4sss.schedule_id = tms.schedule_id
+                        left join tb_m_freqs tmf on tr4sss.freq_id = tmf.freq_id
+                where
+                    tr4sms.month_num = ${month}
+                    and tr4sms.year_num = ${year}
+                    and tr4sms.deleted_dt is null`
+
+    if (lineId)
+    {
+        sql += ` and tr4sms.line_id = ${lineId}`
+    }
+    if (groupId)
+    {
+        sql += ` and tr4sms.group_id = ${groupId}`
+    }
+    if (freqId)
+    {
+        sql += ` and tr4sss.freq_id = ${freqId}`
+    }
+    if (zoneId)
+    {
+        sql += ` and tr4sss.zone_id = ${zoneId}`
+    }
+    if (kanbanId)
+    {
+        sql += ` and tr4sss.kanban_id = ${kanbanId}`
+    }
+
+    const query = await databasePool.query(sql)
+    if (query && query.rowCount > 0)
+    {
+        return query.rows
+    }
+
+    return null
+}
+
+const findSignCheckerTransaction4S = async (
+    year,
+    month,
+    lineId,
+    groupId
+) => {
+    let sql = `select
+                    tr4sms.main_schedule_id
+                from
+                    tb_r_4s_main_schedules tr4sms
+                    join tb_r_4s_schedule_sign_checkers tr4sss on tr4sms.main_schedule_id = tr4sss.main_schedule_id
+                where
+                    tr4sms.month_num = ${month}
+                    and tr4sms.year_num = ${year}
+                    and tr4sms.line_id = ${lineId}
+                    and tr4sms.group_id = ${groupId}`
+
+    //console.log('sql sign checker', sql);
+    const query = await databasePool.query(sql)
+    if (query && query.rowCount > 0)
+    {
+        return query.rows
+    }
+
+    return null
+}
+
+const genDailySchedulePlan = async (
+    kanbanRow = {},
+    shiftRows = [],
+    monthNum,
+    yearNum,
+    lineId = 0,
+    groupId = 0,
+    shouldGeneratePlan = true
+) => {
+    let result = []
+    if (kanbanRow.precition_val == 1)
+    {
+        if (!shiftRows || shiftRows.length == 0)
+        {
+            shiftRows = await shiftByGroupId(
+                yearNum,
+                monthNum,
+                lineId,
+                groupId
+            )
+        }
+
+        for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
+        {
+            const exists = result.find((item) =>
+                item.group_id == lineId
+                && item.line_id == groupId
+                && item.kanban_id == shiftRows[sIndex].kanban_id
+                && item.zone_id == shiftRows[sIndex].zone_id
+                && item.freq_id == shiftRows[sIndex].freq_id
+                && item.schedule_id == shiftRows[sIndex].schedule_id
+            )
+
+            if (exists)
+            {
+                continue
+            }
+
+            let planTime = null
+            if (shiftRows[sIndex].shift_type == 'morning_shift' && !shiftRows[sIndex].is_holiday)
+            {
+                planTime = dateFormatted(shiftRows[sIndex].date)
+            }
+
+            result.push({
+                main_schedule_id: null,
+                group_id: groupId,
+                line_id: lineId,
+                kanban_id: kanbanRow.kanban_id,
+                zone_id: kanbanRow.zone_id,
+                freq_id: kanbanRow.freq_id,
+                schedule_id: shiftRows[sIndex].schedule_id,
+                shift_type: shiftRows[sIndex].shift_type,
+                plan_time: planTime == dateFormatted(shiftRows[sIndex].date) && shouldGeneratePlan ? planTime : null,
+                is_holiday: shiftRows[sIndex].is_holiday,
+            })
+        }
+    }
+
+    return result
+}
+
+const genWeeklySchedulePlan = async (
+    kanbanRow = {},
+    shiftRows = [],
+    monthNum,
+    yearNum,
+    lineId,
+    groupId,
+    shouldGeneratePlan = true
+) => {
+    const result = []
+
+    if (kanbanRow.precition_val == 7)
+    {
+        if (!shiftRows || shiftRows.length == 0)
+        {
+            shiftRows = await shiftByGroupId(
+                yearNum,
+                monthNum,
+                lineId,
+                groupId
+            )
+        }
+
+        let planTimeWeeklyArr = []
+
+        if (shouldGeneratePlan)
+        {
+            const morningShift = shiftRows.filter((item) => {
+                return item.shift_type == 'morning_shift' && !item.is_holiday
+            })
+
+
+            let lastWeekNum = 0
+            let dayIncrement = 1
+            for (let i = 0; i < morningShift.length; i++)
+            {
+                if (lastWeekNum != morningShift[i].week_num)
+                {
+                    const plan = morningShift.filter((item) => {
+                        return item.week_num == morningShift[i].week_num
+                    })
+
+                    if (plan.length > 0)
+                    {
+                        planTimeWeeklyArr.push(dateFormatted(plan[getRandomInt(0, plan.length - 1)].date))
+                    } else
+                    {
+                        planTimeWeeklyArr.push(dateFormatted(morningShift[i].date))
+                    }
+
+                    lastWeekNum = morningShift[i].week_num
+                    dayIncrement++
+                }
+            }
+        }
+
+        for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
+        {
+
+            const exists = result.find((item) =>
+                lineId == item.line_id
+                && item.group_id == groupId
+                && item.kanban_id == shiftRows[sIndex].kanban_id
+                && item.zone_id == shiftRows[sIndex].zone_id
+                && item.freq_id == shiftRows[sIndex].freq_id
+                && item.schedule_id == shiftRows[sIndex].schedule_id
+            )
+
+            if (exists)
+            {
+                continue
+            }
+
+            let planTime = planTimeWeeklyArr.find((item) => item == dateFormatted(shiftRows[sIndex].date))
+
+            result.push({
+                main_schedule_id: null,
+                group_id: groupId,
+                line_id: lineId,
+                kanban_id: kanbanRow.kanban_id,
+                zone_id: kanbanRow.zone_id,
+                freq_id: kanbanRow.freq_id,
+                schedule_id: shiftRows[sIndex].schedule_id,
+                shift_type: shiftRows[sIndex].shift_type,
+                plan_time: planTime == dateFormatted(shiftRows[sIndex].date) && shouldGeneratePlan ? planTime : null,
+                is_holiday: shiftRows[sIndex].is_holiday,
+            })
+        }
+    }
+
+    return result
+}
+
+const genMonthlySchedulePlan = async (
+    kanbanRow = {},
+    shiftRows = [],
+    lineId = 0,
+    groupId = 0,
+    monthNum = 0,
+    yearNum = 0,
+    shouldGeneratePlan = true
+) => {
+    const result = []
+    if (kanbanRow.precition_val >= 30)
+    {
+        if (!shiftRows || shiftRows.length == 0)
+        {
+            shiftRows = await shiftByGroupId(
+                yearNum,
+                monthNum,
+                lineId,
+                groupId
+            )
+        }
+
+        let planTime = null
+        if (shouldGeneratePlan)
+        {
+            const lastMonthPlanSql = `select
+                                        tms."date"
+                                    from
+                                        ${table.tb_r_4s_sub_schedules} trss
+                                        join ${table.tb_m_kanbans} tmk on trss.kanban_id = tmk.kanban_id
+                                        join ${table.tb_m_zones} tmz on trss.zone_id = tmz.zone_id
+                                        join ${table.tb_m_freqs} tmf on trss.freq_id = tmf.freq_id
+                                        join ${table.tb_m_schedules} tms on trss.schedule_id = tms.schedule_id
+                                    where 
+                                        trss.kanban_id = '${kanbanRow.kanban_id}'
+                                        and trss.zone_id = '${kanbanRow.zone_id}'
+                                        and trss.freq_id = '${kanbanRow.freq_id}'
+                                        and tms.date = '${yearNum}-${padTwoDigits(monthNum)}-01'::date - interval '${kanbanRow.precition_val} days'
+                                        and tmf.precition_val >= 30
+                                    order by
+                                        trss.sub_schedule_id desc 
+                                    limit 1`
+
+            const lastPlanTimeQuery = await databasePool.query(lastMonthPlanSql)
+
+            if (lastPlanTimeQuery.rows && lastPlanTimeQuery.rowCount > 0)
+            {
+                planTime = moment(lastPlanTimeQuery.rows[0].date, 'YYYY-MM-DD')
+                    .add(kanbanRow.precition_val, 'd')
+                    .format('YYYY-MM-DD')
+
+                //MONTHLY should plan on holiday  
+                if (
+                    kanbanRow.precition_val == 30
+                    && moment(planTime).day() != 6
+                )
+                {
+                    console.log('platime before', planTime)
+                    planTime = moment(planTime)
+                        .clone()
+                        .weekday(6)
+                        .format('YYYY-MM-DD')
+                    console.log('platime after', planTime)
+                }
+                //2 MONTH should plan on week day
+                else if (moment(planTime).day() == 6 || moment(planTime).day() == 7)
+                {
+                    planTime = moment(planTime)
+                        .clone()
+                        .weekday(getRandomInt(0, 5)) // generate random number 0 - 5 for weekday
+                        .format('YYYY-MM-DD')
+                }
+            }
+
+            if (!planTime)
+            {
+                // determine validity of kanban precition_val should plan if not already exists before (specially for > 1 month)
+                if (kanbanRow.precition_val > 30)
+                {
+                    //#region existing validity
+                    const scheduleExistsSql = `select 
+                                                tr4ss.schedule_id
+                                            from 
+                                                ${table.tb_r_4s_sub_schedules} tr4ss 
+                                                join ${table.tb_m_schedules} tms on tr4ss.schedule_id = tms.schedule_id
+                                            where 
+                                                tr4ss.kanban_id = '${kanbanRow.kanban_id}'
+                                                and tr4ss.zone_id = '${kanbanRow.zone_id}'
+                                                and tr4ss.freq_id = '${kanbanRow.freq_id}'
+                                                and tms.date = '${yearNum}-${padTwoDigits(monthNum)}-01'::date - interval '${kanbanRow.precition_val} days'`
+
+                    const scheduleExists = await databasePool.query(scheduleExistsSql)
+                    if (scheduleExists.rowCount > 0)
+                    {
+                        return result
+                    }
+                    //#endregion
+                }
+
+                const morningShift = shiftRows.filter((item) => {
+                    if (kanbanRow.precition_val == 30)
+                    {
+                        return item.is_holiday_schedule
+                    }
+
+                    return item.shift_type == 'morning_shift'
+                });
+
+                planTime = morningShift[getRandomInt(0, morningShift.length - 1)].date;
+                if (!planTime)
+                {
+                    const lastDay = moment(`${yearNum}-${padTwoDigits(monthNum)}-01`, 'YYYY-MM-DD')
+                        .endOf('month')
+                        .format('D');
+
+                    planTime = `${yearNum}-${padTwoDigits(monthNum)}-${getRandomInt(0, lastDay)}`;
+                }
+            }
+        }
+
+
+        for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
+        {
+            const exists = result.find((item) =>
+                lineId == item.line_id
+                && item.group_id == groupId
+                && item.kanban_id == shiftRows[sIndex].kanban_id
+                && item.zone_id == shiftRows[sIndex].zone_id
+                && item.freq_id == shiftRows[sIndex].freq_id
+                && item.schedule_id == shiftRows[sIndex].schedule_id
+            )
+
+            if (exists)
+            {
+                continue
+            }
+
+            result.push({
+                main_schedule_id: null,
+                group_id: groupId,
+                line_id: lineId,
+                kanban_id: kanbanRow.kanban_id,
+                zone_id: kanbanRow.zone_id,
+                freq_id: kanbanRow.freq_id,
+                schedule_id: shiftRows[sIndex].schedule_id,
+                shift_type: shiftRows[sIndex].shift_type,
+                plan_time: planTime == dateFormatted(shiftRows[sIndex].date) && shouldGeneratePlan ? planTime : null,
+                is_holiday: shiftRows[sIndex].is_holiday,
+            })
+        }
+    }
+
+    return result
+}
 
 
 /**
@@ -198,9 +621,7 @@ const genMonthlySubScheduleSchemaOM = async (currentYear, currentMonth, lineGrou
     const result = []
 
     //#region scheduler fetch all item check
-    const itemCheckQuery = await databasePool.query(
-        `
-            select
+    const mstSql = `select
                 tmoick.om_item_check_kanban_id,
                 tmf.freq_id,
                 tmm.machine_id,
@@ -213,8 +634,9 @@ const genMonthlySubScheduleSchemaOM = async (currentYear, currentMonth, lineGrou
                 tmm.line_id = ${lineGroup.line_id}
                 and tmoick.group_id = ${lineGroup.group_id}
             order by
-                tmf.precition_val
-        `)
+                tmf.precition_val`
+
+    const itemCheckQuery = await databasePool.query(mstSql)
     const itemCheckRows = itemCheckQuery.rows
     if (itemCheckRows.length == 0)
     {
