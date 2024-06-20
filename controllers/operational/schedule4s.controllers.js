@@ -1326,28 +1326,48 @@ module.exports = {
 
       subScheduleRow = subScheduleRow.rows[0]
 
-      const result = await queryCustom(
-        `
-          update ${table.tb_r_4s_sub_schedules}
-          set 
-            plan_time = null,
-            actual_time = null,
-            actual_pic_id = null,
-            changed_by = '${req.user.fullname}',
-            changed_dt = '${moment().format('YYYY-MM-DD HH:mm:ss')}'
-          where
-            main_schedule_id = '${subScheduleRow.main_schedule_id}' 
+      const transaction = await queryTransaction(async (db) => {
+        const updateCondition = `main_schedule_id = '${subScheduleRow.main_schedule_id}' 
             and freq_id = '${subScheduleRow.freq_id}' 
             and zone_id = '${subScheduleRow.zone_id}' 
             and kanban_id = '${subScheduleRow.kanban_id}'
-            and schedule_id = '${subScheduleRow.schedule_id}'
-          returning *
-        `
-      )
+            and schedule_id = '${subScheduleRow.schedule_id}'`
 
+        const updateSql = `update ${table.tb_r_4s_sub_schedules}
+                            set 
+                              plan_time = null,
+                              actual_time = null,
+                              actual_pic_id = null,
+                              changed_by = '${req.user.fullname}',
+                              changed_dt = '${moment().format('YYYY-MM-DD HH:mm:ss')}'
+                            where
+                              ${updateCondition}
+                            returning *`
+        const result = await db.query(updateSql)
+
+        //find previous 1 month schedule, used previous updatecondition value before reinit
+        const findAvailPlanTimeSql = `select 
+                                        * 
+                                      from 
+                                        ${table.tb_r_4s_sub_schedules} 
+                                      where 
+                                        ${updateCondition}
+                                        and plan_time is not null`
+        console.log('findAvailPlanTimeSql', findAvailPlanTimeSql);
+        const findAvailPlanTimeQuery = await db.query(findAvailPlanTimeSql)
+        console.log('findAvailPlanTime lenght', findAvailPlanTimeQuery.rowCount);
+        if (findAvailPlanTimeQuery.rowCount == 0)
+        {
+          //delete if plan time null
+          await db.query(`delete from ${table.tb_r_4s_sub_schedules} where ${updateCondition}`)
+        }
+
+        return result
+      })
+     
       cacheDelete(subScheduleCacheKey(subScheduleRow.main_schedule_uuid))
 
-      response.success(res, 'success to delete 4s sub schedule', result.rows[0])
+      response.success(res, 'success to delete 4s sub schedule', transaction.rows[0])
     } catch (e)
     {
       console.log(e)

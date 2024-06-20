@@ -69,7 +69,7 @@ const main = async () => {
                 lineGroups[lgIndex].group_id
             )
 
-            if (!find || find.length == 0)
+            if (!find || (find?.length ?? 0) == 0)
             {
                 mainScheduleBulkSchema.push({
                     uuid: uuid(),

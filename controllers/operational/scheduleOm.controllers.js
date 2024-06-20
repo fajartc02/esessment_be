@@ -960,12 +960,27 @@ module.exports = {
                     }
                     else
                     {
-                        updateCondition = `
-                                om_main_schedule_id = '${newMainScheduleRealId}' 
+                        //find previous 1 month schedule, used previous updatecondition value before reinit
+                        const findAvailPlanTimeSql = `select 
+                                            * 
+                                          from 
+                                            ${table.tb_r_om_sub_schedules} 
+                                          where 
+                                            ${updateCondition}
+                                            and plan_time is not null`
+                        console.log('findAvailPlanTimeSql', findAvailPlanTimeSql);
+                        const findAvailPlanTimeQuery = await db.query(findAvailPlanTimeSql)
+                        console.log('findAvailPlanTime length', findAvailPlanTimeQuery.rowCount);
+                        if (findAvailPlanTimeQuery.rowCount == 0)
+                        {
+                            //delete if plan time null
+                            await db.query(`delete from ${table.tb_r_om_sub_schedules} where ${updateCondition}`)
+                        }
+
+                        updateCondition = `om_main_schedule_id = '${newMainScheduleRealId}' 
                                 and freq_id = '${schedulRow.freq_id}' 
                                 and om_item_check_kanban_id = '${schedulRow.om_item_check_kanban_id}' 
-                                and machine_id = '${schedulRow.machine_id}'
-                            `
+                                and machine_id = '${schedulRow.machine_id}'`
 
                         //#region check month and year updated plan_date by mandatory id
                         const monthlyPlanSql = `
@@ -1018,16 +1033,26 @@ module.exports = {
                                 newMainScheduleRealId
                             )
 
-                            const sqlInSubSchedule = `insert into ${table.tb_r_om_sub_schedules} (${singleKanbanSchedule.columns}) values ${singleKanbanSchedule.values}`
-                            console.log('sqlInSubSchedule', sqlInSubSchedule);
-                            await db.query(sqlInSubSchedule)
+                            if (singleKanbanSchedule.columns.length > 0)
+                            {
+                                const sqlInSubSchedule = `insert into ${table.tb_r_om_sub_schedules} (${singleKanbanSchedule.columns}) values ${singleKanbanSchedule.values}`
+                                console.log('sqlInSubSchedule', sqlInSubSchedule);
+                                await db.query(sqlInSubSchedule)
+                            }
 
-                            const sqlInSignChecker = `insert into ${table.tb_r_om_schedule_sign_checkers} (${signCheckerScheduleSchema.columns}) values ${signCheckerScheduleSchema.values}`
-                            console.log('sqlInSignChecker', sqlInSignChecker);
-                            await db.query(sqlInSignChecker)
+                            if (signCheckerScheduleSchema.columns.length > 0)
+                            {
+                                const sqlInSignChecker = `insert into ${table.tb_r_om_schedule_sign_checkers} (${signCheckerScheduleSchema.columns}) values ${signCheckerScheduleSchema.values}`
+                                console.log('sqlInSignChecker', sqlInSignChecker);
+                                await db.query(sqlInSignChecker)
+                            }
+
                         }
                         else
                         {
+                            // updating previous plan date
+                            await db.query(sqlUpdateOldPlanDate())
+
                             // updating new plan date
                             await db.query(sqlUpdateNewPlanDate(newMainScheduleSet))
                         }
@@ -1129,9 +1154,14 @@ module.exports = {
 
             subScheduleRow = subScheduleRow.rows[0]
 
-            const result = await queryCustom(
-                `
-                    update ${table.tb_r_om_sub_schedules}
+            const transaction = await queryTransaction(async (db) => {
+                const updateCondition = `om_main_schedule_id = '${subScheduleRow.om_main_schedule_id}' 
+                        and freq_id = '${subScheduleRow.freq_id}' 
+                        and machine_id = '${subScheduleRow.machine_id}' 
+                        and om_item_check_kanban_id = '${subScheduleRow.om_item_check_kanban_id}'
+                        and schedule_id = '${subScheduleRow.schedule_id}'`
+
+                const updateSql = `update ${table.tb_r_om_sub_schedules}
                     set 
                         plan_time = null,
                         actual_time = null,
@@ -1139,18 +1169,34 @@ module.exports = {
                         changed_by = '${req.user.fullname}',
                         changed_dt = '${moment().format('YYYY-MM-DD HH:mm:ss')}'
                     where
-                        om_main_schedule_id = '${subScheduleRow.om_main_schedule_id}' 
-                        and freq_id = '${subScheduleRow.freq_id}' 
-                        and machine_id = '${subScheduleRow.machine_id}' 
-                        and om_item_check_kanban_id = '${subScheduleRow.om_item_check_kanban_id}'
-                        and schedule_id = '${subScheduleRow.schedule_id}'
-                    returning *
-                `
-            )
+                        ${updateCondition}
+                    returning *`
+
+                const result = await db.query(updateSql)
+
+                //find previous 1 month schedule, used previous updatecondition value before reinit
+                const findAvailPlanTimeSql = `select 
+                                            * 
+                                          from 
+                                            ${table.tb_r_om_sub_schedules} 
+                                          where 
+                                            ${updateCondition}
+                                            and plan_time is not null`
+                console.log('findAvailPlanTimeSql', findAvailPlanTimeSql);
+                const findAvailPlanTimeQuery = await db.query(findAvailPlanTimeSql)
+                console.log('findAvailPlanTime length', findAvailPlanTimeQuery.rowCount);
+                if (findAvailPlanTimeQuery.rowCount == 0)
+                {
+                    //delete if plan time null
+                    await db.query(`delete from ${table.tb_r_om_sub_schedules} where ${updateCondition}`)
+                }
+
+                return result
+            })
 
             cacheDelete(subScheduleCacheKey(subScheduleRow.om_main_schedule_uuid))
 
-            response.success(res, 'success to delete om sub schedule', result.rows[0])
+            response.success(res, 'success to delete om sub schedule', transaction.rows[0])
         } catch (e)
         {
             console.log(e)

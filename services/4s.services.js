@@ -195,16 +195,6 @@ const findSignCheckerTransaction4S = async (
     return null
 }
 
-const findSubSchedule = async (
-    mainScheduleId,
-    freqId = null,
-    zoneId = null,
-    kanbanId = null,
-    scheduleId = null
-) => {
-
-}
-
 const genDailySchedulePlan = async (
     kanbanRow = {},
     shiftRows = [],
