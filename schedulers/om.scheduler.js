@@ -8,7 +8,7 @@ const moment = require('moment')
 const { uuid } = require('uuidv4')
 const pg = require('pg')
 
-const { databasePool } = require('../config/database')
+const { databasePool, database } = require('../config/database')
 const table = require('../config/table')
 const { bulkToSchema } = require('../helpers/schema')
 const logger = require('../helpers/logger')
@@ -36,14 +36,14 @@ console.log('env', {
 console.log(`OM Schedule Date Scheduler Running .....`)
 
 const currentDate = moment()
-const currentMonth = 5//currentDate.month() + 1 // need +1 to determine current month
+const currentMonth = currentDate.month() + 1 // need +1 to determine current month
 const currentYear = currentDate.year()
 const flagCreatedBy = `SCHEDULERS ${currentDate.format('YYYY-MM-DD')}`
 
 const main = async () => {
     try
     {
-        await databasePool.connect()
+        await database.connect()
 
         //#region schedulers parent 
         const lineGroups = await lineGroupRows(currentYear, currentMonth)
@@ -61,8 +61,8 @@ const main = async () => {
                 lineGroups[lgIndex].line_id,
                 lineGroups[lgIndex].group_id
             )
-
-            if (!findMain || (findMain?.length ?? 0) == 0)
+            console.log('findMain', findMain);
+            if (!findMain)
             {
                 mainScheduleBulkSchema.push({
                     uuid: uuid(),
@@ -92,11 +92,11 @@ const main = async () => {
         }
         //#endregion
 
-
+        console.log('mainScheduleBulkSchema length', mainScheduleBulkSchema.length);
         if (mainScheduleBulkSchema.length > 0)
         {
             const mSchema = await bulkToSchema(mainScheduleBulkSchema)
-            await databasePool.query(
+            await database.query(
                 `insert into ${table.tb_r_om_main_schedules} (${mSchema.columns}) values ${mSchema.values} returning *`)
             console.log('tb_r_om_main_schedules', 'inserted')
         }
@@ -106,17 +106,19 @@ const main = async () => {
         console.log('signCheckerTlBulkSchema length', signCheckerTlBulkSchema.length);
         console.log('signChckerGlBulkSchema length', signChckerGlBulkSchema.length);
 
+        //console.log('subScheduleBulkSchema', subScheduleBulkSchema[0]);
+
         let countInsertSub = 0
         let countInsertSign = 0
 
-        for (let mIndex = 0; mIndex < mainScheduleInserted.rows.length; mIndex++)
+        for (let mIndex = 0; mIndex < mainScheduleInserted.length; mIndex++)
         {
             //#region scheduler generate om_main_schedule_id for subScheduleBulkSchema
             for (let subIndex = 0; subIndex < subScheduleBulkSchema.length; subIndex++)
             {
                 if (
-                    subScheduleBulkSchema[subIndex].line_id == mainScheduleInserted.rows[mIndex].line_id
-                    && subScheduleBulkSchema[subIndex].group_id == mainScheduleInserted.rows[mIndex].group_id
+                    subScheduleBulkSchema[subIndex].line_id == mainScheduleInserted[mIndex].line_id
+                    && subScheduleBulkSchema[subIndex].group_id == mainScheduleInserted[mIndex].group_id
                 )
                 {
                     const checkExisting = await findScheduleTransactionOM(
@@ -130,10 +132,12 @@ const main = async () => {
                         subScheduleBulkSchema[subIndex].schedule_id
                     )
 
+                    //console.log('checkExisting', checkExisting);
+
                     const sSchema = await bulkToSchema([
                         {
                             uuid: uuid(),
-                            om_main_schedule_id: mainScheduleInserted.rows[mIndex].om_main_schedule_id,
+                            om_main_schedule_id: mainScheduleInserted[mIndex].om_main_schedule_id,
                             om_item_check_kanban_id: subScheduleBulkSchema[subIndex].om_item_check_kanban_id,
                             machine_id: subScheduleBulkSchema[subIndex].machine_id,
                             freq_id: subScheduleBulkSchema[subIndex].freq_id,
@@ -148,7 +152,7 @@ const main = async () => {
                     if (!checkExisting)
                     {
                         //console.log('sqlInSub', sqlInSub);
-                        await databasePool.query(sqlInSub)
+                        await database.query(sqlInSub)
                         countInsertSub += 1
                     }
                     else
@@ -163,8 +167,8 @@ const main = async () => {
             for (let tl1Index = 0; tl1Index < signCheckerTlBulkSchema.length; tl1Index++)
             {
                 if (
-                    signCheckerTlBulkSchema[tl1Index].group_id == mainScheduleInserted.rows[mIndex].group_id
-                    && signCheckerTlBulkSchema[tl1Index].line_id == mainScheduleInserted.rows[mIndex].line_id
+                    signCheckerTlBulkSchema[tl1Index].group_id == mainScheduleInserted[mIndex].group_id
+                    && signCheckerTlBulkSchema[tl1Index].line_id == mainScheduleInserted[mIndex].line_id
                 )
                 {
                     const checkExisting = await findSignCheckerTransactionOM(
@@ -195,7 +199,7 @@ const main = async () => {
                     {
 
                         //console.log('sqlInSign', sqlInSign);
-                        await databasePool.query(sqlInSign)
+                        await database.query(sqlInSign)
                         countInsertSign += 1
                     }
                     else
@@ -208,8 +212,8 @@ const main = async () => {
             for (let glIndex = 0; glIndex < signChckerGlBulkSchema.length; glIndex++)
             {
                 if (
-                    signChckerGlBulkSchema[glIndex].group_id == mainScheduleInserted.rows[mIndex].group_id
-                    && signChckerGlBulkSchema[glIndex].line_id == mainScheduleInserted.rows[mIndex].line_id
+                    signChckerGlBulkSchema[glIndex].group_id == mainScheduleInserted[mIndex].group_id
+                    && signChckerGlBulkSchema[glIndex].line_id == mainScheduleInserted[mIndex].line_id
                 )
                 {
                     const checkExisting = await findSignCheckerTransactionOM(
@@ -240,7 +244,7 @@ const main = async () => {
                     {
 
                         //console.log('sqlInSign', sqlInSign);
-                        await databasePool.query(sqlInSign)
+                        await database.query(sqlInSign)
                         countInsertSign += 1
                         //console.log('tb_r_4s_schedule_sign_checkers', 'inserted tl1')
                     }
@@ -263,7 +267,9 @@ const main = async () => {
     }
     finally
     {
-        databasePool.end()
+        database.end((e) => {
+            console.log('error end', e);
+        })
     }
 }
 
@@ -272,7 +278,7 @@ const main = async () => {
         logger(`successfully run om.scheduler for month=${currentMonth}-${currentYear}`)
         process.exit()
     })
-    .catch((error) => {
+    .catch((e) => {
         logger(`error clearOmTransactionRows() om.scheduler for month=${currentMonth}-${currentYear}`, {
             data: e
         })

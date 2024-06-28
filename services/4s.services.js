@@ -507,25 +507,30 @@ const mapSchemaPlanKanban4S = async (
     monthNum = 0,
     yearNum = 0,
     shiftRows = [],
+    validate = false,
     shouldGeneratePlan = true
 ) => {
     const result = []
 
-    /* const find = await findScheduleTransaction4S(
-        yearNum,
-        monthNum,
-        lineId,
-        groupId,
-        freqId,
-        zoneId,
-        kanbanId
-    )
-
-    if (find || (find?.length ?? 0) > 0)
+    if (validate)
     {
-        //console.log('exists', JSON.stringify(find));
-        return result;
-    } */
+        const find = await findScheduleTransaction4S(
+            yearNum,
+            monthNum,
+            lineId,
+            groupId,
+            freqId,
+            zoneId,
+            kanbanId
+        )
+
+        if (find || (find?.length ?? 0) > 0)
+        {
+            //console.log('exists', JSON.stringify(find));
+            return result;
+        }
+    }
+
 
     if (!shiftRows || shiftRows.length == 0)
     {
@@ -1058,193 +1063,201 @@ const createNewKanbanSingleLineSchedule = async (
     shiftRows = [],
     flagInsertBy = ''
 ) => {
-    if (!db)
+    try
     {
-        db = databasePool
-    }
+        if (!db)
+        {
+            db = database
+        }
 
-    const find = await findScheduleTransaction4S(
-        yearNum,
-        monthNum,
-        lineId,
-        groupId
-    )
-
-    let mainScheduleData = null
-
-    if (!find || find.length == 0)
-    {
-        const mainScheduleSql = `insert into ${table.tb_r_4s_main_schedules}
-            (uuid, month_num, year_num, line_id, group_id) 
-            values 
-            ('${uuid()}', ${monthNum}, ${yearNum}, ${lineId}, ${groupId}) returning *`
-        console.log('mainScheduleSql', mainScheduleSql);
-
-        mainScheduleData = await db.query(mainScheduleSql)
-        mainScheduleData = mainScheduleData.rows[0]
-    }
-    else
-    {
-        mainScheduleData = await db.query(`select * from ${table.tb_r_4s_main_schedules} where main_schedule_id = '${find[0].main_schedule_id}'`)
-        mainScheduleData = mainScheduleData.rows[0]
-    }
-
-    if (!shiftRows || shiftRows.length == 0)
-    {
-        shiftRows = await shiftByGroupId(
+        const find = await findScheduleTransaction4S(
             yearNum,
             monthNum,
             lineId,
             groupId
         )
-    }
 
-    const lineGroup = {
-        line_id: lineId,
-        group_id: groupId,
-    }
+        let mainScheduleData = null
 
-    //#region sub_schedule inserted
+        if (!find || find.length == 0)
+        {
+            const mainScheduleSql = `insert into ${table.tb_r_4s_main_schedules}
+            (uuid, month_num, year_num, line_id, group_id) 
+            values 
+            ('${uuid()}', ${monthNum}, ${yearNum}, ${lineId}, ${groupId}) returning *`
+            console.log('mainScheduleSql', mainScheduleSql);
+
+            mainScheduleData = await db.query(mainScheduleSql)
+            mainScheduleData = mainScheduleData.rows[0]
+        }
+        else
+        {
+            mainScheduleData = await db.query(`select * from ${table.tb_r_4s_main_schedules} where main_schedule_id = '${find[0].main_schedule_id}'`)
+            mainScheduleData = mainScheduleData.rows[0]
+        }
+
+        if (!shiftRows || shiftRows.length == 0)
+        {
+            shiftRows = await shiftByGroupId(
+                yearNum,
+                monthNum,
+                lineId,
+                groupId
+            )
+        }
+
+        const lineGroup = {
+            line_id: lineId,
+            group_id: groupId,
+        }
+
+        //#region sub_schedule inserted
+        {
+            const subSchedule = await mapSchemaPlanKanban4S(
+                lineId,
+                groupId,
+                precitionVal,
+                freqId,
+                zoneId,
+                kanbanId,
+                monthNum,
+                yearNum,
+                shiftRows,
+                true
+            )
+
+            if (subSchedule.length > 0)
+            {
+                let subScheduleTemp = []
+                for (let i = 0; i < subSchedule.length; i++)
+                {
+                    subScheduleTemp.push({
+                        uuid: uuid(),
+                        main_schedule_id: mainScheduleData.main_schedule_id,
+                        kanban_id: subSchedule[i].kanban_id,
+                        zone_id: subSchedule[i].zone_id,
+                        freq_id: subSchedule[i].freq_id,
+                        schedule_id: subSchedule[i].schedule_id,
+                        shift_type: subSchedule[i].shift_type,
+                        plan_time: subSchedule[i].plan_time,
+                        is_holiday: subSchedule[i].is_holiday,
+                        created_by: flagInsertBy ? flagInsertBy : 'GENERATED',
+                    })
+                }
+
+                if (subScheduleTemp.length > 0)
+                {
+                    const subSchema = await bulkToSchema(subScheduleTemp)
+                    const sqlInSub = `insert into ${table.tb_r_4s_sub_schedules} (${subSchema.columns}) values ${subSchema.values}`
+                    console.log('sqlInSub', sqlInSub);
+                    await db.query(sqlInSub)
+                }
+            }
+        }
+        //#endregion
+
+        //#region sign_checker inserted
+        {
+            const signCheckers = await genMonthlySignCheckerSchema(
+                yearNum,
+                monthNum,
+                lineGroup,
+                shiftRows
+            )
+
+            const signCheckersTemp = []
+
+            const signCheckerTl1 = signCheckers.tl1
+            if (signCheckerTl1.length > 0)
+            {
+                for (let i = 0; i < signCheckerTl1.length; i++)
+                {
+                    signCheckersTemp.push({
+                        main_schedule_id: mainScheduleData.main_schedule_id,
+                        uuid: uuid(),
+                        start_date: signCheckerTl1[i].start_date,
+                        end_date: signCheckerTl1[i].end_date,
+                        is_tl_1: true,
+                        is_tl_2: null,
+                        is_gl: null,
+                        is_sh: null,
+                        created_by: flagInsertBy ? flagInsertBy : 'GENERATED',
+                    })
+                }
+            }
+
+            const signCheckerTl2 = signCheckers.tl2
+            if (signCheckerTl2.length > 0)
+            {
+                for (let i = 0; i < signCheckerTl2.length; i++)
+                {
+                    signCheckersTemp.push({
+                        main_schedule_id: mainScheduleData.main_schedule_id,
+                        uuid: uuid(),
+                        start_date: signCheckerTl2[i].start_date,
+                        end_date: signCheckerTl2[i].end_date,
+                        is_tl_1: null,
+                        is_tl_2: true,
+                        is_gl: null,
+                        is_sh: null,
+                        created_by: flagInsertBy ? flagInsertBy : 'GENERATED',
+                    })
+                }
+            }
+
+            const signChckerGl = signCheckers.gl
+            if (signChckerGl.length > 0)
+            {
+                for (let i = 0; i < signChckerGl.length; i++)
+                {
+                    signCheckersTemp.push({
+                        main_schedule_id: mainScheduleData.main_schedule_id,
+                        uuid: uuid(),
+                        start_date: signChckerGl[i].start_date,
+                        end_date: signChckerGl[i].end_date,
+                        is_tl_1: null,
+                        is_tl_2: null,
+                        is_gl: true,
+                        is_sh: null,
+                        created_by: flagInsertBy ? flagInsertBy : 'GENERATED',
+                    })
+                }
+            }
+
+            const signChckerSh = signCheckers.sh
+            if (signChckerSh.length > 0)
+            {
+                for (let i = 0; i < signChckerSh.length; i++)
+                {
+                    signCheckersTemp.push({
+                        main_schedule_id: mainScheduleData.main_schedule_id,
+                        uuid: uuid(),
+                        start_date: signChckerSh[i].start_date,
+                        end_date: signChckerSh[i].end_date,
+                        is_tl_1: null,
+                        is_tl_2: null,
+                        is_gl: null,
+                        is_sh: true,
+                        created_by: flagInsertBy ? flagInsertBy : 'GENERATED',
+                    })
+                }
+            }
+
+            if (signCheckersTemp.length > 0)
+            {
+                const sgSchema = await bulkToSchema(signCheckersTemp)
+                const sqlInSign = `insert into ${table.tb_r_4s_schedule_sign_checkers} (${sgSchema.columns}) values ${sgSchema.values}`
+                console.log('sqlInSign', sqlInSign);
+                await db.query(sqlInSign)
+            }
+        }
+
+        //#endregion
+    }
+    catch (e)
     {
-        const subSchedule = await mapSchemaPlanKanban4S(
-            lineId,
-            groupId,
-            precitionVal,
-            freqId,
-            zoneId,
-            kanbanId,
-            monthNum,
-            yearNum,
-            shiftRows
-        )
-
-        if (subSchedule.length > 0)
-        {
-            let subScheduleTemp = []
-            for (let i = 0; i < subSchedule.length; i++)
-            {
-                subScheduleTemp.push({
-                    uuid: uuid(),
-                    main_schedule_id: mainScheduleData.main_schedule_id,
-                    kanban_id: subSchedule[i].kanban_id,
-                    zone_id: subSchedule[i].zone_id,
-                    freq_id: subSchedule[i].freq_id,
-                    schedule_id: subSchedule[i].schedule_id,
-                    shift_type: subSchedule[i].shift_type,
-                    plan_time: subSchedule[i].plan_time,
-                    is_holiday: subSchedule[i].is_holiday,
-                    created_by: flagInsertBy ? flagInsertBy : 'GENERATED',
-                })
-            }
-
-            if (subScheduleTemp.length > 0)
-            {
-                const subSchema = await bulkToSchema(subScheduleTemp)
-                const sqlInSub = `insert into ${table.tb_r_4s_sub_schedules} (${subSchema.columns}) values ${subSchema.values}`
-                console.log('sqlInSub', sqlInSub);
-                await db.query(sqlInSub)
-            }
-        }
+        throw e
     }
-    //#endregion
-
-    //#region sign_checker inserted
-    {
-        const signCheckers = await genMonthlySignCheckerSchema(
-            yearNum,
-            monthNum,
-            lineGroup,
-            shiftRows
-        )
-
-        const signCheckersTemp = []
-
-        const signCheckerTl1 = signCheckers.tl1
-        if (signCheckerTl1.length > 0)
-        {
-            for (let i = 0; i < signCheckerTl1.length; i++)
-            {
-                signCheckersTemp.push({
-                    main_schedule_id: mainScheduleData.main_schedule_id,
-                    uuid: uuid(),
-                    start_date: signCheckerTl1[i].start_date,
-                    end_date: signCheckerTl1[i].end_date,
-                    is_tl_1: true,
-                    is_tl_2: null,
-                    is_gl: null,
-                    is_sh: null,
-                    created_by: flagInsertBy ? flagInsertBy : 'GENERATED',
-                })
-            }
-        }
-
-        const signCheckerTl2 = signCheckers.tl2
-        if (signCheckerTl2.length > 0)
-        {
-            for (let i = 0; i < signCheckerTl2.length; i++)
-            {
-                signCheckersTemp.push({
-                    main_schedule_id: mainScheduleData.main_schedule_id,
-                    uuid: uuid(),
-                    start_date: signCheckerTl2[i].start_date,
-                    end_date: signCheckerTl2[i].end_date,
-                    is_tl_1: null,
-                    is_tl_2: true,
-                    is_gl: null,
-                    is_sh: null,
-                    created_by: flagInsertBy ? flagInsertBy : 'GENERATED',
-                })
-            }
-        }
-
-        const signChckerGl = signCheckers.gl
-        if (signChckerGl.length > 0)
-        {
-            for (let i = 0; i < signChckerGl.length; i++)
-            {
-                signCheckersTemp.push({
-                    main_schedule_id: mainScheduleData.main_schedule_id,
-                    uuid: uuid(),
-                    start_date: signChckerGl[i].start_date,
-                    end_date: signChckerGl[i].end_date,
-                    is_tl_1: null,
-                    is_tl_2: null,
-                    is_gl: true,
-                    is_sh: null,
-                    created_by: flagInsertBy ? flagInsertBy : 'GENERATED',
-                })
-            }
-        }
-
-        const signChckerSh = signCheckers.sh
-        if (signChckerSh.length > 0)
-        {
-            for (let i = 0; i < signChckerSh.length; i++)
-            {
-                signCheckersTemp.push({
-                    main_schedule_id: mainScheduleData.main_schedule_id,
-                    uuid: uuid(),
-                    start_date: signChckerSh[i].start_date,
-                    end_date: signChckerSh[i].end_date,
-                    is_tl_1: null,
-                    is_tl_2: null,
-                    is_gl: null,
-                    is_sh: true,
-                    created_by: flagInsertBy ? flagInsertBy : 'GENERATED',
-                })
-            }
-        }
-
-        if (signCheckersTemp.length > 0)
-        {
-            const sgSchema = await bulkToSchema(signCheckersTemp)
-            const sqlInSign = `insert into ${table.tb_r_4s_schedule_sign_checkers} (${sgSchema.columns}) values ${sgSchema.values}`
-            console.log('sqlInSign', sqlInSign);
-            await db.query(sqlInSign)
-        }
-    }
-
-    //#endregion
 }
 
 module.exports = {

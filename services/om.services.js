@@ -1,7 +1,7 @@
 const pg = require('pg')
 const table = require('../config/table')
 const moment = require('moment')
-const { databasePool } = require('../config/database')
+const { databasePool, database } = require('../config/database')
 const { getRandomInt, padTwoDigits } = require('../helpers/formatting')
 const { bulkToSchema } = require('../helpers/schema')
 const { uuid } = require('uuidv4')
@@ -29,7 +29,7 @@ const baseMstScheduleQueryOM = async (
                     order by
                         tmf.precition_val`
 
-    const kanbanQuery = await databasePool.query(mstSql)
+    const kanbanQuery = await database.query(mstSql)
     return kanbanQuery.rows
 }
 
@@ -48,11 +48,11 @@ const findScheduleTransactionOM = async (
 
     if (lineId)
     {
-        filterMain.push(`tr4sms.line_id = ${lineId}`)
+        filterMain.push(`troms.line_id = ${lineId}`)
     }
     if (groupId)
     {
-        filterMain.push(`tr4sms.group_id = ${groupId}`)
+        filterMain.push(`troms.group_id = ${groupId}`)
     }
 
     if (freqId)
@@ -93,8 +93,8 @@ const findScheduleTransactionOM = async (
                     and troms.deleted_dt is null
                     ${filterMain.length > 0 ? 'and ' + filterMain.join(' and ') : ''}
                     ${filterSub.length > 0 ? 'and ' + filterSub.join(' and ') : ''}`
-
-    const query = await databasePool.query(sql)
+    //console.log('findScheduleTransactionOM', sql)
+    const query = await database.query(sql)
     if (query && query.rowCount > 0)
     {
         return query.rows
@@ -141,8 +141,8 @@ const findSignCheckerTransactionOM = async (
         sql += ` and trossc.is_gl = true`
     }
 
-    //console.log('sql sign checker', sql);
-    const query = await databasePool.query(sql)
+    //console.log('findSignCheckerTransactionOM', sql);
+    const query = await database.query(sql)
     if (query && query.rowCount > 0)
     {
         return query.rows
@@ -173,7 +173,9 @@ const findSingleLastPlanTimeOM = async (
                                 and tross.freq_id = '${freqId}'
                                 and tms.date = '${yearNum}-${padTwoDigits(monthNum)}-01'::date - interval '${precitionVal} days'
                             limit 1`
-    const lastPlanTimeQuery = await databasePool.query(lastPlanTimeSql)
+
+    //console.log('findSingleLastPlanTimeOM', lastPlanTimeSql);
+    const lastPlanTimeQuery = await database.query(lastPlanTimeSql)
 
     if (lastPlanTimeQuery && lastPlanTimeQuery.rowCount > 0)
     {
@@ -239,7 +241,11 @@ const genWeeklySchedulePlan = async (
 ) => {
     const result = []
 
-    if (itemCheckKanbanRow.precition_val >= 7)
+    if (
+        itemCheckKanbanRow.precition_val == 7
+        || itemCheckKanbanRow.precition_val == 14
+        || itemCheckKanbanRow.precition_val == 21
+    )
     {
         if (!shiftRows || shiftRows.length == 0)
         {
@@ -255,31 +261,58 @@ const genWeeklySchedulePlan = async (
 
         if (shouldGeneratePlan)
         {
-            const morningShift = shiftRows.filter((item) => {
+            const shifts = shiftRows.filter((item) => {
                 return !item.is_holiday
             })
 
             let lastWeekNum = 0
 
-            for (let i = 0; i < morningShift.length; i++)
+            if (itemCheckKanbanRow.precition_val == 7)
             {
-                if (lastWeekNum != morningShift[i].week_num)
+                for (let i = 0; i < shifts.length; i++)
                 {
-                    const plan = morningShift.filter((item) => {
-                        return item.week_num == morningShift[i].week_num
-                    })
+                    if (lastWeekNum != shifts[i].week_num)
+                    {
+                        const plan = shifts.filter((item) => {
+                            return item.week_num == shifts[i].week_num
+                        })
 
-                    if (plan.length > 0)
-                    {
-                        planTimeWeeklyArr.push(dateFormatted(plan[getRandomInt(0, plan.length - 1)].date))
-                    } else
-                    {
-                        planTimeWeeklyArr.push(dateFormatted(morningShift[i].date))
+                        if (plan.length > 0)
+                        {
+                            planTimeWeeklyArr.push(dateFormatted(plan[getRandomInt(0, plan.length - 1)].date))
+                        } else
+                        {
+                            planTimeWeeklyArr.push(dateFormatted(shifts[i].date))
+                        }
+
+                        lastWeekNum = shifts[i].week_num
                     }
-
-                    lastWeekNum = morningShift[i].week_num
                 }
             }
+            else if (itemCheckKanbanRow.precition_val == 14)
+            {
+                const mid = shifts.length - (shifts.length / 2);
+                const first = shifts[getRandomInt(0, mid)]
+                if (first)
+                {
+                    planTimeWeeklyArr.push(dateFormatted(first.date))
+                }
+
+                const second = shifts[getRandomInt(mid, shifts.length)]
+                if (second)
+                {
+                    planTimeWeeklyArr.push(dateFormatted(second.date))
+                } 
+                else
+                {
+                    planTimeWeeklyArr.push(dateFormatted(shifts[getRandomInt(0, shifts.length)].date))
+                }
+            }
+            else if (itemCheckKanbanRow.precition_val == 21)
+            {
+                planTimeWeeklyArr.push(dateFormatted(shifts[getRandomInt(0, shifts.length)].date))
+            }
+
         }
 
         for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
@@ -370,11 +403,11 @@ const genMonthlySchedulePlan = async (
                                                 ${table.tb_r_om_sub_schedules} tross 
                                                 join ${table.tb_m_schedules} tms on tross.schedule_id = tms.schedule_id
                                             where 
-                                                tross.kanban_id = '${itemCheckKanbanRow.kanban_id}'
+                                                tross.om_item_check_kanban_id = '${itemCheckKanbanRow.om_item_check_kanban_id}'
                                                 and tross.machine_id = '${itemCheckKanbanRow.machine_id}'
                                                 and tross.freq_id = '${itemCheckKanbanRow.freq_id}'`
 
-                const scheduleExists = await databasePool.query(scheduleExistsSql)
+                const scheduleExists = await database.query(scheduleExistsSql)
                 if (scheduleExists.rowCount > 0)
                 {
                     return result
@@ -446,7 +479,7 @@ const mapSchemaPlanKanbanOM = async (
 
     const itemCheckKanbanRow = {
         precition_val: precition_val,
-        kanban_id: itemCheckKanbanId,
+        om_item_check_kanban_id: itemCheckKanbanId,
         freq_id: freqId,
         machine_id: machineId,
     }
@@ -682,7 +715,7 @@ const genMonthlySignCheckerSchemaOM = async (yearNum, monthNum, lineGroup, shift
 
             //console.log('glSignSql', glSignSql)
             //logger(glSignSql)
-            const glSignQuery = await databasePool.query(glSignSql)
+            const glSignQuery = await database.query(glSignSql)
 
             for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
             {
@@ -747,7 +780,6 @@ const genSingleMonthlySubScheduleSchemaOM = (kanbanRow, lineGroup, shiftRows = [
     return result
 }
 
-
 /**
 * 
 * @param {signChecker} signCheckerSchema 
@@ -792,18 +824,18 @@ const clearOmTransactionRows = async (flagCreatedBy) => {
     if (flagCreatedBy)
     {
         console.log('clearing start')
-        
-        await databasePool.query(`DELETE FROM ${table.tb_r_om_sub_schedules} WHERE created_by = '${flagCreatedBy}'`)
-        const lastSub = await databasePool.query(`SELECT *, date(created_dt) as created_date FROM ${table.tb_r_om_sub_schedules} ORDER BY om_sub_schedule_id DESC LIMIT 1`)
-        await databasePool.query(`ALTER TABLE ${table.tb_r_om_sub_schedules} ALTER COLUMN om_sub_schedule_id RESTART WITH ${(lastSub.rows[0]?.om_sub_schedule_id ?? 0) + 1}`)
 
-        await databasePool.query(`DELETE FROM ${table.tb_r_om_schedule_sign_checkers} WHERE created_by = '${flagCreatedBy}'`)
-        const lastSignChecker = await databasePool.query(`SELECT *, date(created_dt) as created_date FROM ${table.tb_r_om_schedule_sign_checkers} ORDER BY om_sign_checker_id DESC LIMIT 1`)
-        await databasePool.query(`ALTER TABLE ${table.tb_r_om_schedule_sign_checkers} ALTER COLUMN om_sign_checker_id RESTART WITH ${(lastSignChecker.rows[0]?.om_sign_checker_id ?? 0) + 1}`)
+        await database.query(`DELETE FROM ${table.tb_r_om_sub_schedules} WHERE created_by = '${flagCreatedBy}'`)
+        const lastSub = await database.query(`SELECT *, date(created_dt) as created_date FROM ${table.tb_r_om_sub_schedules} ORDER BY om_sub_schedule_id DESC LIMIT 1`)
+        await database.query(`ALTER TABLE ${table.tb_r_om_sub_schedules} ALTER COLUMN om_sub_schedule_id RESTART WITH ${(lastSub.rows[0]?.om_sub_schedule_id ?? 0) + 1}`)
 
-        await databasePool.query(`DELETE FROM ${table.tb_r_om_main_schedules} WHERE created_by = '${flagCreatedBy}'`)
-        const lastMain = await databasePool.query(`SELECT *, date(created_dt) as created_date FROM ${table.tb_r_om_main_schedules} ORDER BY om_main_schedule_id DESC LIMIT 1`)
-        await databasePool.query(`ALTER TABLE ${table.tb_r_om_main_schedules} ALTER COLUMN om_main_schedule_id RESTART WITH ${(lastMain.rows[0]?.om_main_schedule_id ?? 0) + 1}`)
+        await database.query(`DELETE FROM ${table.tb_r_om_schedule_sign_checkers} WHERE created_by = '${flagCreatedBy}'`)
+        const lastSignChecker = await database.query(`SELECT *, date(created_dt) as created_date FROM ${table.tb_r_om_schedule_sign_checkers} ORDER BY om_sign_checker_id DESC LIMIT 1`)
+        await database.query(`ALTER TABLE ${table.tb_r_om_schedule_sign_checkers} ALTER COLUMN om_sign_checker_id RESTART WITH ${(lastSignChecker.rows[0]?.om_sign_checker_id ?? 0) + 1}`)
+
+        await database.query(`DELETE FROM ${table.tb_r_om_main_schedules} WHERE created_by = '${flagCreatedBy}'`)
+        const lastMain = await database.query(`SELECT *, date(created_dt) as created_date FROM ${table.tb_r_om_main_schedules} ORDER BY om_main_schedule_id DESC LIMIT 1`)
+        await database.query(`ALTER TABLE ${table.tb_r_om_main_schedules} ALTER COLUMN om_main_schedule_id RESTART WITH ${(lastMain.rows[0]?.om_main_schedule_id ?? 0) + 1}`)
 
         console.log('clearing succeed')
     }

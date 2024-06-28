@@ -10,7 +10,7 @@
         "dev-vps": "SET NODE_ENV=dev && pm2 start ./bin/www --name=eas-dev",
         "yearly-scheduler": "SET NODE_ENV=local && node ./schedulers/yearDates.scheduler.js",
         "4s-scheduler": "SET NODE_ENV=dev && node ./schedulers/4s.scheduler.js",
-        "om-scheduler": "SET NODE_ENV=local && node ./schedulers/om.scheduler.js"
+        "om-scheduler": "SET NODE_ENV=dev && node ./schedulers/om.scheduler.js"
     },
     "dependencies": {
         "axios": "^1.4.0",
