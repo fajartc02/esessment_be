@@ -9,6 +9,18 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const cors = require('cors')
 
+//#region cron
+const cron = require('node-cron');
+cron.schedule('* 0 1 * * *', async () => {
+    const _4sSchedule = require('./schedulers/4s.scheduler')
+    const omSchedule = require('./schedulers/om.scheduler')
+    
+    await _4sSchedule()
+    await omSchedule()
+});
+//#endregion
+
+
 var routerV1 = require('./routes/v1/index');
 
 const { database } = require('./config/database')
@@ -36,5 +48,6 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/api/v1', routerV1);
+
 
 module.exports = app;
