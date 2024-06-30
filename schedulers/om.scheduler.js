@@ -43,7 +43,9 @@ const flagCreatedBy = `SCHEDULERS ${currentDate.format('YYYY-MM-DD')}`
 const main = async () => {
     try
     {
-        await database.connect()
+        database.connect((err) => {
+            console.log('database already connected');
+        })
 
         //#region schedulers parent 
         const lineGroups = await lineGroupRows(currentYear, currentMonth)
