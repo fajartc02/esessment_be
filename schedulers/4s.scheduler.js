@@ -454,9 +454,9 @@ const main = async () => {
     }
     finally
     {
-        database.end((e) => {
+        /* database.end((e) => {
             console.log('error database end', e);
-        })
+        }) */
     }
 }
 //#endregion

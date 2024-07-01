@@ -269,9 +269,9 @@ const main = async () => {
     }
     finally
     {
-        database.end((e) => {
+        /* database.end((e) => {
             console.log('error end', e);
-        })
+        }) */
     }
 }
 

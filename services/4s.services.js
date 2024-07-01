@@ -410,7 +410,7 @@ const genMonthlySchedulePlan = async (
                         .clone()
                         .weekday(6)
 
-                    console.log('platime after', planTime)
+                    //console.log('platime after', planTime)
                 }
                 //2 MONTH should plan on week day
                 else if (kanbanRow.precition_val > 30 && moment(planTime).day() == 6 || moment(planTime).day() == 7)
