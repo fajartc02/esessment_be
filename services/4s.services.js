@@ -28,7 +28,7 @@ const { getRandomInt, padTwoDigits } = require('../helpers/formatting')
 const { bulkToSchema } = require('../helpers/schema')
 const { uuid } = require('uuidv4')
 const { addBusinessDaysToDate } = require('../helpers/date')
-const { shiftByGroupId } = require('./shift.services')
+const { shiftByGroupId, nonShift } = require('./shift.services')
 
 const dateFormatted = (date = '') => (moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD'))
 
@@ -81,6 +81,7 @@ const findScheduleTransaction4S = async (
     {
         filterMain.push(`tr4sms.group_id = ${groupId}`)
     }
+
     if (freqId)
     {
         filterSub.push(`tr4sss.freq_id = ${freqId}`)
@@ -209,32 +210,36 @@ const genDailySchedulePlan = async (
     {
         if (!shiftRows || shiftRows.length == 0)
         {
-            shiftRows = await shiftByGroupId(
-                yearNum,
-                monthNum,
-                lineId,
-                groupId
-            )
+            if (lineId == 8 || lineId == 9)
+            {
+                shiftRows = await shiftByGroupId(
+                    yearNum,
+                    monthNum,
+                    lineId,
+                    groupId
+                )
+            }
+            else
+            {
+                shiftRows = await nonShift(
+                    yearNum,
+                    monthNum
+                )
+            }
         }
 
         for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
         {
-            /* const exists = result.find((item) =>
-                item.group_id == lineId
-                && item.line_id == groupId
-                && item.kanban_id == kanbanRow.kanban_id
-                && item.zone_id == kanbanRow.zone_id
-                && item.freq_id == kanbanRow.freq_id
-                && item.schedule_id == shiftRows[sIndex].schedule_id
-            )
-
-            if (exists)
-            {
-                continue
-            } */
-
             let planTime = null
-            if (shiftRows[sIndex].shift_type == 'morning_shift' && !shiftRows[sIndex].is_holiday)
+            if (
+                !shiftRows[sIndex].is_holiday
+                && (lineId == 8 || lineId == 9)
+                && shiftRows[sIndex].shift_type == 'morning_shift'
+            )
+            {
+                planTime = dateFormatted(shiftRows[sIndex].date)
+            }
+            else if (!shiftRows[sIndex].is_holiday && lineId != 8 && lineId != 9)
             {
                 planTime = dateFormatted(shiftRows[sIndex].date)
             }
@@ -247,7 +252,7 @@ const genDailySchedulePlan = async (
                 zone_id: kanbanRow.zone_id,
                 freq_id: kanbanRow.freq_id,
                 schedule_id: shiftRows[sIndex].schedule_id,
-                shift_type: shiftRows[sIndex].shift_type,
+                shift_type: lineId == 8 || lineId == 9 ? shiftRows[sIndex].shift_type : null,
                 plan_time: planTime == dateFormatted(shiftRows[sIndex].date) && shouldGeneratePlan ? planTime : null,
                 is_holiday: shiftRows[sIndex].is_holiday,
             })
@@ -272,12 +277,22 @@ const genWeeklySchedulePlan = async (
     {
         if (!shiftRows || shiftRows.length == 0)
         {
-            shiftRows = await shiftByGroupId(
-                yearNum,
-                monthNum,
-                lineId,
-                groupId
-            )
+            if (lineId == 8 || lineId == 9)
+            {
+                shiftRows = await shiftByGroupId(
+                    yearNum,
+                    monthNum,
+                    lineId,
+                    groupId
+                )
+            }
+            else
+            {
+                shiftRows = await nonShift(
+                    yearNum,
+                    monthNum
+                )
+            }
         }
 
         let planTimeWeeklyArr = []
@@ -285,7 +300,12 @@ const genWeeklySchedulePlan = async (
         if (shouldGeneratePlan)
         {
             const morningShift = shiftRows.filter((item) => {
-                return item.shift_type == 'morning_shift' && !item.is_holiday
+                if (lineId == 8 || lineId == 9)
+                {
+                    return item.shift_type == 'morning_shift' && !item.is_holiday
+                }
+
+                return !item.is_holiday
             })
 
             let lastWeekNum = 0
@@ -338,7 +358,7 @@ const genWeeklySchedulePlan = async (
                 zone_id: kanbanRow.zone_id,
                 freq_id: kanbanRow.freq_id,
                 schedule_id: shiftRows[sIndex].schedule_id,
-                shift_type: shiftRows[sIndex].shift_type,
+                shift_type: lineId == 8 || lineId == 9 ? shiftRows[sIndex].shift_type : null,
                 plan_time: planTime == dateFormatted(shiftRows[sIndex].date) && shouldGeneratePlan ? planTime : null,
                 is_holiday: shiftRows[sIndex].is_holiday,
             })
@@ -362,12 +382,22 @@ const genMonthlySchedulePlan = async (
     {
         if (!shiftRows || shiftRows.length == 0)
         {
-            shiftRows = await shiftByGroupId(
-                yearNum,
-                monthNum,
-                lineId,
-                groupId
-            )
+            if (lineId == 8 || lineId == 9)
+            {
+                shiftRows = await shiftByGroupId(
+                    yearNum,
+                    monthNum,
+                    lineId,
+                    groupId
+                )
+            }
+            else
+            {
+                shiftRows = await nonShift(
+                    yearNum,
+                    monthNum
+                )
+            }
         }
 
         let planTime = null
@@ -405,7 +435,7 @@ const genMonthlySchedulePlan = async (
                     && moment(planTime).day() != 6
                 )
                 {
-                    console.log('platime before', planTime)
+                    //console.log('platime before', planTime)
                     planTime = moment(planTime)
                         .clone()
                         .weekday(6)
@@ -449,7 +479,12 @@ const genMonthlySchedulePlan = async (
                     return item.is_holiday
                 }
 
-                return item.shift_type == 'morning_shift'
+                if (lineId == 8 || lineId == 9)
+                {
+                    return item.shift_type == 'morning_shift'
+                }
+
+                return true;
             });
 
             planTime = morningShift[getRandomInt(0, morningShift.length - 1)].date;
@@ -487,7 +522,7 @@ const genMonthlySchedulePlan = async (
                 zone_id: kanbanRow.zone_id,
                 freq_id: kanbanRow.freq_id,
                 schedule_id: shiftRows[sIndex].schedule_id,
-                shift_type: shiftRows[sIndex].shift_type,
+                shift_type: lineId == 8 || lineId == 9 ? shiftRows[sIndex].shift_type : null,
                 plan_time: dateFormatted(planTime) == dateFormatted(shiftRows[sIndex].date) ? planTime : null,
                 is_holiday: shiftRows[sIndex].is_holiday,
             })
@@ -534,12 +569,22 @@ const mapSchemaPlanKanban4S = async (
 
     if (!shiftRows || shiftRows.length == 0)
     {
-        shiftRows = await shiftByGroupId(
-            yearNum,
-            monthNum,
-            lineId,
-            groupId
-        )
+        if (lineId == 8 || lineId == 9)
+        {
+            shiftRows = await shiftByGroupId(
+                yearNum,
+                monthNum,
+                lineId,
+                groupId
+            )
+        }
+        else
+        {
+            shiftRows = await nonShift(
+                yearNum,
+                monthNum
+            )
+        }
     }
 
     const kanbanRow = {
@@ -632,12 +677,22 @@ const genMonthlySubScheduleSchema = async (
     {
         if (!shiftRows || (shiftRows?.length ?? 0) == 0)
         {
-            shiftRows = await shiftByGroupId(
-                yearNum,
-                monthNum,
-                lineGroup.line_id,
-                lineGroup.group_id
-            )
+            if (lineGroup.line_id == 8 || lineGroup.line_id == 9)
+            {
+                shiftRows = await shiftByGroupId(
+                    yearNum,
+                    monthNum,
+                    lineGroup.line_id,
+                    lineGroup.group_id,
+                )
+            }
+            else
+            {
+                shiftRows = await nonShift(
+                    yearNum,
+                    monthNum
+                )
+            }
         }
 
         for (let kIndex = 0; kIndex < kanbanRows.length; kIndex++)
@@ -699,12 +754,22 @@ const genMonthlySignCheckerSchema = async (yearNum, monthNum, lineGroup, shiftRo
 
     if (!shiftRows || shiftRows.length == 0)
     {
-        shiftRows = await shiftByGroupId(
-            yearNum,
-            monthNum,
-            lineGroup.line_id,
-            lineGroup.group_id
-        )
+        if (lineGroup.line_id == 8 || lineGroup.line_id == 9)
+        {
+            shiftRows = await shiftByGroupId(
+                yearNum,
+                monthNum,
+                lineGroup.line_id,
+                lineGroup.group_id
+            )
+        }
+        else
+        {
+            shiftRows = await nonShift(
+                yearNum,
+                monthNum
+            )
+        }
     }
 
     //#region scheduler generate tl1 & tl2 sign checker
@@ -920,7 +985,7 @@ const genSingleMonthlySubScheduleSchema = async (
             zone_id: kanbanRow.zone_id,
             freq_id: kanbanRow.freq_id,
             schedule_id: shiftRows[sIndex].schedule_id,
-            shift_type: shiftRows[sIndex].shift_type,
+            shift_type: lineGroup.line_id == 8 || lineGroup.line_id == 9 ? shiftRows[sIndex].shift_type : null,
             plan_time: planTime && planTime == dateFormatted(shiftRows[sIndex].date) ? planTime : null,
             is_holiday: shiftRows[sIndex].is_holiday,
         })
@@ -944,12 +1009,22 @@ const genSingleSignCheckerSqlFromSchema = async (
 ) => {
     if (!shiftRows || shiftRows.length == 0)
     {
-        shiftRows = await shiftByGroupId(
-            yearNum,
-            monthNum,
-            lineGroup.line_id,
-            lineGroup.group_id
-        )
+        if (lineGroup.line_id == 8 || lineGroup.line_id == 9)
+        {
+            shiftRows = await shiftByGroupId(
+                yearNum,
+                monthNum,
+                lineGroup.line_id,
+                lineGroup.group_id
+            )
+        }
+        else
+        {
+            shiftRows = await nonShift(
+                yearNum,
+                monthNum
+            )
+        }
     }
 
     const signCheckerSchema = await genMonthlySignCheckerSchema(yearNum, monthNum, lineGroup, shiftRows)
@@ -1098,12 +1173,22 @@ const createNewKanbanSingleLineSchedule = async (
 
         if (!shiftRows || shiftRows.length == 0)
         {
-            shiftRows = await shiftByGroupId(
-                yearNum,
-                monthNum,
-                lineId,
-                groupId
-            )
+            if (lineId == 8 || lineId == 9)
+            {
+                shiftRows = await shiftByGroupId(
+                    yearNum,
+                    monthNum,
+                    lineId,
+                    groupId
+                )
+            }
+            else
+            {
+                shiftRows = await nonShift(
+                    yearNum,
+                    monthNum
+                )
+            }
         }
 
         const lineGroup = {
@@ -1138,7 +1223,7 @@ const createNewKanbanSingleLineSchedule = async (
                         zone_id: subSchedule[i].zone_id,
                         freq_id: subSchedule[i].freq_id,
                         schedule_id: subSchedule[i].schedule_id,
-                        shift_type: subSchedule[i].shift_type,
+                        shift_type: lineId == 8 || lineId == 9 ? subSchedule[i].shift_type : null,
                         plan_time: subSchedule[i].plan_time,
                         is_holiday: subSchedule[i].is_holiday,
                         created_by: flagInsertBy ? flagInsertBy : 'GENERATED',

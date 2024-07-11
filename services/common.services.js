@@ -13,7 +13,8 @@ module.exports = {
                 select 
                     tml.line_id,
                     tmg.group_id,
-                    tmsm.month_num
+                    tmsm.month_num,
+                    tml.line_nm
                 from 
                     (select * from tb_m_lines where deleted_dt is null order by line_id asc) tml,
                     (select * from tb_m_groups where is_active = true and deleted_dt is null) tmg,

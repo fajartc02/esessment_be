@@ -214,7 +214,7 @@ const genDailySchedulePlan = async (
             }
 
             result.push({
-                main_schedule_id: null,
+                om_main_schedule_id: null,
                 group_id: groupId,
                 line_id: lineId,
                 om_item_check_kanban_id: itemCheckKanbanRow.om_item_check_kanban_id,
@@ -320,7 +320,7 @@ const genWeeklySchedulePlan = async (
             let planTime = planTimeWeeklyArr.find((item) => item == dateFormatted(shiftRows[sIndex].date))
 
             result.push({
-                main_schedule_id: null,
+                om_main_schedule_id: null,
                 group_id: groupId,
                 line_id: lineId,
                 om_item_check_kanban_id: itemCheckKanbanRow.om_item_check_kanban_id,
@@ -439,7 +439,7 @@ const genMonthlySchedulePlan = async (
         for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
         {
             result.push({
-                main_schedule_id: null,
+                om_main_schedule_id: null,
                 group_id: groupId,
                 line_id: lineId,
                 om_item_check_kanban_id: itemCheckKanbanRow.om_item_check_kanban_id,
@@ -628,7 +628,7 @@ const genMonthlySignCheckerSchemaOM = async (yearNum, monthNum, lineGroup, shift
             if (!shiftRows[sIndex].is_holiday)
             {
                 result.tl.push({
-                    main_schedule_id: null,
+                    om_main_schedule_id: null,
                     group_id: lineGroup.group_id,
                     line_id: lineGroup.line_id,
                     is_tl: true,
@@ -728,7 +728,7 @@ const genMonthlySignCheckerSchemaOM = async (yearNum, monthNum, lineGroup, shift
                 for (let glIndex = 0; glIndex < glSignQuery.rows.length; glIndex++)
                 {
                     result.gl.push({
-                        main_schedule_id: null,
+                        om_main_schedule_id: null,
                         group_id: lineGroup.group_id,
                         line_id: lineGroup.line_id,
                         start_date: dateFormatted(glSignQuery.rows[glIndex].start_non_holiday),
@@ -842,6 +842,186 @@ const clearOmTransactionRows = async (flagCreatedBy) => {
 }
 //#endregion
 
+/**
+ * 
+ * @param {databasePool} db 
+ * @param {number} lineId 
+ * @param {number} groupId 
+ * @param {number} precitionVal 
+ * @param {number} freqId 
+ * @param {number} zoneId 
+ * @param {number} kanbanId 
+ * @param {number} monthNum 
+ * @param {number} yearNum 
+ * @param {Array<Any>|null>} shiftRows 
+ */
+const createNewKanbanSingleLineSchedule = async (
+    db,
+    lineId,
+    groupId,
+    precitionVal,
+    freqId,
+    machineId,
+    itemCheckId,
+    monthNum = 0,
+    yearNum = 0,
+    shiftRows = [],
+    flagInsertBy = ''
+) => {
+    try
+    {
+        if (!db)
+        {
+            db = database
+        }
+
+        const find = await findScheduleTransactionOM(
+            yearNum,
+            monthNum,
+            lineId,
+            groupId
+        )
+
+        let mainScheduleData = null
+
+        if (!find || find.length == 0)
+        {
+            const mainScheduleSql = `insert into ${table.tb_r_om_main_schedules}
+            (uuid, month_num, year_num, line_id, group_id) 
+            values 
+            ('${uuid()}', ${monthNum}, ${yearNum}, ${lineId}, ${groupId}) returning *`
+            console.log('mainScheduleSql', mainScheduleSql);
+
+            mainScheduleData = await db.query(mainScheduleSql)
+            mainScheduleData = mainScheduleData.rows[0]
+        }
+        else
+        {
+            mainScheduleData = await db.query(`select * from ${table.tb_r_om_main_schedules} where om_main_schedule_id = '${find[0].om_main_schedule_id}'`)
+            mainScheduleData = mainScheduleData.rows[0]
+        }
+
+        if (!shiftRows || shiftRows.length == 0)
+        {
+            shiftRows = await nonShift(
+                yearNum,
+                monthNum,
+                lineId,
+                groupId
+            )
+        }
+
+        const lineGroup = {
+            line_id: lineId,
+            group_id: groupId,
+        }
+
+        //#region sub_schedule inserted
+        {
+            const subSchedule = await mapSchemaPlanKanbanOM(
+                lineId,
+                groupId,
+                precitionVal,
+                freqId,
+                machineId,
+                itemCheckId,
+                monthNum,
+                yearNum,
+                shiftRows,
+                true
+            )
+
+            if (subSchedule.length > 0)
+            {
+                let subScheduleTemp = []
+                for (let i = 0; i < subSchedule.length; i++)
+                {
+                    subScheduleTemp.push({
+                        uuid: uuid(),
+                        om_main_schedule_id: mainScheduleData.om_main_schedule_id,
+                        om_item_check_kanban_id: subSchedule[i].om_item_check_kanban_id,
+                        machine_id: subSchedule[i].machine_id,
+                        freq_id: subSchedule[i].freq_id,
+                        schedule_id: subSchedule[i].schedule_id,
+                        plan_time: subSchedule[i].plan_time,
+                        is_holiday: subSchedule[i].is_holiday,
+                        created_by: flagInsertBy ? flagInsertBy : 'GENERATED',
+                    })
+                }
+
+                if (subScheduleTemp.length > 0)
+                {
+                    const subSchema = await bulkToSchema(subScheduleTemp)
+                    const sqlInSub = `insert into ${table.tb_r_om_sub_schedules} (${subSchema.columns}) values ${subSchema.values}`
+                    console.log('sqlInSub', sqlInSub);
+                    await db.query(sqlInSub)
+                }
+            }
+        }
+        //#endregion
+
+        //#region sign_checker inserted
+        {
+            const signCheckers = await genMonthlySignCheckerSchemaOM(
+                yearNum,
+                monthNum,
+                lineGroup,
+                shiftRows
+            )
+
+            const signCheckersTemp = []
+
+            const signCheckerTl1 = signCheckers.tl
+            if (signCheckerTl1.length > 0)
+            {
+                for (let i = 0; i < signCheckerTl1.length; i++)
+                {
+                    signCheckersTemp.push({
+                        om_main_schedule_id: mainScheduleData.om_main_schedule_id,
+                        uuid: uuid(),
+                        start_date: signCheckerTl1[i].start_date,
+                        end_date: signCheckerTl1[i].end_date,
+                        is_tl: true,
+                        is_gl: null,
+                        created_by: flagInsertBy ? flagInsertBy : 'GENERATED',
+                    })
+                }
+            }
+
+            const signChckerGl = signCheckers.gl
+            if (signChckerGl.length > 0)
+            {
+                for (let i = 0; i < signChckerGl.length; i++)
+                {
+                    signCheckersTemp.push({
+                        om_main_schedule_id: mainScheduleData.om_main_schedule_id,
+                        uuid: uuid(),
+                        start_date: signChckerGl[i].start_date,
+                        end_date: signChckerGl[i].end_date,
+                        is_tl: null,
+                        is_gl: true,
+                        created_by: flagInsertBy ? flagInsertBy : 'GENERATED',
+                    })
+                }
+            }
+
+            if (signCheckersTemp.length > 0)
+            {
+                const sgSchema = await bulkToSchema(signCheckersTemp)
+                const sqlInSign = `insert into ${table.tb_r_om_schedule_sign_checkers} (${sgSchema.columns}) values ${sgSchema.values}`
+                console.log('sqlInSign', sqlInSign);
+                await db.query(sqlInSign)
+            }
+        }
+
+        //#endregion
+    }
+    catch (e)
+    {
+        throw e
+    }
+}
+
 module.exports = {
     findScheduleTransactionOM: findScheduleTransactionOM,
     findSignCheckerTransactionOM: findSignCheckerTransactionOM,
@@ -849,5 +1029,6 @@ module.exports = {
     genMonthlySignCheckerSchemaOM: genMonthlySignCheckerSchemaOM,
     genSingleMonthlySubScheduleSchemaOM: genSingleMonthlySubScheduleSchemaOM,
     singleSignCheckerSqlFromSchemaOM: singleSignCheckerSqlFromSchemaOM,
-    clearOmTransactionRows: clearOmTransactionRows
+    clearOmTransactionRows: clearOmTransactionRows,
+    createNewKanbanSingleLineSchedule
 }

@@ -15,5 +15,7 @@
     "4s-sub-line-red-white": "SET NODE_ENV=dev && node ./design/seeders/4sSublineRedWhite.seeder.js",
     "4s-low-preassure-red-white": "SET NODE_ENV=dev && node ./design/seeders/4sLowPreassureRedWhite.seeder.js",
     "4s-manual-update": "SET NODE_ENV=dev && node ./design/seeders/4sManualUpdatePlan.seeder.js",
-    "4s-diecast-red-white": "SET NODE_ENV=local && node ./design/seeders/4sDiecastRedWhite.seeder.js"
+    "4s-diecast-red-white": "SET NODE_ENV=local && node ./design/seeders/4sDiecastRedWhite.seeder.js",
+    "om-camshaft-red-white": "SET NODE_ENV=local && node ./design/seeders/omCamShaftRedWhite.seeder.js",
+    "4s-cylinderhead-red-white": "SET NODE_ENV=local && node ./design/seeders/4sCylinderHeadRedWhite_05072024.seeder.js"
 }

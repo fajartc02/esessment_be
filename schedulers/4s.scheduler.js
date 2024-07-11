@@ -12,7 +12,7 @@ const table = require('../config/table')
 const { queryTransaction } = require('../helpers/query')
 const { bulkToSchema } = require('../helpers/schema')
 const logger = require('../helpers/logger')
-const { shiftByGroupId } = require('../services/shift.services')
+const { shiftByGroupId, nonShift } = require('../services/shift.services')
 const { lineGroupRows } = require('../services/common.services')
 const {
     genMonthlySubScheduleSchema,
@@ -61,7 +61,15 @@ const main = async () => {
 
         for (let lgIndex = 0; lgIndex < lineGroups.length; lgIndex++)
         {
-            const shiftRows = await shiftByGroupId(currentYear, currentMonth, lineGroups[lgIndex].line_id, lineGroups[lgIndex].group_id)
+            let shiftRows
+            if (lineGroups[lgIndex].line_nm.toLowerCase().includes('line'))
+            {
+                shiftRows = await shiftByGroupId(currentYear, currentMonth, lineGroups[lgIndex].line_id, lineGroups[lgIndex].group_id)
+            }
+            else
+            {
+                shiftRows = await nonShift(currentYear, currentMonth)
+            }
 
             //#region scheduler bulk temp var
             const find = await findScheduleTransaction4S(
@@ -235,17 +243,6 @@ const main = async () => {
                         {
                             //console.log('tb_r_4s_schedule_sign_checkers', 'skipped! tl1', sqlInSign)
                         }
-
-                        /* signCheckersTemp.push({
-                            main_schedule_id: mainScheduleInserted[mIndex].main_schedule_id,
-                            uuid: uuid(),
-                            start_date: signCheckerTl1BulkSchema[tl1Index].start_date,
-                            end_date: signCheckerTl1BulkSchema[tl1Index].end_date,
-                            is_tl_1: true,
-                            is_tl_2: null,
-                            is_gl: null,
-                            is_sh: null,
-                        }) */
                     }
                 }
             }
@@ -297,17 +294,6 @@ const main = async () => {
                         {
                             //console.log('tb_r_4s_schedule_sign_checkers', 'skipped! tl2', sqlInSign)
                         }
-
-                        /* signCheckersTemp.push({
-                            main_schedule_id: mainScheduleInserted[mIndex].main_schedule_id,
-                            uuid: uuid(),
-                            start_date: signCheckerTl2BulkSchema[tl2Index].start_date,
-                            end_date: signCheckerTl2BulkSchema[tl2Index].end_date,
-                            is_tl_1: null,
-                            is_tl_2: true,
-                            is_gl: null,
-                            is_sh: null,
-                        }) */
                     }
                 }
             }
@@ -360,17 +346,6 @@ const main = async () => {
                         {
                             // console.log('tb_r_4s_schedule_sign_checkers', 'skipped! gl', sqlInSign)
                         }
-
-                        /* signCheckersTemp.push({
-                            main_schedule_id: mainScheduleInserted[mIndex].main_schedule_id,
-                            uuid: uuid(),
-                            start_date: signChckerGlBulkSchema[glIndex].start_date,
-                            end_date: signChckerGlBulkSchema[glIndex].end_date,
-                            is_tl_1: null,
-                            is_tl_2: null,
-                            is_gl: true,
-                            is_sh: null,
-                        }) */
                     }
                 }
             }
@@ -425,18 +400,6 @@ const main = async () => {
                         {
                             //console.log('tb_r_4s_schedule_sign_checkers', 'skipped! sh', sqlInSign)
                         }
-
-                        /* signCheckersTemp.push({
-                            main_schedule_id: mainScheduleInserted[mIndex].main_schedule_id,
-                            uuid: uuid(),
-                            start_date: signChckerShBulkSchema[shIndex].start_date,
-                            end_date: signChckerShBulkSchema[shIndex].end_date,
-                            //end_date: `func (select "date" from tb_m_schedules where "date" between '${signChckerShBulkSchema[shIndex].start_date}' and '${signChckerShBulkSchema[shIndex].end_date}' and (is_holiday is null or is_holiday = false) order by schedule_id desc limit 1)`,
-                            is_tl_1: null,
-                            is_tl_2: null,
-                            is_gl: null,
-                            is_sh: true,
-                        }) */
                     }
                 }
             }
