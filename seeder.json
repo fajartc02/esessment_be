@@ -17,5 +17,7 @@
     "4s-manual-update": "SET NODE_ENV=dev && node ./design/seeders/4sManualUpdatePlan.seeder.js",
     "4s-diecast-red-white": "SET NODE_ENV=local && node ./design/seeders/4sDiecastRedWhite.seeder.js",
     "om-camshaft-red-white": "SET NODE_ENV=local && node ./design/seeders/omCamShaftRedWhite.seeder.js",
-    "4s-cylinderhead-red-white": "SET NODE_ENV=local && node ./design/seeders/4sCylinderHeadRedWhite_05072024.seeder.js"
+    "4s-cylinderhead-red-white": "SET NODE_ENV=local && node ./design/seeders/4sCylinderHeadRedWhite_05072024.seeder.js",
+    "om-cylinderblock-red-white": "SET NODE_ENV=local && node ./design/seeders/omCylinderBlocRedWhite_27072024.seeder.js",
+    "om-cylinderhead-red-white": "SET NODE_ENV=local && node ./design/seeders/omCylinderHeadRedWhite_27072024.seeder.js"
 }
