@@ -9,6 +9,7 @@ const config = {
     ssl: false
 }
 
+pg.defaults.poolSize = 25;
 const database = new pg.Client(config);
 
 /**

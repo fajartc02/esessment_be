@@ -45,7 +45,7 @@ const flagCreatedBy = `SCHEDULERS ${currentDate.format('YYYY-MM-DD')}`
 const main = async () => {
     try
     {
-        database.connect((err) => {
+        databasePool.connect((err) => {
             console.log('database already connected');
         })
 
@@ -125,7 +125,7 @@ const main = async () => {
         if (mainScheduleBulkSchema.length > 0)
         {
             const mSchema = await bulkToSchema(mainScheduleBulkSchema)
-            await database.query(
+            await databasePool.query(
                 `insert into ${table.tb_r_4s_main_schedules} (${mSchema.columns}) values ${mSchema.values} returning *`)
             console.log('tb_r_4s_main_schedules', 'inserted')
         }
@@ -183,7 +183,7 @@ const main = async () => {
                         if (!checkExisting)
                         {
                             //console.log('sqlInSub', sqlInSub);
-                            await database.query(sqlInSub)
+                            await databasePool.query(sqlInSub)
                             countInsertSub += 1
                         }
                         else
@@ -235,7 +235,7 @@ const main = async () => {
                         {
 
                             //console.log('sqlInSign', sqlInSign);
-                            await database.query(sqlInSign)
+                            await databasePool.query(sqlInSign)
                             countInsertSign += 1
                             //console.log('tb_r_4s_schedule_sign_checkers', 'inserted tl1')
                         }
@@ -286,7 +286,7 @@ const main = async () => {
                         {
 
                             //console.log('sqlInSign', sqlInSign);
-                            await database.query(sqlInSign)
+                            await databasePool.query(sqlInSign)
                             countInsertSign += 1
                             //console.log('tb_r_4s_schedule_sign_checkers', 'inserted tl2')
                         }
@@ -338,7 +338,7 @@ const main = async () => {
                         {
 
                             //console.log('sqlInSign', sqlInSign);
-                            await database.query(sqlInSign)
+                            await databasePool.query(sqlInSign)
                             countInsertSign += 1
                             //console.log('tb_r_4s_schedule_sign_checkers', 'inserted gl')
                         }
@@ -392,7 +392,7 @@ const main = async () => {
                         {
 
                             //console.log('sqlInSign', sqlInSign);
-                            await database.query(sqlInSign)
+                            await databasePool.query(sqlInSign)
                             countInsertSign += 1
                             //console.log('tb_r_4s_schedule_sign_checkers', 'inserted sh')
                         }

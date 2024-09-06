@@ -18,6 +18,7 @@ const { uuid } = require("uuidv4")
 const { shiftByGroupId } = require('../../services/shift.services')
 const { genSingleMonthlySubScheduleSchema, genSingleSignCheckerSqlFromSchema } = require('../../services/4s.services')
 const { bulkToSchema } = require('../../helpers/schema')
+const { databasePool } = require('../../config/database');
 
 const fromSubScheduleSql = `
     ${table.tb_r_4s_sub_schedules} tbrcs
@@ -183,7 +184,11 @@ const childrenSubSchedule = async (
            `
   //console.warn('childrensql', childrenSql)
   //logger(childrenSql, 'childrenSql')
-  const children = await queryCustom(childrenSql, false)
+  //const children = await queryCustom(childrenSql, false)
+  const startTime = Date.now();
+  const children = await databasePool.query(childrenSql);
+  const timeTaken = Date.now() - startTime;
+  console.log(`4S childrenSubSchedule query time = ${Math.floor(timeTaken / 1000)}`);
 
   return children.rows
 }
@@ -432,7 +437,7 @@ module.exports = {
 
       //console.log('scheduleSql', scheduleSql)
       //logger(scheduleSql, 'schedule')
-      const scheduleQuery = await queryCustom(scheduleSql, false)
+      const scheduleQuery = await databasePool.query(scheduleSql)
 
       if (scheduleQuery.rows && scheduleQuery.rows.length > 0)
       {
@@ -485,9 +490,11 @@ module.exports = {
           `
 
           //console.log('countRowSpanSql', countRowSpanSql)
-          const countRowSpanQuery = await queryCustom(countRowSpanSql, false)
+          //const countRowSpanQuery = await queryCustom(countRowSpanSql, false)
+          const countRowSpanQuery = null
 
-          let countRows = countRowSpanQuery.rows
+          //let countRows = countRowSpanQuery.rows
+          let countRows = []
           if (countRows && countRows.length > 0)
           {
             countRows = countRows[0]
@@ -522,6 +529,7 @@ module.exports = {
           return item
         })
 
+
         const signCheckerQuery = async (who = '') => {
           let whoIs = ``
           if (who == 'gl')
@@ -532,7 +540,7 @@ module.exports = {
             whoIs = 'and is_sh = true'
           }
 
-          return await queryCustom(`
+          return await databasePool.query(`
               select 
                 uuid as sign_checker_id,
                 sign,
@@ -560,8 +568,7 @@ module.exports = {
                 main_schedule_id = '${mainScheduleRealId}' 
                 ${whoIs}
               order by
-                start_date `,
-            false
+                start_date `
           )
         }
 
@@ -572,7 +579,7 @@ module.exports = {
           const holidayTemp = []
 
           const findHolidaySignChecker = async (dateBetwenStr, i, first = false) => {
-            const holidaySchedule = await queryCustom(
+            const holidaySchedule = await databasePool.query(
               `
                                 select 
                                      tms.*
@@ -1364,7 +1371,7 @@ module.exports = {
 
         return result
       })
-     
+
       cacheDelete(subScheduleCacheKey(subScheduleRow.main_schedule_uuid))
 
       response.success(res, 'success to delete 4s sub schedule', transaction.rows[0])

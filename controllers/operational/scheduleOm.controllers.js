@@ -17,6 +17,7 @@ const { shiftByGroupId, nonShift } = require('../../services/shift.services')
 const { genSingleMonthlySubScheduleSchemaOM, singleSignCheckerSqlFromSchemaOM } = require('../../services/om.services')
 const { bulkToSchema } = require('../../helpers/schema')
 const { uuid } = require('uuidv4')
+const { databasePool } = require('../../config/database');
 
 /**
  * @typedef {Object} ChildrenSubSchedule
@@ -64,7 +65,10 @@ const childrenSubSchedule = async (
            `
     //logger(childrenSql)
     //console.warn('childrensql', childrenSql)
-    const children = await queryCustom(childrenSql, false)
+    const startTime = Date.now();
+    const children = await databasePool.query(childrenSql);
+    const timeTaken = Date.now() - startTime;
+    console.log(`4S childrenSubSchedule query time = ${Math.floor(timeTaken / 1000)}`);
 
     return children.rows
 }
@@ -209,7 +213,7 @@ const subScheduleRows = async (
     //console.log('scheduleSql', scheduleSql)
     //logger(scheduleSql, 'scheduleSql')
 
-    const query = (await queryCustom(scheduleSql, false)).rows
+    const query = (await databasePool.query(scheduleSql)).rows
     if (original)
     {
         query.map((item) => {
@@ -226,7 +230,7 @@ const subScheduleRows = async (
 
     if (paginated)
     {
-        const count = await queryCustom(`select count(*)::integer as count from ( ${originScheduleSql} ) a `, false)
+        const count = await databasePool.query(`select count(*)::integer as count from ( ${originScheduleSql} ) a `)
 
         const countRows = count.rows[0]
         return {
@@ -426,7 +430,7 @@ module.exports = {
                         `
 
                     //console.log('countRowSpanSql', countRowSpanSql)
-                    const countRowSpanQuery = await queryCustom(countRowSpanSql, false)
+                    const countRowSpanQuery = await databasePool.query(countRowSpanSql)
 
                     let countRows = countRowSpanQuery.rows
                     if (countRows && countRows.length > 0)
@@ -462,7 +466,7 @@ module.exports = {
                         whoIs = 'and is_gl = true'
                     }
 
-                    return await queryCustom(
+                    return await databasePool.query(
                         `
                             select 
                                 '${om_main_schedule_id}' as om_main_schedule_id,
@@ -492,8 +496,6 @@ module.exports = {
                             order by
                                 start_date
                         `
-                        ,
-                        true
                     )
                 }
 
@@ -504,7 +506,7 @@ module.exports = {
                 })
 
                 const findHolidaySignChecker = async (dateBetwenStr, i, first = false) => {
-                    const holidaySchedule = await queryCustom(
+                    const holidaySchedule = await databasePool.query(
                         `
                                 select 
                                      tms.*
