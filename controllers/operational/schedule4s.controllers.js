@@ -78,6 +78,13 @@ const selectSubScheduleCol = [
 
 const selectSubScheduleSql = selectSubScheduleCol.join(', ')
 
+const poolQuery = async (raw) => {
+  const client = await databasePool.connect();
+  const query = await client.query(raw);
+  client.release();
+  return query;
+}
+
 /**
  * @typedef {Object} ChildrenSubSchedule
  * 
@@ -186,7 +193,7 @@ const childrenSubSchedule = async (
   //logger(childrenSql, 'childrenSql')
   //const children = await queryCustom(childrenSql, false)
   const startTime = Date.now();
-  const children = await databasePool.query(childrenSql);
+  const children = await poolQuery(childrenSql);
   const timeTaken = Date.now() - startTime;
   console.log(`4S childrenSubSchedule query time = ${Math.floor(timeTaken / 1000)}`);
 
@@ -437,7 +444,7 @@ module.exports = {
 
       //console.log('scheduleSql', scheduleSql)
       //logger(scheduleSql, 'schedule')
-      const scheduleQuery = await databasePool.query(scheduleSql)
+      const scheduleQuery = await poolQuery(scheduleSql)
 
       if (scheduleQuery.rows && scheduleQuery.rows.length > 0)
       {
@@ -540,7 +547,7 @@ module.exports = {
             whoIs = 'and is_sh = true'
           }
 
-          return await databasePool.query(`
+          return await poolQuery(`
               select 
                 uuid as sign_checker_id,
                 sign,
@@ -579,7 +586,7 @@ module.exports = {
           const holidayTemp = []
 
           const findHolidaySignChecker = async (dateBetwenStr, i, first = false) => {
-            const holidaySchedule = await databasePool.query(
+            const holidaySchedule = await poolQuery(
               `
                                 select 
                                      tms.*
