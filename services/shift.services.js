@@ -1,4 +1,3 @@
-const { databasePool, database } = require('../config/database')
 const pg = require('pg')
 const table = require('../config/table')
 const moment = require('moment')
@@ -13,7 +12,7 @@ module.exports = {
     * @param {number} group_id 
     * @returns {Promise<Array<*>>} []
     */
-    shiftByGroupId: async (currentYear, currentMonth, line_id, group_id) => {
+    shiftByGroupId: async (db, currentYear, currentMonth, line_id, group_id) => {
         //#region scheduler shiftSql
         const shiftSql =
             `
@@ -85,7 +84,7 @@ module.exports = {
 
         //console.log('shiftSql', shiftSql)
         //logger.log('info', shiftSql)
-        const shiftQuery = await database.query(shiftSql)
+        const shiftQuery = await db.query(shiftSql)
         return shiftQuery.rows
     },
     /**
@@ -94,7 +93,7 @@ module.exports = {
      * @param {number} currentMonth 
      * @returns {Promise<Array<*>>}
      */
-    nonShift: async (currentYear, currentMonth) => {
+    nonShift: async (db, currentYear, currentMonth) => {
         //#region scheduler shiftSql
         const shiftSql =
             `
@@ -150,7 +149,7 @@ module.exports = {
 
         //console.log('shiftSql', shiftSql)
         //logger(shiftSql)
-        const shiftQuery = await database.query(shiftSql)
+        const shiftQuery = await db.query(shiftSql)
         return shiftQuery.rows
     }
 }

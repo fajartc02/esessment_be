@@ -4,7 +4,8 @@ const {
     queryGET,
     queryPUT,
     queryTransaction,
-    queryPutTransaction
+    queryPutTransaction,
+    poolQuery
 } = require("../../helpers/query")
 
 const response = require("../../helpers/response")
@@ -13,11 +14,10 @@ const { arrayOrderBy, objToString, padTwoDigits } = require("../../helpers/forma
 const moment = require('moment')
 const logger = require('../../helpers/logger')
 const { cacheGet, cacheAdd, cacheDelete } = require('../../helpers/cacheHelper')
-const { shiftByGroupId, nonShift } = require('../../services/shift.services')
+const { nonShift } = require('../../services/shift.services')
 const { genSingleMonthlySubScheduleSchemaOM, singleSignCheckerSqlFromSchemaOM } = require('../../services/om.services')
 const { bulkToSchema } = require('../../helpers/schema')
 const { uuid } = require('uuidv4')
-const { databasePool } = require('../../config/database');
 
 /**
  * @typedef {Object} ChildrenSubSchedule
@@ -51,7 +51,12 @@ const childrenSubSchedule = async (
                     date_num,
                     is_holiday,
                     status,
-                    sign_tl
+                    case
+                        when sign_tl is not null and sign_tl != '' then
+                            true::boolean
+                        else
+                            false::boolean
+                    end as has_sign_tl
                   from
                       ${table.v_om_sub_schedules}
                   where
@@ -66,7 +71,7 @@ const childrenSubSchedule = async (
     //logger(childrenSql)
     //console.warn('childrensql', childrenSql)
     const startTime = Date.now();
-    const children = await databasePool.query(childrenSql);
+    const children = await poolQuery(childrenSql);
     const timeTaken = Date.now() - startTime;
     console.log(`4S childrenSubSchedule query time = ${Math.floor(timeTaken / 1000)}`);
 
@@ -213,7 +218,7 @@ const subScheduleRows = async (
     //console.log('scheduleSql', scheduleSql)
     //logger(scheduleSql, 'scheduleSql')
 
-    const query = (await databasePool.query(scheduleSql)).rows
+    const query = (await poolQuery(scheduleSql)).rows
     if (original)
     {
         query.map((item) => {
@@ -230,7 +235,7 @@ const subScheduleRows = async (
 
     if (paginated)
     {
-        const count = await databasePool.query(`select count(*)::integer as count from ( ${originScheduleSql} ) a `)
+        const count = await poolQuery(`select count(*)::integer as count from ( ${originScheduleSql} ) a `)
 
         const countRows = count.rows[0]
         return {
@@ -430,7 +435,7 @@ module.exports = {
                         `
 
                     //console.log('countRowSpanSql', countRowSpanSql)
-                    const countRowSpanQuery = await databasePool.query(countRowSpanSql)
+                    const countRowSpanQuery = await poolQuery(countRowSpanSql)
 
                     let countRows = countRowSpanQuery.rows
                     if (countRows && countRows.length > 0)
@@ -466,7 +471,7 @@ module.exports = {
                         whoIs = 'and is_gl = true'
                     }
 
-                    return await databasePool.query(
+                    return await poolQuery(
                         `
                             select 
                                 '${om_main_schedule_id}' as om_main_schedule_id,
@@ -506,7 +511,7 @@ module.exports = {
                 })
 
                 const findHolidaySignChecker = async (dateBetwenStr, i, first = false) => {
-                    const holidaySchedule = await databasePool.query(
+                    const holidaySchedule = await poolQuery(
                         `
                                 select 
                                      tms.*
@@ -749,9 +754,9 @@ module.exports = {
                 `and actual_time is not null and date(tross.actual_time) >= current_date`
             )
 
-            $sql = `with delay as (${delay}), progress as (${progress}), done as (${done}) select * from delay, progress, done`
+            const sql = `with delay as (${delay}), progress as (${progress}), done as (${done}) select * from delay, progress, done`
 
-            let result = (await queryCustom($sql, false)).rows
+            let result = (await queryCustom(sql, false)).rows
             if (result.length > 0)
             {
                 result = result[0]
@@ -1008,7 +1013,7 @@ module.exports = {
 
                         if (monthlyPlanQuery.rowCount == 0)
                         {
-                            const currentMonthDays = await nonShift(planDateUpdate.year(), planDateUpdate.month() + 1)
+                            const currentMonthDays = await nonShift(db, planDateUpdate.year(), planDateUpdate.month() + 1)
                             const singleKanbanSchedule = await bulkToSchema(genSingleMonthlySubScheduleSchemaOM(
                                 {
                                     om_item_check_kanban_id: schedulRow.om_item_check_kanban_id,
@@ -1025,6 +1030,7 @@ module.exports = {
                             ))
 
                             const signCheckerScheduleSchema = await singleSignCheckerSqlFromSchemaOM(
+                                db,
                                 planDateUpdate.year(),
                                 planDateUpdate.month() + 1,
                                 {

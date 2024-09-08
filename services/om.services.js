@@ -1,7 +1,6 @@
 const pg = require('pg')
 const table = require('../config/table')
 const moment = require('moment')
-const { databasePool, database } = require('../config/database')
 const { getRandomInt, padTwoDigits } = require('../helpers/formatting')
 const { bulkToSchema } = require('../helpers/schema')
 const { uuid } = require('uuidv4')
@@ -10,6 +9,7 @@ const { nonShift } = require('./shift.services')
 const dateFormatted = (date = '') => (moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD'))
 
 const baseMstScheduleQueryOM = async (
+    db,
     lineId,
     groupId
 ) => {
@@ -29,11 +29,12 @@ const baseMstScheduleQueryOM = async (
                     order by
                         tmf.precition_val`
 
-    const kanbanQuery = await database.query(mstSql)
+    const kanbanQuery = await db.query(mstSql)
     return kanbanQuery.rows
 }
 
 const findScheduleTransactionOM = async (
+    db,
     year,
     month,
     lineId = null,
@@ -94,7 +95,7 @@ const findScheduleTransactionOM = async (
                     ${filterMain.length > 0 ? 'and ' + filterMain.join(' and ') : ''}
                     ${filterSub.length > 0 ? 'and ' + filterSub.join(' and ') : ''}`
     //console.log('findScheduleTransactionOM', sql)
-    const query = await database.query(sql)
+    const query = await db.query(sql)
     if (query && query.rowCount > 0)
     {
         return query.rows
@@ -104,6 +105,7 @@ const findScheduleTransactionOM = async (
 }
 
 const findSignCheckerTransactionOM = async (
+    db,
     year,
     month,
     lineId,
@@ -142,7 +144,7 @@ const findSignCheckerTransactionOM = async (
     }
 
     //console.log('findSignCheckerTransactionOM', sql);
-    const query = await database.query(sql)
+    const query = await db.query(sql)
     if (query && query.rowCount > 0)
     {
         return query.rows
@@ -152,6 +154,7 @@ const findSignCheckerTransactionOM = async (
 }
 
 const findSingleLastPlanTimeOM = async (
+    db,
     yearNum,
     monthNum,
     itemCheckKanbanId,
@@ -175,7 +178,7 @@ const findSingleLastPlanTimeOM = async (
                             limit 1`
 
     //console.log('findSingleLastPlanTimeOM', lastPlanTimeSql);
-    const lastPlanTimeQuery = await database.query(lastPlanTimeSql)
+    const lastPlanTimeQuery = await db.query(lastPlanTimeSql)
 
     if (lastPlanTimeQuery && lastPlanTimeQuery.rowCount > 0)
     {
@@ -186,6 +189,7 @@ const findSingleLastPlanTimeOM = async (
 }
 
 const genDailySchedulePlan = async (
+    db,
     itemCheckKanbanRow = {},
     shiftRows = [],
     monthNum,
@@ -200,6 +204,7 @@ const genDailySchedulePlan = async (
         if (!shiftRows || shiftRows.length == 0)
         {
             shiftRows = await nonShift(
+                db,
                 yearNum,
                 monthNum
             )
@@ -231,6 +236,7 @@ const genDailySchedulePlan = async (
 }
 
 const genWeeklySchedulePlan = async (
+    db,
     itemCheckKanbanRow = {},
     shiftRows = [],
     monthNum,
@@ -250,6 +256,7 @@ const genWeeklySchedulePlan = async (
         if (!shiftRows || shiftRows.length == 0)
         {
             shiftRows = await nonShift(
+                db,
                 yearNum,
                 monthNum,
                 lineId,
@@ -302,7 +309,7 @@ const genWeeklySchedulePlan = async (
                 if (second)
                 {
                     planTimeWeeklyArr.push(dateFormatted(second.date))
-                } 
+                }
                 else
                 {
                     planTimeWeeklyArr.push(dateFormatted(shifts[getRandomInt(0, shifts.length)].date))
@@ -337,6 +344,7 @@ const genWeeklySchedulePlan = async (
 }
 
 const genMonthlySchedulePlan = async (
+    db,
     itemCheckKanbanRow = {},
     shiftRows = [],
     lineId = 0,
@@ -351,6 +359,7 @@ const genMonthlySchedulePlan = async (
         if (!shiftRows || shiftRows.length == 0)
         {
             shiftRows = await nonShift(
+                db,
                 yearNum,
                 monthNum
             )
@@ -360,6 +369,7 @@ const genMonthlySchedulePlan = async (
         if (shouldGeneratePlan)
         {
             const lastPlanTime = await findSingleLastPlanTimeOM(
+                db,
                 yearNum,
                 monthNum,
                 itemCheckKanbanRow.om_item_check_kanban_id,
@@ -407,7 +417,7 @@ const genMonthlySchedulePlan = async (
                                                 and tross.machine_id = '${itemCheckKanbanRow.machine_id}'
                                                 and tross.freq_id = '${itemCheckKanbanRow.freq_id}'`
 
-                const scheduleExists = await database.query(scheduleExistsSql)
+                const scheduleExists = await db.query(scheduleExistsSql)
                 if (scheduleExists.rowCount > 0)
                 {
                     return result
@@ -456,6 +466,7 @@ const genMonthlySchedulePlan = async (
 }
 
 const mapSchemaPlanKanbanOM = async (
+    db,
     lineId,
     groupId,
     precition_val,
@@ -472,6 +483,7 @@ const mapSchemaPlanKanbanOM = async (
     if (!shiftRows || shiftRows.length == 0)
     {
         shiftRows = await nonShift(
+            db,
             yearNum,
             monthNum
         )
@@ -485,6 +497,7 @@ const mapSchemaPlanKanbanOM = async (
     }
 
     const monthly = await genMonthlySchedulePlan(
+        db,
         itemCheckKanbanRow,
         shiftRows,
         lineId,
@@ -495,6 +508,7 @@ const mapSchemaPlanKanbanOM = async (
     )
 
     const weekly = await genWeeklySchedulePlan(
+        db,
         itemCheckKanbanRow,
         shiftRows,
         monthNum,
@@ -505,6 +519,7 @@ const mapSchemaPlanKanbanOM = async (
     )
 
     const daily = await genDailySchedulePlan(
+        db,
         itemCheckKanbanRow,
         shiftRows,
         monthNum,
@@ -543,11 +558,12 @@ const mapSchemaPlanKanbanOM = async (
 * 
 * @returns {Promise<Array<*>>} []
 */
-const genMonthlySubScheduleSchemaOM = async (yearNum, monthNum, lineGroup, shiftRows = []) => {
+const genMonthlySubScheduleSchemaOM = async (db, yearNum, monthNum, lineGroup, shiftRows = []) => {
     const result = []
 
     //#region scheduler fetch all kanban
     const itemCheckKanbanRows = await baseMstScheduleQueryOM(
+        db,
         lineGroup.line_id,
         lineGroup.group_id
     )
@@ -563,6 +579,7 @@ const genMonthlySubScheduleSchemaOM = async (yearNum, monthNum, lineGroup, shift
         if (!shiftRows || (shiftRows?.length ?? 0) == 0)
         {
             shiftRows = await nonShift(
+                db,
                 yearNum,
                 monthNum
             )
@@ -571,6 +588,7 @@ const genMonthlySubScheduleSchemaOM = async (yearNum, monthNum, lineGroup, shift
         for (let kIndex = 0; kIndex < itemCheckKanbanRows.length; kIndex++)
         {
             const allPlan = await mapSchemaPlanKanbanOM(
+                db,
                 lineGroup.line_id,
                 lineGroup.group_id,
                 itemCheckKanbanRows[kIndex].precition_val,
@@ -601,13 +619,14 @@ const genMonthlySubScheduleSchemaOM = async (yearNum, monthNum, lineGroup, shift
 * @param {Array<*>} shiftRows 
 * @returns {Promise<Array<*>>}
 */
-const genMonthlySignCheckerSchemaOM = async (yearNum, monthNum, lineGroup, shiftRows = []) => {
+const genMonthlySignCheckerSchemaOM = async (db, yearNum, monthNum, lineGroup, shiftRows = []) => {
     const result = {
         tl: [],
         gl: [],
     }
 
     const find = await findSignCheckerTransactionOM(
+        db,
         yearNum,
         monthNum,
         lineGroup.line_id,
@@ -715,7 +734,7 @@ const genMonthlySignCheckerSchemaOM = async (yearNum, monthNum, lineGroup, shift
 
             //console.log('glSignSql', glSignSql)
             //logger(glSignSql)
-            const glSignQuery = await database.query(glSignSql)
+            const glSignQuery = await db.query(glSignSql)
 
             for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
             {
@@ -785,8 +804,8 @@ const genSingleMonthlySubScheduleSchemaOM = (kanbanRow, lineGroup, shiftRows = [
 * @param {signChecker} signCheckerSchema 
 * @returns {Object}
 */
-const singleSignCheckerSqlFromSchemaOM = async (yearNum, monthNum, lineGroup, shiftRows = [], mainScheduleId) => {
-    const signCheckerSchema = await genMonthlySignCheckerSchemaOM(yearNum, monthNum, lineGroup, shiftRows)
+const singleSignCheckerSqlFromSchemaOM = async (db, yearNum, monthNum, lineGroup, shiftRows = [], mainScheduleId) => {
+    const signCheckerSchema = await genMonthlySignCheckerSchemaOM(db, yearNum, monthNum, lineGroup, shiftRows)
     const signCheckersTemp = []
 
     for (let tl1Index = 0; tl1Index < signCheckerSchema.tl.length; tl1Index++)
@@ -820,22 +839,22 @@ const singleSignCheckerSqlFromSchemaOM = async (yearNum, monthNum, lineGroup, sh
 }
 
 //#region scheduler delete all for testing purpose
-const clearOmTransactionRows = async (flagCreatedBy) => {
+const clearOmTransactionRows = async (db, flagCreatedBy) => {
     if (flagCreatedBy)
     {
         console.log('clearing start')
 
-        await database.query(`DELETE FROM ${table.tb_r_om_sub_schedules} WHERE created_by = '${flagCreatedBy}'`)
-        const lastSub = await database.query(`SELECT *, date(created_dt) as created_date FROM ${table.tb_r_om_sub_schedules} ORDER BY om_sub_schedule_id DESC LIMIT 1`)
-        await database.query(`ALTER TABLE ${table.tb_r_om_sub_schedules} ALTER COLUMN om_sub_schedule_id RESTART WITH ${(lastSub.rows[0]?.om_sub_schedule_id ?? 0) + 1}`)
+        await db.query(`DELETE FROM ${table.tb_r_om_sub_schedules} WHERE created_by = '${flagCreatedBy}'`)
+        const lastSub = await db.query(`SELECT *, date(created_dt) as created_date FROM ${table.tb_r_om_sub_schedules} ORDER BY om_sub_schedule_id DESC LIMIT 1`)
+        await db.query(`ALTER TABLE ${table.tb_r_om_sub_schedules} ALTER COLUMN om_sub_schedule_id RESTART WITH ${(lastSub.rows[0]?.om_sub_schedule_id ?? 0) + 1}`)
 
-        await database.query(`DELETE FROM ${table.tb_r_om_schedule_sign_checkers} WHERE created_by = '${flagCreatedBy}'`)
-        const lastSignChecker = await database.query(`SELECT *, date(created_dt) as created_date FROM ${table.tb_r_om_schedule_sign_checkers} ORDER BY om_sign_checker_id DESC LIMIT 1`)
-        await database.query(`ALTER TABLE ${table.tb_r_om_schedule_sign_checkers} ALTER COLUMN om_sign_checker_id RESTART WITH ${(lastSignChecker.rows[0]?.om_sign_checker_id ?? 0) + 1}`)
+        await db.query(`DELETE FROM ${table.tb_r_om_schedule_sign_checkers} WHERE created_by = '${flagCreatedBy}'`)
+        const lastSignChecker = await db.query(`SELECT *, date(created_dt) as created_date FROM ${table.tb_r_om_schedule_sign_checkers} ORDER BY om_sign_checker_id DESC LIMIT 1`)
+        await db.query(`ALTER TABLE ${table.tb_r_om_schedule_sign_checkers} ALTER COLUMN om_sign_checker_id RESTART WITH ${(lastSignChecker.rows[0]?.om_sign_checker_id ?? 0) + 1}`)
 
-        await database.query(`DELETE FROM ${table.tb_r_om_main_schedules} WHERE created_by = '${flagCreatedBy}'`)
-        const lastMain = await database.query(`SELECT *, date(created_dt) as created_date FROM ${table.tb_r_om_main_schedules} ORDER BY om_main_schedule_id DESC LIMIT 1`)
-        await database.query(`ALTER TABLE ${table.tb_r_om_main_schedules} ALTER COLUMN om_main_schedule_id RESTART WITH ${(lastMain.rows[0]?.om_main_schedule_id ?? 0) + 1}`)
+        await db.query(`DELETE FROM ${table.tb_r_om_main_schedules} WHERE created_by = '${flagCreatedBy}'`)
+        const lastMain = await db.query(`SELECT *, date(created_dt) as created_date FROM ${table.tb_r_om_main_schedules} ORDER BY om_main_schedule_id DESC LIMIT 1`)
+        await db.query(`ALTER TABLE ${table.tb_r_om_main_schedules} ALTER COLUMN om_main_schedule_id RESTART WITH ${(lastMain.rows[0]?.om_main_schedule_id ?? 0) + 1}`)
 
         console.log('clearing succeed')
     }
@@ -870,12 +889,8 @@ const createNewKanbanSingleLineSchedule = async (
 ) => {
     try
     {
-        if (!db)
-        {
-            db = database
-        }
-
         const find = await findScheduleTransactionOM(
+            db,
             yearNum,
             monthNum,
             lineId,
@@ -904,6 +919,7 @@ const createNewKanbanSingleLineSchedule = async (
         if (!shiftRows || shiftRows.length == 0)
         {
             shiftRows = await nonShift(
+                db,
                 yearNum,
                 monthNum,
                 lineId,
@@ -919,6 +935,7 @@ const createNewKanbanSingleLineSchedule = async (
         //#region sub_schedule inserted
         {
             const subSchedule = await mapSchemaPlanKanbanOM(
+                db,
                 lineId,
                 groupId,
                 precitionVal,
@@ -963,6 +980,7 @@ const createNewKanbanSingleLineSchedule = async (
         //#region sign_checker inserted
         {
             const signCheckers = await genMonthlySignCheckerSchemaOM(
+                db,
                 yearNum,
                 monthNum,
                 lineGroup,

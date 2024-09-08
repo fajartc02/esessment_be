@@ -5,7 +5,8 @@ const {
   queryPUT,
   queryTransaction,
   queryPutTransaction,
-  queryPostTransaction
+  queryPostTransaction,
+  poolQuery
 } = require("../../helpers/query")
 
 const response = require("../../helpers/response")
@@ -78,13 +79,6 @@ const selectSubScheduleCol = [
 
 const selectSubScheduleSql = selectSubScheduleCol.join(', ')
 
-const poolQuery = async (raw) => {
-  const client = await databasePool.connect();
-  const query = await client.query(raw);
-  client.release();
-  return query;
-}
-
 /**
  * @typedef {Object} ChildrenSubSchedule
  * 
@@ -127,8 +121,18 @@ const childrenSubSchedule = async (
                       when tbrcs.plan_time is not null then
                         'PLANNING'
                     end as status,
-                    trcc1.sign as sign_tl_1,
-                    trcc2.sign as sign_tl_2
+                    case
+                      when trcc1.sign is not null and trcc1.sign != '' then
+                        true::boolean
+                      else 
+                        false::boolean
+                    end as has_tl1_sign,
+                    case
+                      when trcc2.sign is not null and trcc2.sign != '' then
+                        true::boolean
+                      else
+                        false::boolean
+                    end as has_tl2_sign        
                   from
                       ${fromSubScheduleSql}
                       left join lateral (
@@ -195,7 +199,7 @@ const childrenSubSchedule = async (
   const startTime = Date.now();
   const children = await poolQuery(childrenSql);
   const timeTaken = Date.now() - startTime;
-  console.log(`4S childrenSubSchedule query time = ${Math.floor(timeTaken / 1000)}`);
+  console.log(`4S childrenSubSchedule query time = ${Math.floor(timeTaken / 1000)} seconds`);
 
   return children.rows
 }
@@ -207,7 +211,9 @@ const subScheduleCacheKey = (
   kanban_id = null,
   line_id = null,
   group_id = null,
-  month_year_num = null
+  month_year_num = null,
+  limit = null,
+  current_page = null,
 ) => {
   const obj = {
     main_schedule_id: main_schedule_id
@@ -237,8 +243,120 @@ const subScheduleCacheKey = (
   {
     obj.month_year_num = month_year_num
   }
+  if (limit)
+  {
+    obj.limit = limit
+  }
+  if (current_page)
+  {
+    obj.current_page = current_page
+  }
 
   return objToString(obj)
+}
+
+const subScheduleRows = async (
+  params
+) => {
+  const { main_schedule_id, freq_id, zone_id, kanban_id, line_id, group_id, month_year_num } = params
+  let { limit, current_page } = params;
+
+  let filterCondition = []
+
+  if (freq_id && freq_id != null && freq_id != "")
+  {
+    filterCondition.push(` freq_id = '${freq_id}' `)
+  }
+  if (zone_id && zone_id != null && zone_id != "")
+  {
+    filterCondition.push(` zone_id = '${zone_id}' `)
+  }
+  if (kanban_id && kanban_id != null && kanban_id != "")
+  {
+    filterCondition.push(` kanban_id = '${kanban_id}' `)
+  }
+  if (line_id && line_id != null && line_id != "")
+  {
+    filterCondition.push(` line_id = '${line_id}' `)
+  }
+  if (month_year_num && month_year_num != null && month_year_num != "")
+  {
+    let MYFilterSplit = month_year_num.split('-')
+
+    if (MYFilterSplit.length == 1)
+    {
+      if (MYFilterSplit[0].length == 4)
+      {
+        filterCondition.push(` year_num = '${MYFilterSplit[0]}}' `)
+      }
+      else
+      {
+        filterCondition.push(` month_num = '${parseInt(MYFilterSplit[0])}}' `)
+      }
+    }
+    else
+    {
+      filterCondition.push(` year_num || '-' || month_num = '${MYFilterSplit[0]}-${parseInt(MYFilterSplit[1])}' `)
+    }
+  }
+  if (group_id && group_id != null && group_id != "")
+  {
+    filterCondition.push(` group_id = '${group_id}' `)
+  }
+
+  let paginated = false
+  const whereMainSchedule = `(select main_schedule_id from ${table.tb_r_4s_main_schedules} where uuid = '${main_schedule_id}')`
+  const originScheduleSql = `
+          select * from (
+            select distinct on (tbrcs.freq_id, tbrcs.zone_id, tbrcs.kanban_id)
+              ${selectSubScheduleSql}  
+          from
+             ${fromSubScheduleSql}
+          where
+            tbrcs.main_schedule_id = ${whereMainSchedule}
+          ) a 
+          where
+            1 = 1
+            ${filterCondition.length > 0 ? `and ${filterCondition.join('and')}` : ''} 
+        `
+  let scheduleSql = `${originScheduleSql}`
+
+  if (limit && current_page)
+  {
+    current_page = parseInt(current_page ?? 1)
+    limit = parseInt(limit ?? 10)
+
+    const qOffset = (limit != -1 && limit) && current_page > 1 ? `OFFSET ${limit * (current_page - 1)}` : ``
+    const qLimit = (limit != -1 && limit) ? `LIMIT ${limit}` : ``
+
+    paginated = true
+    scheduleSql = `
+            select row_number () over (
+                            order by
+                            freq_nm
+                        )::integer as no, * from ( ${originScheduleSql} ) a order by freq_nm ${qLimit} ${qOffset}
+        `
+  }
+
+  console.log('scheduleSql', scheduleSql)
+  //logger(scheduleSql, 'scheduleSql')
+
+  const query = (await poolQuery(scheduleSql)).rows
+  if (paginated)
+  {
+    const count = await poolQuery(`select count(*)::integer as count from ( ${originScheduleSql} ) a `)
+
+    const countRows = count.rows[0]
+    return {
+      current_page: params.current_page,
+      total_page: +countRows.count > 0 ? Math.ceil(countRows.count / +params.limit) : 0,
+      total_data: countRows.count,
+      limit: params.limit,
+      list: query,
+    }
+  }
+
+  return query
 }
 
 module.exports = {
@@ -346,8 +464,8 @@ module.exports = {
   get4sSubSchedule: async (req, res) => {
     try
     {
-      const { main_schedule_id, freq_id, zone_id, kanban_id, line_id, group_id, month_year_num } = req.query
-      const cacheKey = subScheduleCacheKey(main_schedule_id, freq_id, zone_id, kanban_id, line_id, group_id, month_year_num);
+      const { main_schedule_id, freq_id, zone_id, kanban_id, line_id, group_id, month_year_num, limit, current_page } = req.query
+      const cacheKey = subScheduleCacheKey(main_schedule_id, freq_id, zone_id, kanban_id, line_id, group_id, month_year_num, limit, current_page);
       const cachedSchedule = cacheGet(cacheKey)
 
       if (cachedSchedule)
@@ -376,81 +494,23 @@ module.exports = {
         sign_checker_sh: []
       }
 
-      const whereMainSchedule = `(select main_schedule_id from ${table.tb_r_4s_main_schedules} where uuid = '${main_schedule_id}')`
-
-      let scheduleSql = `
-          select * from (
-            select distinct on (tbrcs.freq_id, tbrcs.zone_id, tbrcs.kanban_id)
-              ${selectSubScheduleSql}  
-          from
-             ${fromSubScheduleSql}
-          where
-            tbrcs.main_schedule_id = ${whereMainSchedule}
-          ) a 
-          where
-            1 = 1
-        `
-
-      let filterCondition = []
-
-      if (freq_id && freq_id != null && freq_id != "")
-      {
-        filterCondition.push(` freq_id = '${freq_id}' `)
-      }
-      if (zone_id && zone_id != null && zone_id != "")
-      {
-        filterCondition.push(` zone_id = '${zone_id}' `)
-      }
-      if (kanban_id && kanban_id != null && kanban_id != "")
-      {
-        filterCondition.push(` kanban_id = '${kanban_id}' `)
-      }
-      if (line_id && line_id != null && line_id != "")
-      {
-        filterCondition.push(` line_id = '${line_id}' `)
-      }
-      if (month_year_num && month_year_num != null && month_year_num != "")
-      {
-        let MYFilterSplit = month_year_num.split('-')
-
-        if (MYFilterSplit.length == 1)
-        {
-          if (MYFilterSplit[0].length == 4)
-          {
-            filterCondition.push(` year_num = '${MYFilterSplit[0]}}' `)
-          }
-          else
-          {
-            filterCondition.push(` month_num = '${parseInt(MYFilterSplit[0])}}' `)
-          }
-        }
-        else
-        {
-          filterCondition.push(` year_num || '-' || month_num = '${MYFilterSplit[0]}-${parseInt(MYFilterSplit[1])}' `)
-        }
-      }
-      if (group_id && group_id != null && group_id != "")
-      {
-        filterCondition.push(` group_id = '${group_id}' `)
-      }
-
-      if (filterCondition.length > 0)
-      {
-        filterCondition = filterCondition.join(' and ')
-        scheduleSql = scheduleSql.concat(` and ${filterCondition} `)
-      }
-
-      scheduleSql = scheduleSql.concat(`order by precition_val, plan_time`)
-
       //console.log('scheduleSql', scheduleSql)
       //logger(scheduleSql, 'schedule')
-      const scheduleQuery = await poolQuery(scheduleSql)
+      let scheduleQuery = await subScheduleRows(req.query)
 
-      if (scheduleQuery.rows && scheduleQuery.rows.length > 0)
+      if (scheduleQuery)
       {
         let mainScheduleRealId = null
+        let scheduleFinalResult = null;
+        if (typeof scheduleQuery === 'object')
+        {
+          scheduleFinalResult = scheduleQuery.list;
+        } else
+        {
+          scheduleFinalResult = scheduleQuery;
+        }
 
-        const scheduleRows = scheduleQuery.rows.map(async (item) => {
+        const scheduleRows = scheduleFinalResult.map(async (item) => {
           mainScheduleRealId = item.main_schedule_id
 
           const whereFreqId = ` ((select freq_id from ${table.tb_m_freqs} where uuid = '${item.freq_id}' limit 1)) `
@@ -655,8 +715,14 @@ module.exports = {
         }
 
         result.schedule = await Promise.all(scheduleRows)
+        console.log('count schedule', result.schedule.length);
+        /* result.sign_checker_gl = []
+        result.sign_checker_sh = [] */
         result.sign_checker_gl = await addHolidayTemp(signGl)
         result.sign_checker_sh = await addHolidayTemp(signSh)
+        result.limit = scheduleQuery?.limit ? parseInt(scheduleQuery.limit) : 0;
+        result.current_page = scheduleQuery?.current_page ? parseInt(scheduleQuery.current_page) : 0;
+        result.total_data = scheduleQuery?.total_data ? parseInt(scheduleQuery.total_data) : 0;
 
         cacheAdd(cacheKey, result)
       }
@@ -1192,7 +1258,7 @@ module.exports = {
 
             if (monthlyPlanQuery.rowCount == 0)
             {
-              const currentMonthDays = await shiftByGroupId(planDateUpdate.year(), planDateUpdate.month() + 1, schedulRow.line_id, schedulRow.group_id)
+              const currentMonthDays = await shiftByGroupId(db, planDateUpdate.year(), planDateUpdate.month() + 1, schedulRow.line_id, schedulRow.group_id)
               const singleKanbanSchedule = await genSingleMonthlySubScheduleSchema(
                 {
                   kanban_id: schedulRow.kanban_id,
@@ -1209,6 +1275,7 @@ module.exports = {
               )
 
               const signCheckerScheduleSchema = await genSingleSignCheckerSqlFromSchema(
+                db,
                 planDateUpdate.year(),
                 planDateUpdate.month() + 1,
                 {

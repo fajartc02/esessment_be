@@ -11,7 +11,7 @@ const cors = require('cors')
 
 //#region cron
 const cron = require('node-cron');
-cron.schedule('* 0 1 * *', async () => {
+cron.schedule('0 0 1 * *', async () => {
     const _4sSchedule = require('./schedulers/4s.scheduler')
     const omSchedule = require('./schedulers/om.scheduler')
 
