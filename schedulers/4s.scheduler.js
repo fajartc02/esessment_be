@@ -425,7 +425,7 @@ const main = () => {
             finally
             {
                 release();
-                process.exit();
+                //process.exit();
             }
         });    
 
@@ -433,7 +433,7 @@ const main = () => {
     } catch (error) {
         console.log('error final 4s generate schedule, scheduler running', error);
         logger(`error 4s.scheduler for month=${currentMonth}-${currentYear}`, error);
-        process.exit();
+        //process.exit();
     }
     
 }
@@ -475,6 +475,6 @@ const main = () => {
         process.exit()
     }) */
 
-main();
+/* main(); */
 
-//module.exports = main
+module.exports = main

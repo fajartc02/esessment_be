@@ -278,7 +278,7 @@ const main = async () => {
             finally
             {
                 release();
-                process.exit();
+                //process.exit();
             }
         });
 
@@ -288,11 +288,11 @@ const main = async () => {
     {
         console.log('error final om generate schedule, scheduler running', e);
         logger(`error om.scheduler for month=${currentMonth}-${currentYear}`, e);
-        process.exit();
+        //process.exit();
     } 
 }
 
-main()
+/* main() */
 /* .then(() => {
     logger(`successfully run om.scheduler for month=${currentMonth}-${currentYear}`)
     process.exit()
@@ -304,4 +304,4 @@ main()
     process.exit()
 }) */
 
-/* module.exports = main */
+module.exports = main
