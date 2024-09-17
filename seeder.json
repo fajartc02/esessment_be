@@ -19,5 +19,6 @@
     "om-camshaft-red-white": "SET NODE_ENV=local && node ./design/seeders/omCamShaftRedWhite.seeder.js",
     "4s-cylinderhead-red-white": "SET NODE_ENV=local && node ./design/seeders/4sCylinderHeadRedWhite_05072024.seeder.js",
     "om-cylinderblock-red-white": "SET NODE_ENV=local && node ./design/seeders/omCylinderBlocRedWhite_27072024.seeder.js",
-    "om-cylinderhead-red-white": "SET NODE_ENV=local && node ./design/seeders/omCylinderHeadRedWhite_27072024.seeder.js"
+    "om-cylinderhead-red-white": "SET NODE_ENV=local && node ./design/seeders/omCylinderHeadRedWhite_27072024.seeder.js",
+    "4s-crankshaft": "SET NODE_ENV=local && node ./design/seeders/4sCrankShaft_17092024.seeder.js"
 }
