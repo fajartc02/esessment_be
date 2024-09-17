@@ -1,40 +1,39 @@
 const multer = require("multer");
 const path = require("path");
-const fs = require('fs');
+const fs = require("fs");
 
-const checkFileType = function (file, cb) { //Allowed file extensions
-    const fileTypes = /jpeg|jpg|png|gif|svg|pdf|/;
+const checkFileType = function(file, cb) {
+    //Allowed file extensions
+    const fileTypes = /jpeg|jpg|png|gif|svg|pdf|mp4|mov|/;
     console.log(file);
 
     //check extension names
 
     const extName = fileTypes.test(path.extname(file.originalname).toLowerCase());
 
-
     const mimeType = fileTypes.test(file.mimetype);
 
-
-    if (mimeType && extName) { return cb(null, true); } else
-    {
+    if (mimeType && extName) {
+        return cb(null, true);
+    } else {
         cb("Error: You can Only Upload Images!!");
     }
 };
 
 //Setting storage engine
 const storageEngine = multer.diskStorage({
-    destination: function (req, file, cb) {
+    destination: function(req, file, cb) {
         // console.log('req.body');
         // console.log(req.body);
 
         console.log(file);
 
-        const path = `./uploads/${req.body.dest}/`
-        if (!fs.existsSync(path))
-        {
-            fs.mkdirSync(path, { recursive: true })
+        const path = `./uploads/${req.body.dest}/`;
+        if (!fs.existsSync(path)) {
+            fs.mkdirSync(path, { recursive: true });
         }
 
-        cb(null, path)
+        cb(null, path);
     },
     filename: (req, file, cb) => {
         cb(null, `${Date.now()}--${file.originalname}`);
@@ -45,9 +44,9 @@ const storageEngine = multer.diskStorage({
 const upload = multer({
     storage: storageEngine,
     //limits: { fileSize: 10000000 }, // 10 MB Max
-    fileFilter: (req, file, cb) => { checkFileType(file, cb); },
-
+    fileFilter: (req, file, cb) => {
+        checkFileType(file, cb);
+    },
 });
 
-
-module.exports = upload
+module.exports = upload;
