@@ -9,6 +9,7 @@ const poolQuery = async (raw) => {
   try
   {
     client = await databasePool.connect();
+    console.log('raw query', raw);
     const query = await client.query(raw);
     client.release();
     return query;

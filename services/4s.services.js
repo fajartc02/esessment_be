@@ -1183,9 +1183,9 @@ const createNewKanbanSingleLineSchedule = async (
         if (!find || find.length == 0)
         {
             const mainScheduleSql = `insert into ${table.tb_r_4s_main_schedules}
-            (uuid, month_num, year_num, line_id, group_id) 
+            (uuid, month_num, year_num, line_id, group_id, created_by) 
             values 
-            ('${uuid()}', ${monthNum}, ${yearNum}, ${lineId}, ${groupId}) returning *`
+            ('${uuid()}', ${monthNum}, ${yearNum}, ${lineId}, ${groupId}, '${flagInsertBy}') returning *`
             console.log('mainScheduleSql', mainScheduleSql);
 
             mainScheduleData = await db.query(mainScheduleSql)

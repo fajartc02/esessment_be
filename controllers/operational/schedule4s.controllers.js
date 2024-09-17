@@ -510,7 +510,7 @@ module.exports = {
           scheduleFinalResult = scheduleQuery;
         }
 
-        const scheduleRows = scheduleFinalResult.map(async (item) => {
+        const scheduleRows = scheduleFinalResult.map(async (item, index) => {
           mainScheduleRealId = item.main_schedule_id
 
           const whereFreqId = ` ((select freq_id from ${table.tb_m_freqs} where uuid = '${item.freq_id}' limit 1)) `
@@ -639,8 +639,8 @@ module.exports = {
           )
         }
 
-        const signGl = (await signCheckerQuery('gl')).rows
-        const signSh = (await signCheckerQuery('sh')).rows
+        const signGl = mainScheduleRealId != null ? (await signCheckerQuery('gl')).rows : []
+        const signSh = mainScheduleRealId != null ? (await signCheckerQuery('sh')).rows : []
 
         const addHolidayTemp = async (signArr) => {
           const holidayTemp = []
@@ -718,8 +718,8 @@ module.exports = {
         console.log('count schedule', result.schedule.length);
         /* result.sign_checker_gl = []
         result.sign_checker_sh = [] */
-        result.sign_checker_gl = await addHolidayTemp(signGl)
-        result.sign_checker_sh = await addHolidayTemp(signSh)
+        result.sign_checker_gl = mainScheduleRealId != null ? await addHolidayTemp(signGl) : [];
+        result.sign_checker_sh = mainScheduleRealId != null ? await addHolidayTemp(signSh) : [];
         result.limit = scheduleQuery?.limit ? parseInt(scheduleQuery.limit) : 0;
         result.current_page = scheduleQuery?.current_page ? parseInt(scheduleQuery.current_page) : 0;
         result.total_data = scheduleQuery?.total_data ? parseInt(scheduleQuery.total_data) : 0;
