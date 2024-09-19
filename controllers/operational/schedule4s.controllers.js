@@ -183,6 +183,7 @@ const childrenSubSchedule = async (
                                                     where 
                                                       kanban_id = '${kanbanRealId}')
                                                       and main_schedule_id = tbrcs.main_schedule_id
+                                                      and checked_date::date = tbrcs.plan_time::date
                       ) item_check on true
                   where
                       tbrcs.deleted_dt is null
@@ -895,8 +896,7 @@ module.exports = {
                   ${table.tb_r_4s_schedule_item_check_kanbans}
                 where 
                   item_check_kanban_id = tmic.item_check_kanban_id
-                  and date_part('month', checked_date) = ${subScheduleQuery.month_num}
-                  and date_part('year', checked_date) = ${subScheduleQuery.year_num}
+                  and checked_date::date = '${subScheduleQuery.plan_time}'::date
                 order by
                   schedule_item_check_kanban_id desc
                 limit 1

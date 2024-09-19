@@ -1,0 +1,852 @@
+[
+    {
+        "Zone": "Zone 1",
+        "No Kanban": "C - 01 - 01",
+        "Area": "Lantai Bagian Dalam",
+        "Item Check Kanban": "Lantai ",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 1",
+        "No Kanban": "C - 01 - 01",
+        "Area": "Lantai Bagian Dalam",
+        "Item Check Kanban": "Lay out",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 1",
+        "No Kanban": "A - 01 - 01",
+        "Area": "Jalur pejalan kaki",
+        "Item Check Kanban": "Jalur Hijau",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 1",
+        "No Kanban": "A - 01 - 01",
+        "Area": "Jalur pejalan kaki",
+        "Item Check Kanban": "Garis Kuning",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 1",
+        "No Kanban": "A - 01 - 01",
+        "Area": "Jalur pejalan kaki",
+        "Item Check Kanban": "Area Persimpangan",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 1",
+        "No Kanban": "A - 01 - 01",
+        "Area": "Jalur pejalan kaki",
+        "Item Check Kanban": "Area IN & OUT orang",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 2",
+        "No Kanban": "C - 01 - 05",
+        "Area": "Lantai Bagian Dalam ",
+        "Item Check Kanban": "Lantai ",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 2",
+        "No Kanban": "C - 01 - 05",
+        "Area": "Lantai Bagian Dalam ",
+        "Item Check Kanban": "Lay out",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 3",
+        "No Kanban": "B - 01 - 01",
+        "Area": "Dolly Gardosol",
+        "Item Check Kanban": "Doly & oilpan",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "13"
+    },
+    {
+        "Zone": "Zone 3",
+        "No Kanban": "B - 01 - 01",
+        "Area": "Dolly Gardosol",
+        "Item Check Kanban": "Tabung gardosol",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "13"
+    },
+    {
+        "Zone": "Zone 3",
+        "No Kanban": "B - 01 - 01",
+        "Area": "Dolly Gardosol",
+        "Item Check Kanban": "Box tissue ,jerigen &gelas ukur",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "13"
+    },
+    {
+        "Zone": "Zone 3",
+        "No Kanban": "B - 01 - 01",
+        "Area": "Dolly Gardosol",
+        "Item Check Kanban": "Box sheet-sheet",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "13"
+    },
+    {
+        "Zone": "Zone 3",
+        "No Kanban": "B - 01 - 01",
+        "Area": "Dolly Gardosol",
+        "Item Check Kanban": "Lay out & label-label",
+        "Metode 4S": "Up Date",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "13"
+    },
+    {
+        "Zone": "Zone 4",
+        "No Kanban": "C - 04 - 02",
+        "Area": "Rak Central Tool 1,2,3,4",
+        "Item Check Kanban": "Body Rak",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 4",
+        "No Kanban": "C - 04 - 02",
+        "Area": "Rak Central Tool 1,2,3,4",
+        "Item Check Kanban": "Penempatan Tool",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 4",
+        "No Kanban": "C - 04 - 02",
+        "Area": "Rak Central Tool 1,2,3,4",
+        "Item Check Kanban": "Box Tag",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 4",
+        "No Kanban": "C - 04 - 02",
+        "Area": "Rak Central Tool 1,2,3,4",
+        "Item Check Kanban": "Box Buku info Tool",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 4",
+        "No Kanban": "C - 04 - 02",
+        "Area": "Rak Central Tool 1,2,3,4",
+        "Item Check Kanban": "Papan Info",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 4",
+        "No Kanban": "C - 04 - 02",
+        "Area": "Rak Central Tool 1,2,3,4",
+        "Item Check Kanban": "Label",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 4",
+        "No Kanban": "C - 04 - 02",
+        "Area": "Rak Central Tool 1,2,3,4",
+        "Item Check Kanban": "Lay out",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 5",
+        "No Kanban": "C - 01 - 18",
+        "Area": "Lantai",
+        "Item Check Kanban": "Lantai ",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 5",
+        "No Kanban": "C - 01 - 18",
+        "Area": "Lantai",
+        "Item Check Kanban": "Lay out",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 5",
+        "No Kanban": "C - 05 - 01",
+        "Area": "GL Activity Board",
+        "Item Check Kanban": "Card Case",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 5",
+        "No Kanban": "C - 05 - 01",
+        "Area": "GL Activity Board",
+        "Item Check Kanban": "Body papan",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 5",
+        "No Kanban": "C - 05 - 01",
+        "Area": "GL Activity Board",
+        "Item Check Kanban": "Lampu",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 5",
+        "No Kanban": "C - 05 - 01",
+        "Area": "GL Activity Board",
+        "Item Check Kanban": "Layout & Label",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Daily",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 1",
+        "No Kanban": "C - 02 - 11",
+        "Area": "Cover Mesin Zone I Line B ",
+        "Item Check Kanban": "Cover Depan",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "30"
+    },
+    {
+        "Zone": "Zone 1",
+        "No Kanban": "C - 02 - 11",
+        "Area": "Cover Mesin Zone I Line B ",
+        "Item Check Kanban": "Cover Samping kiri & kanan",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "30"
+    },
+    {
+        "Zone": "Zone 1",
+        "No Kanban": "C - 02 - 11",
+        "Area": "Cover Mesin Zone I Line B ",
+        "Item Check Kanban": "Cover Belakang",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "30"
+    },
+    {
+        "Zone": "Zone 1",
+        "No Kanban": "C - 02 - 04",
+        "Area": "Sliper Work finish/Asy",
+        "Item Check Kanban": "Sliper 1   (Op 160  190)",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "30"
+    },
+    {
+        "Zone": "Zone 1",
+        "No Kanban": "C - 02 - 04",
+        "Area": "Sliper Work finish/Asy",
+        "Item Check Kanban": "Sliper 2  (Op 190  QC Gate)",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "30"
+    },
+    {
+        "Zone": "Zone 1",
+        "No Kanban": "C - 02 - 04",
+        "Area": "Sliper Work finish/Asy",
+        "Item Check Kanban": "Sliper 3  (QC Gate  Assy)",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "30"
+    },
+    {
+        "Zone": "Zone 1",
+        "No Kanban": "C - 03 - 02",
+        "Area": "Meja Finish Check TL / GL",
+        "Item Check Kanban": "Lampu Check",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "30"
+    },
+    {
+        "Zone": "Zone 1",
+        "No Kanban": "C - 03 - 02",
+        "Area": "Meja Finish Check TL / GL",
+        "Item Check Kanban": "Dudukan Work",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "30"
+    },
+    {
+        "Zone": "Zone 1",
+        "No Kanban": "C - 03 - 02",
+        "Area": "Meja Finish Check TL / GL",
+        "Item Check Kanban": "Tag Problem",
+        "Metode 4S": "Min : 1, Max : 20",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "30"
+    },
+    {
+        "Zone": "Zone 1",
+        "No Kanban": "C - 03 - 02",
+        "Area": "Meja Finish Check TL / GL",
+        "Item Check Kanban": "Alat Repair",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "30"
+    },
+    {
+        "Zone": "Zone 2",
+        "No Kanban": "C - 02 - 12",
+        "Area": "Cover Mesin Zone II Line B ",
+        "Item Check Kanban": "Cover Depan",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "32"
+    },
+    {
+        "Zone": "Zone 2",
+        "No Kanban": "C - 02 - 12",
+        "Area": "Cover Mesin Zone II Line B ",
+        "Item Check Kanban": "Cover Samping kiri & kanan",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "32"
+    },
+    {
+        "Zone": "Zone 2",
+        "No Kanban": "C - 02 - 12",
+        "Area": "Cover Mesin Zone II Line B ",
+        "Item Check Kanban": "Cover Atas",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "32"
+    },
+    {
+        "Zone": "Zone 2",
+        "No Kanban": "C - 02 - 09",
+        "Area": "Ruang UPS",
+        "Item Check Kanban": "Kaca",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "30"
+    },
+    {
+        "Zone": "Zone 2",
+        "No Kanban": "C - 02 - 09",
+        "Area": "Ruang UPS",
+        "Item Check Kanban": "Body UPS 1",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "30"
+    },
+    {
+        "Zone": "Zone 2",
+        "No Kanban": "C - 02 - 09",
+        "Area": "Ruang UPS",
+        "Item Check Kanban": "Body UPS 2",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "30"
+    },
+    {
+        "Zone": "Zone 2",
+        "No Kanban": "C - 02 - 09",
+        "Area": "Ruang UPS",
+        "Item Check Kanban": "Trafo",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "30"
+    },
+    {
+        "Zone": "Zone 2",
+        "No Kanban": "C - 02 - 09",
+        "Area": "Ruang UPS",
+        "Item Check Kanban": "Tangga",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "30"
+    },
+    {
+        "Zone": "Zone 2",
+        "No Kanban": "C - 02 - 09",
+        "Area": "Ruang UPS",
+        "Item Check Kanban": "Box Tool",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "30"
+    },
+    {
+        "Zone": "Zone 2",
+        "No Kanban": "C - 02 - 09",
+        "Area": "Ruang UPS",
+        "Item Check Kanban": "Lay Out & Label",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "30"
+    },
+    {
+        "Zone": "Zone 2",
+        "No Kanban": "C - 02 - 06",
+        "Area": "Ruang QC 2 (kamishibai)",
+        "Item Check Kanban": "Meja MLF",
+        "Metode 4S": "Cleaning (tdk ada oil & kiriko)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "23"
+    },
+    {
+        "Zone": "Zone 2",
+        "No Kanban": "C - 02 - 06",
+        "Area": "Ruang QC 2 (kamishibai)",
+        "Item Check Kanban": "Meja Gauge",
+        "Metode 4S": "Cleaning (tdk ada oil & kiriko)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "23"
+    },
+    {
+        "Zone": "Zone 2",
+        "No Kanban": "C - 02 - 06",
+        "Area": "Ruang QC 2 (kamishibai)",
+        "Item Check Kanban": "PC Computer & Monitor",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "23"
+    },
+    {
+        "Zone": "Zone 2",
+        "No Kanban": "C - 02 - 06",
+        "Area": "Ruang QC 2 (kamishibai)",
+        "Item Check Kanban": "Lemari Bantex",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "23"
+    },
+    {
+        "Zone": "Zone 2",
+        "No Kanban": "C - 02 - 06",
+        "Area": "Ruang QC 2 (kamishibai)",
+        "Item Check Kanban": "Layout& Label-label",
+        "Metode 4S": "Check (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "23"
+    },
+    {
+        "Zone": "Zone 3",
+        "No Kanban": "C - 02 - 13",
+        "Area": "Cover Mesin Zone III Line B ",
+        "Item Check Kanban": "Cover Depan",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "30"
+    },
+    {
+        "Zone": "Zone 3",
+        "No Kanban": "C - 02 - 13",
+        "Area": "Cover Mesin Zone III Line B ",
+        "Item Check Kanban": "Cover Samping kiri & kanan",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "30"
+    },
+    {
+        "Zone": "Zone 3",
+        "No Kanban": "C - 02 - 13",
+        "Area": "Cover Mesin Zone III Line B ",
+        "Item Check Kanban": "Cover Atas",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "30"
+    },
+    {
+        "Zone": "Zone 4",
+        "No Kanban": "C - 02 - 14",
+        "Area": "Cover Mesin Zone IV Line B ",
+        "Item Check Kanban": "Cover Depan",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "28"
+    },
+    {
+        "Zone": "Zone 4",
+        "No Kanban": "C - 02 - 14",
+        "Area": "Cover Mesin Zone IV Line B ",
+        "Item Check Kanban": "Cover Samping",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "28"
+    },
+    {
+        "Zone": "Zone 4",
+        "No Kanban": "C - 02 - 14",
+        "Area": "Cover Mesin Zone IV Line B ",
+        "Item Check Kanban": "Cover Atas",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "28"
+    },
+    {
+        "Zone": "Zone 5",
+        "No Kanban": "D - 01 - 04",
+        "Area": "Dispenser & Rak gelas",
+        "Item Check Kanban": "Lemari  Dispenser",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 5",
+        "No Kanban": "D - 01 - 04",
+        "Area": "Dispenser & Rak gelas",
+        "Item Check Kanban": "Dispencer,pemanas air",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 5",
+        "No Kanban": "D - 01 - 04",
+        "Area": "Dispenser & Rak gelas",
+        "Item Check Kanban": "Rak gelas",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 5",
+        "No Kanban": "D - 01 - 04",
+        "Area": "Dispenser & Rak gelas",
+        "Item Check Kanban": "Lay out & Label-label",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "15"
+    },
+    {
+        "Zone": "Zone 5",
+        "No Kanban": "B - 03 - 01",
+        "Area": "Lemari Operating Supply",
+        "Item Check Kanban": "Kaca Lemari",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "38"
+    },
+    {
+        "Zone": "Zone 5",
+        "No Kanban": "B - 03 - 01",
+        "Area": "Lemari Operating Supply",
+        "Item Check Kanban": "Body lemari",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "38"
+    },
+    {
+        "Zone": "Zone 5",
+        "No Kanban": "B - 03 - 01",
+        "Area": "Lemari Operating Supply",
+        "Item Check Kanban": "Bagian Dalam Lemari",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "38"
+    },
+    {
+        "Zone": "Zone 5",
+        "No Kanban": "B - 03 - 01",
+        "Area": "Lemari Operating Supply",
+        "Item Check Kanban": "Label/Lay Out",
+        "Metode 4S": "Cleaning (menit)",
+        "Periode": "Weekly",
+        "Group": "RED",
+        "Time": "38"
+    },
+    {
+        "Zone": "Zone 1",
+        "No Kanban": "A - 01 - 02",
+        "Area": "Garis Kuning Sticker tunjuk Kanan Kiri",
+        "Item Check Kanban": "Garis kuning",
+        "Metode 4S": "Cleaning ( Menit )",
+        "Periode": "MONTHLY",
+        "Group": "RED",
+        "Time": "120"
+    },
+    {
+        "Zone": "Zone 1",
+        "No Kanban": "A - 01 - 02",
+        "Area": "Garis Kuning Sticker tunjuk Kanan Kiri",
+        "Item Check Kanban": "Stiker tunjuk kanan kiri",
+        "Metode 4S": "Cleaning ( Menit )",
+        "Periode": "MONTHLY",
+        "Group": "RED",
+        "Time": "120"
+    },
+    {
+        "Zone": "Zone 2",
+        "No Kanban": "C - 01 - 03",
+        "Area": "Kipas Angin ALL ",
+        "Item Check Kanban": "Body Cover Kipas",
+        "Metode 4S": "Cleaning ( Menit )",
+        "Periode": "MONTHLY",
+        "Group": "RED",
+        "Time": "430"
+    },
+    {
+        "Zone": "Zone 2",
+        "No Kanban": "C - 01 - 03",
+        "Area": "Kipas Angin ALL ",
+        "Item Check Kanban": "Baling2 Kipas",
+        "Metode 4S": "Cleaning ( Menit )",
+        "Periode": "MONTHLY",
+        "Group": "RED",
+        "Time": "430"
+    },
+    {
+        "Zone": "Zone 2",
+        "No Kanban": "C - 01 - 03",
+        "Area": "Kipas Angin ALL ",
+        "Item Check Kanban": "Label Identitas",
+        "Metode 4S": "Cleaning ( Menit )",
+        "Periode": "MONTHLY",
+        "Group": "RED",
+        "Time": "430"
+    },
+    {
+        "Zone": "Zone 3",
+        "No Kanban": "C - 02 - 18",
+        "Area": "Guntri IMZY 002,004,006,007 Line B",
+        "Item Check Kanban": "Oil Pan Guntry",
+        "Metode 4S": "Cleaning ( Menit )",
+        "Periode": "MONTHLY",
+        "Group": "RED",
+        "Time": "1050"
+    },
+    {
+        "Zone": "Zone 3",
+        "No Kanban": "C - 02 - 18",
+        "Area": "Guntri IMZY 002,004,006,007 Line B",
+        "Item Check Kanban": "Rel Jalur Guntry",
+        "Metode 4S": "Cleaning ( Menit )",
+        "Periode": "MONTHLY",
+        "Group": "RED",
+        "Time": "1050"
+    },
+    {
+        "Zone": "Zone 3",
+        "No Kanban": "C - 02 - 18",
+        "Area": "Guntri IMZY 002,004,006,007 Line B",
+        "Item Check Kanban": "Pos Qc Guntry",
+        "Metode 4S": "Cleaning ( Menit )",
+        "Periode": "MONTHLY",
+        "Group": "RED",
+        "Time": "1050"
+    },
+    {
+        "Zone": "Zone 3",
+        "No Kanban": "C - 01 - 09",
+        "Area": "Lampu TL  Pos 01 ,Finish & Ruang QC",
+        "Item Check Kanban": "Lampu TL",
+        "Metode 4S": "Cleaning ( Menit )",
+        "Periode": "MONTHLY",
+        "Group": "RED",
+        "Time": "300"
+    },
+    {
+        "Zone": "Zone 3",
+        "No Kanban": "C - 01 - 09",
+        "Area": "Lampu TL  Pos 01 ,Finish & Ruang QC",
+        "Item Check Kanban": "Bracket Lampu",
+        "Metode 4S": "Cleaning ( Menit )",
+        "Periode": "MONTHLY",
+        "Group": "RED",
+        "Time": "300"
+    },
+    {
+        "Zone": "Zone 3",
+        "No Kanban": "C - 01 - 09",
+        "Area": "Lampu TL  Pos 01 ,Finish & Ruang QC",
+        "Item Check Kanban": "Cover Lampu",
+        "Metode 4S": "Cleaning ( Menit )",
+        "Periode": "MONTHLY",
+        "Group": "RED",
+        "Time": "300"
+    },
+    {
+        "Zone": "Zone 4",
+        "No Kanban": "C - 05 - 03",
+        "Area": "All Buletin Board Line B",
+        "Item Check Kanban": "Papan Bulletin",
+        "Metode 4S": "Cleaning ( Menit )",
+        "Periode": "MONTHLY",
+        "Group": "RED",
+        "Time": "190"
+    },
+    {
+        "Zone": "Zone 4",
+        "No Kanban": "C - 05 - 03",
+        "Area": "All Buletin Board Line B",
+        "Item Check Kanban": "Sheet SOP",
+        "Metode 4S": "Cleaning ( Menit )",
+        "Periode": "MONTHLY",
+        "Group": "RED",
+        "Time": "190"
+    },
+    {
+        "Zone": "Zone 4",
+        "No Kanban": "C - 05 - 03",
+        "Area": "All Buletin Board Line B",
+        "Item Check Kanban": "Label Identitas",
+        "Metode 4S": "Cleaning ( Menit )",
+        "Periode": "MONTHLY",
+        "Group": "RED",
+        "Time": "190"
+    },
+    {
+        "Zone": "Zone 4",
+        "No Kanban": "C - 02 - 17",
+        "Area": "Sliper Work Blank Material Line B",
+        "Item Check Kanban": "Sliper",
+        "Metode 4S": "Cleaning ( Menit )",
+        "Periode": "MONTHLY",
+        "Group": "RED",
+        "Time": "520"
+    },
+    {
+        "Zone": "Zone 4",
+        "No Kanban": "C - 02 - 17",
+        "Area": "Sliper Work Blank Material Line B",
+        "Item Check Kanban": "Bolt & Roller",
+        "Metode 4S": "Cleaning ( Menit )",
+        "Periode": "MONTHLY",
+        "Group": "RED",
+        "Time": "520"
+    },
+    {
+        "Zone": "Zone 5",
+        "No Kanban": "C - 02 - 08",
+        "Area": "Gondlla Transfer",
+        "Item Check Kanban": "Rak Finish",
+        "Metode 4S": "Cleaning ( Menit )",
+        "Periode": "MONTHLY",
+        "Group": "RED",
+        "Time": "410"
+    },
+    {
+        "Zone": "Zone 5",
+        "No Kanban": "C - 02 - 08",
+        "Area": "Gondlla Transfer",
+        "Item Check Kanban": "Body Gondola",
+        "Metode 4S": "Cleaning ( Menit )",
+        "Periode": "MONTHLY",
+        "Group": "RED",
+        "Time": "410"
+    },
+    {
+        "Zone": "Zone 5",
+        "No Kanban": "C - 02 - 08",
+        "Area": "Gondlla Transfer",
+        "Item Check Kanban": "Lifter",
+        "Metode 4S": "Cleaning ( Menit )",
+        "Periode": "MONTHLY",
+        "Group": "RED",
+        "Time": "410"
+    },
+    {
+        "Zone": "Zone 5",
+        "No Kanban": "C - 02 - 08",
+        "Area": "Gondlla Transfer",
+        "Item Check Kanban": "Body Panel",
+        "Metode 4S": "Cleaning ( Menit )",
+        "Periode": "MONTHLY",
+        "Group": "RED",
+        "Time": "410"
+    }
+]

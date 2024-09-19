@@ -248,6 +248,11 @@ module.exports = {
                     item_check_kanban_id: ` (select item_check_kanban_id from ${table.tb_m_4s_item_check_kanbans} where uuid = '${req.body.item_check_kanban_id}') `,
                 }
 
+                if (req.body.sub_schedule_id)
+                {
+                    body.sub_schedule_id = ` (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}') `;
+                }
+
                 let checkExists = await db.query(
                     `
                         select 

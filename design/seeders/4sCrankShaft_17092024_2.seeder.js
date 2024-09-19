@@ -89,7 +89,7 @@ const mapFreq = (period) => {
     }
 }
 
-const flagCreatedBy = 'SEEDER CrankShaft 17092024'
+const flagCreatedBy = 'SEEDER CrankShaft 17092024 02'
 
 /**
  * Clears all rows from the specified tables in the database.
@@ -154,16 +154,16 @@ const main = async () => {
         const lineQuery = await db.query(`select * from tb_m_lines where line_nm in ('Crank Shaft') and deleted_dt is null limit 1`)
         const lineRow = lineQuery.rows[0]
 
-        const json = JSON.parse(await readFile(path.resolve(__dirname, '../json/4sCrankShaft_17092024.json'), "utf8"));
+        const json = JSON.parse(await readFile(path.resolve(__dirname, '../json/4sCrankShaft_17092024_2.json'), "utf8"));
         for (let i = 0; i < json.length; i++)
         {
             //#region zone
             let zoneNm = json[i].Zone
             if (typeof zoneNm === 'string')
             {
-                zoneNm = zoneNm.replace('ZONE ', '').replace(/("|')/g, "").trim()
-                zoneNm = zoneNm.replace('ZONA ', '')
-                zoneNm = zoneNm.replace('Zone ', '')
+                zoneNm = zoneNm.replace('ZONE ', '').replace(/("|')/g, "").trim();
+                zoneNm = zoneNm.replace('ZONA ', '');
+                zoneNm = zoneNm.replace('Zone ', '');
             }
 
             if (!zoneNm)
