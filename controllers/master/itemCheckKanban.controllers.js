@@ -92,7 +92,7 @@ module.exports = {
                     {
                         item.ilustration_imgs = item.ilustration_imgs.split('; ').map((img, index) => ({
                             index: index,
-                            img: `${process.env.IMAGE_URL}/file?path=${img}`,
+                            img: `${process.env.IMAGE_URL}${img}`,
                             path: img,
                             is_deleted: false
                         }))
