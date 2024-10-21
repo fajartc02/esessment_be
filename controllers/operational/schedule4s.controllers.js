@@ -196,7 +196,7 @@ const childrenSubSchedule = async (
                       ${byPic}
               ) a order by date_num      
            `
-  //console.warn('childrensql', childrenSql)
+  //console.log('childrensql', childrenSql)
   //logger(childrenSql, 'childrenSql')
   //const children = await queryCustom(childrenSql, false)
   const startTime = Date.now();
@@ -469,6 +469,7 @@ module.exports = {
     {
       const { main_schedule_id, freq_id, zone_id, kanban_id, line_id, group_id, month_year_num, limit, current_page } = req.query
       const cacheKey = subScheduleCacheKey(main_schedule_id, freq_id, zone_id, kanban_id, line_id, group_id, month_year_num, limit, current_page);
+      /* 
       const cachedSchedule = cacheGet(cacheKey)
 
       if (cachedSchedule)
@@ -476,7 +477,7 @@ module.exports = {
         console.log('get4sSubSchedule fetch from cached');
         response.success(res, "Success to get 4s sub schedule", cachedSchedule)
         return
-      }
+      } */
 
       console.log('get4sSubSchedule fetch from query');
 
