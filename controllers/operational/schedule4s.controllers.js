@@ -181,9 +181,11 @@ const childrenSubSchedule = async (
                                                     from 
                                                       ${table.tb_m_4s_item_check_kanbans} 
                                                     where 
-                                                      kanban_id = '${kanbanRealId}')
-                                                      and main_schedule_id = tbrcs.main_schedule_id
-                                                      and checked_date::date = tbrcs.plan_time::date
+                                                      kanban_id = '${kanbanRealId}'
+                                                      )
+                                                      and sub_schedule_id = tbrcs.sub_schedule_id
+                                                      /* and main_schedule_id = tbrcs.main_schedule_id
+                                                      and checked_date::date = tbrcs.plan_time::date */
                       ) item_check on true
                   where
                       tbrcs.deleted_dt is null
