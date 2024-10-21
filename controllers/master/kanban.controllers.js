@@ -106,7 +106,7 @@ module.exports = {
                     {
                         item.kanban_imgs = item.kanban_imgs.split('; ').map((img, index) => ({
                             index: index,
-                            img: `${process.env.IMAGE_URL}/file?path=${img}`
+                            img: `${process.env.IMAGE_URL}${img}`
                         }))
                     }
 

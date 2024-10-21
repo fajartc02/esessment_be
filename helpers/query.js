@@ -1,40 +1,34 @@
-const pg = require('pg')
-const { database, databasePool } = require('../config/database')
-const logger = require('./logger')
+const pg = require("pg");
+const { database, databasePool } = require("../config/database");
+const logger = require("./logger");
 
-const _defaultCallbackTrans = async (db = databasePool) => { };
+const _defaultCallbackTrans = async (db = databasePool) => {};
 
 const poolQuery = async (raw) => {
   let client;
-  try
-  {
+  try {
     client = await databasePool.connect();
-    console.log('raw query', raw);
+    console.log("raw query", raw);
     const query = await client.query(raw);
     client.release();
     return query;
-  } catch (error)
-  {
+  } catch (error) {
     throw error;
-  } finally
-  {
-    if (client)
-    {
+  } finally {
+    if (client) {
       //client.release();
     }
   }
-}
+};
 
 module.exports = {
   queryGET: async (table, whereCond = false, cols = null) => {
     return new Promise(async (resolve, reject) => {
       let selectedCols = "*";
-      if (cols)
-      {
+      if (cols) {
         selectedCols = cols.join(",");
       }
-      if (!whereCond)
-      {
+      if (!whereCond) {
         whereCond = "";
       }
       let q = `SELECT ${selectedCols} FROM ${table} ${whereCond}`;
@@ -54,16 +48,13 @@ module.exports = {
     return new Promise(async (resolve, reject) => {
       let containerColumn = [];
       let containerValues = [];
-      for (const key in data)
-      {
+      for (const key in data) {
         containerColumn.push(key);
 
         let value = data[key];
-        if (typeof value === "string" && value.includes("select"))
-        {
+        if (typeof value === "string" && value.includes("select")) {
           value = `${data[key]}`;
-        } else
-        {
+        } else {
           value = `'${data[key]}'`;
         }
 
@@ -94,30 +85,23 @@ module.exports = {
       let containerValues = [];
       let mapBulkData = await data.map((item) => {
         containerValues = [];
-        for (const key in item)
-        {
-          if (key != "childs")
-          {
-            if (item[key])
-            {
+        for (const key in item) {
+          if (key != "childs") {
+            if (item[key]) {
               console.log();
-              if (typeof item[key] == "object")
-              {
+              if (typeof item[key] == "object") {
                 containerValues.push(`'{${item[key].join(",")}}'`);
-              } else
-              {
+              } else {
                 containerValues.push(`'${item[key]}'`);
               }
-            } else
-            {
+            } else {
               containerValues.push(`NULL`);
             }
           }
         }
         return `(${containerValues.join(",")})`;
       });
-      for (const key in data[0])
-      {
+      for (const key in data[0]) {
         containerColumn.push(key);
       }
       let q = `INSERT INTO ${table} (${containerColumn.join(
@@ -138,19 +122,14 @@ module.exports = {
   queryPUT: async (table, data, whereCond = "") => {
     return new Promise(async (resolve, reject) => {
       let containerSetValues = [];
-      for (const key in data)
-      {
-        if (data[key] == "CURRENT_TIMESTAMP")
-        {
+      for (const key in data) {
+        if (data[key] == "CURRENT_TIMESTAMP") {
           containerSetValues.push(`${key} = CURRENT_TIMESTAMP`);
-        } else if (data[key] && data[key] != "null")
-        {
+        } else if (data[key] && data[key] != "null") {
           let value = data[key];
-          if (typeof value === "string" && value.includes("select"))
-          {
+          if (typeof value === "string" && value.includes("select")) {
             value = `${data[key]}`;
-          } else
-          {
+          } else {
             value = `'${data[key]}'`;
           }
 
@@ -188,8 +167,7 @@ module.exports = {
   querySoftDELETE: async (table, data, whereCond = "") => {
     return new Promise(async (resolve, reject) => {
       let containerSetValues = [];
-      for (const key in data)
-      {
+      for (const key in data) {
         containerSetValues.push(`${key} = '${data[key]}'`);
       }
       let q = `UPDATE ${table} SET ${containerSetValues.join(
@@ -209,8 +187,7 @@ module.exports = {
   queryCustom: async (sql, log = true) => {
     return new Promise(async (resolve, reject) => {
       let q = sql;
-      if (log)
-      {
+      if (log) {
         console.log(q);
       }
       await database
@@ -231,8 +208,7 @@ module.exports = {
       db.release();
     };
 
-    try
-    {
+    try {
       await db.query(`SET session_replication_role = 'replica'`);
       await db.query("BEGIN");
 
@@ -240,8 +216,7 @@ module.exports = {
       await db.query("COMMIT");
       await finish();
       return r;
-    } catch (error)
-    {
+    } catch (error) {
       //console.log('error transaction', error)
       await db.query("ROLLBACK");
       await finish();
@@ -252,16 +227,13 @@ module.exports = {
     return new Promise(async (resolve, reject) => {
       let containerColumn = [];
       let containerValues = [];
-      for (const key in data)
-      {
+      for (const key in data) {
         containerColumn.push(key);
 
         let value = data[key];
-        if (typeof value === "string" && value.includes("select"))
-        {
+        if (typeof value === "string" && value.includes("select")) {
           value = `${data[key]}`;
-        } else
-        {
+        } else {
           value = `'${data[key]}'`;
         }
 
@@ -288,19 +260,14 @@ module.exports = {
   queryPutTransaction: async (dbPool, table, data, whereCond = "") => {
     return new Promise(async (resolve, reject) => {
       let containerSetValues = [];
-      for (const key in data)
-      {
-        if (data[key] == "CURRENT_TIMESTAMP")
-        {
+      for (const key in data) {
+        if (data[key] == "CURRENT_TIMESTAMP") {
           containerSetValues.push(`${key} = CURRENT_TIMESTAMP`);
-        } else if (data[key] && data[key] != "null")
-        {
+        } else if (data[key] && data[key] != "null") {
           let value = data[key];
-          if (typeof value === "string" && value.includes("select"))
-          {
+          if (typeof value === "string" && value.includes("select")) {
             value = `${data[key]}`;
-          } else
-          {
+          } else {
             value = `'${data[key]}'`;
           }
 
@@ -322,5 +289,20 @@ module.exports = {
         });
     });
   },
-  poolQuery
+  queryDeleteTransaction: async (dbPool, table, id, col_nm) => {
+    return new Promise(async (resolve, reject) => {
+      const q = `DELETE FROM ${table} WHERE ${col_nm} = ${id}`;
+      console.log(q);
+
+      await dbPool
+        .query(q)
+        .then((result) => {
+          resolve(result);
+        })
+        .catch((err) => {
+          reject(err);
+        });
+    });
+  },
+  poolQuery,
 };

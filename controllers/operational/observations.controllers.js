@@ -5,6 +5,10 @@ const {
   queryCustom,
   queryGET,
   queryPUT,
+  queryPutTransaction,
+  queryTransaction,
+  queryDeleteTransaction,
+  queryPostTransaction,
 } = require("../../helpers/query");
 
 const response = require("../../helpers/response");
@@ -17,6 +21,7 @@ const addAttrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData");
 const condDataNotDeleted = `deleted_dt IS NULL`;
 
 const moment = require("moment");
+const getLastIdDataNew = require("../../helpers/getLastIdDataNew");
 
 module.exports = {
   addScheduleObservation: async (req, res) => {
@@ -137,7 +142,7 @@ module.exports = {
         let checkers = await queryGET(
           table.tb_r_obs_checker,
           `WHERE observation_id = '${obsUuidtoId}'`,
-          ["uuid as id", "checker_nm"]
+          ["uuid as id", "checker_nm", "checker_nm as label"]
         );
         obs.checkers = checkers;
         obs.total_page =
@@ -718,6 +723,69 @@ module.exports = {
       response.failed(res, "Error to add CHECK observation");
     }
   },
+  editScheduleObservation: async (req, res) => {
+    try {
+      await queryTransaction(async (db) => {
+        let body = req.body;
+        let observationId = req.params.id;
+        observationId = await uuidToId(
+          table.tb_r_observations,
+          "observation_id",
+          observationId
+        );
+        // console.log(body);
+        // console.log(observationId);
+
+        const mapCheckers = await body.checkers.map(async (checker, i) => {
+          const lastId = await getLastIdData(
+            table.tb_r_obs_checker,
+            "obs_checker_id"
+          );
+          checker.observation_id = observationId;
+          checker.uuid = req.uuid();
+          checker.obs_checker_id = (await lastId) + (i + 1);
+          // console.log(checker);
+
+          return checker;
+        });
+        // DELETE tb_r_obs_checker where schedule_id = observationId
+        await queryDeleteTransaction(
+          db,
+          table.tb_r_obs_checker,
+          observationId,
+          "observation_id"
+        );
+        const promiseMapChecker = await Promise.all(mapCheckers);
+        await promiseMapChecker.forEach(async (checker) => {
+          console.log(checker);
+
+          // INSERT tb_r_obs_checker
+          await queryPostTransaction(db, table.tb_r_obs_checker, checker);
+        });
+
+        // edit tb_r_observations
+        delete body.checkers;
+        body.pos_id = `(select pos_id FROM tb_m_pos WHERE uuid = '${body?.pos_id}')`;
+        body.job_id = `(select job_id FROM tb_m_jobs WHERE uuid = '${body?.job_id}')`;
+        body.group_id = `(select group_id FROM tb_m_groups WHERE uuid = '${body?.group_id}')`;
+        console.log(body);
+
+        await queryPutTransaction(
+          db,
+          table.tb_r_observations,
+          body,
+          `WHERE observation_id = ${observationId}`
+        );
+
+        // await queryPostTransaction(db, table.tb_r_obs_checker, )
+        return true;
+      });
+      response.success(res, "Success to edit schedule");
+    } catch (error) {
+      console.log(error);
+      response.failed(res, "Error to edit schedule observation");
+    }
+  },
   deleteScheduleObservation: async (req, res) => {
     try {
       let obj = {
@@ -731,6 +799,7 @@ module.exports = {
         attrsUserUpdate,
         `WHERE uuid = '${req.params.id}'`
       );
+
       response.success(res, "Success to soft delete obser", result);
     } catch (error) {
       console.log(error);
