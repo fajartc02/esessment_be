@@ -44,7 +44,7 @@ module.exports = {
       const { observation_id } = req.query
       const responseData = await queryGET(
         table.tb_r_observations_comments,
-        `WHERE observation_id = '${observation_id}'`,
+        `WHERE observation_id = (select observation_id from tb_r_observations WHERE uuid = '${observation_id}')`,
         ['uuid as id', 'comments', 'created_dt', 'name', 'noreg'],
       )
       response.success(res, `Success to get comments with id: ${observation_id}`, responseData)
