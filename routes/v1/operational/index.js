@@ -7,6 +7,7 @@ const henkaten = require('./henkaten')
 const graph = require('./graph')
 const r4s = require("./4s")
 const om = require('./om')
+const comments = require('./comments.route')
 
 router.use('/observation', observations)
 router.use('/findingCm', findingCm)
@@ -16,6 +17,7 @@ router.use('/focus-thema', focusThema)
 router.use('/graph', graph)
 router.use("/4s", r4s)
 router.use("/om", om)
+router.use('/comments', comments)
 
 
 module.exports = router
