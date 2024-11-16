@@ -15,6 +15,10 @@ const table = {
     tb_m_categories: 'tb_m_categories',
     tb_m_judgments: 'tb_m_judgments',
     tb_r_observations: 'tb_r_observations',
+
+    // comments
+    tb_r_observations_comments: 'tb_r_observations_comments',
+
     tb_r_obs_members: 'tb_r_obs_members',
     tb_r_obs_checker: 'tb_r_obs_checker',
     tb_r_obs_results: 'tb_r_obs_results',

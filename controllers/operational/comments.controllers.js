@@ -42,7 +42,12 @@ module.exports = {
   getComments: async (req, res) => {
     try {
       const { observation_id } = req.query
-      response.success(res, `Success to get comments with id: ${observation_id}`, containerMock)
+      const responseData = await queryGET(
+        table.tb_r_observations_comments,
+        `WHERE observation_id = '${observation_id}'`,
+        ['uuid as id', 'comments', 'created_dt', 'name', 'noreg'],
+      )
+      response.success(res, `Success to get comments with id: ${observation_id}`, responseData)
     } catch (error) {
       console.log(error)
       response.failed(res, error)
@@ -50,11 +55,24 @@ module.exports = {
   },
   postComments: async (req, res) => {
     try {
-      containerMock.push(req.body)
-      response.success(res, 'Success to post comments', req.body)
+      req.body.created_by = req.user.noreg
+      let { comments, observation_id, name, noreg, created_dt, created_by } = req.body
+      const data = {
+        id: `(select COALESCE(MAX(id), 0) + 1 FROM tb_r_observations_comments)`,
+        uuid: req.uuid(),
+        comments,
+        observation_id: `(select observation_id from tb_r_observations WHERE uuid = '${observation_id}')`,
+        name,
+        noreg,
+        created_dt,
+        created_by
+      }
+      const responseData = await queryPOST(table.tb_r_observations_comments, data)
+      // containerMock.push(req.body)
+      response.success(res, 'Success to post comments')
     } catch (error) {
       console.log(error)
-      response.failed(res, error)
+      response.failed(res, 'Internal error')
     }
   }
 }
