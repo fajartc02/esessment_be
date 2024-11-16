@@ -24,11 +24,12 @@
 const pg = require('pg')
 const table = require('../config/table')
 const moment = require('moment')
-const { getRandomInt, padTwoDigits } = require('../helpers/formatting')
-const { bulkToSchema } = require('../helpers/schema')
-const { uuid } = require('uuidv4')
-const { addBusinessDaysToDate } = require('../helpers/date')
-const { shiftByGroupId, nonShift } = require('./shift.services')
+const {getRandomInt, padTwoDigits} = require('../helpers/formatting')
+const {bulkToSchema} = require('../helpers/schema')
+const {uuid} = require('uuidv4')
+const {addBusinessDaysToDate} = require('../helpers/date')
+const {shiftByGroupId, nonShift} = require('./shift.services')
+const scheduleHelper = require("../helpers/schedule.helper");
 
 const dateFormatted = (date = '') => (moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD'))
 
@@ -75,29 +76,23 @@ const findScheduleTransaction4S = async (
     let filterSub = []
     let filterMain = []
 
-    if (lineId)
-    {
+    if (lineId) {
         filterMain.push(`tr4sms.line_id = ${lineId}`)
     }
-    if (groupId)
-    {
+    if (groupId) {
         filterMain.push(`tr4sms.group_id = ${groupId}`)
     }
 
-    if (freqId)
-    {
+    if (freqId) {
         filterSub.push(`tr4sss.freq_id = ${freqId}`)
     }
-    if (zoneId)
-    {
+    if (zoneId) {
         filterSub.push(`tr4sss.zone_id = ${zoneId}`)
     }
-    if (kanbanId)
-    {
+    if (kanbanId) {
         filterSub.push(`tr4sss.kanban_id = ${kanbanId}`)
     }
-    if (scheduleId)
-    {
+    if (scheduleId) {
         filterSub.push(`tr4sss.schedule_id = ${scheduleId}`)
     }
 
@@ -132,8 +127,7 @@ const findScheduleTransaction4S = async (
                     ${filterSub.length > 0 ? 'and ' + filterSub.join(' and ') : ''}`
 
     const query = await db.query(sql)
-    if (query && query.rowCount > 0)
-    {
+    if (query && query.rowCount > 0) {
         return query.rows
     }
 
@@ -164,40 +158,105 @@ const findSignCheckerTransaction4S = async (
                     and tr4sms.line_id = ${lineId}
                     and tr4sms.group_id = ${groupId}`
 
-    if (startDate)
-    {
+    if (startDate) {
         sql += ` and tr4sss.start_date = '${startDate}'`
     }
-    if (endDate)
-    {
+    if (endDate) {
         sql += ` and tr4sss.end_date = '${endDate}'`
     }
-    if (isTl1)
-    {
+    if (isTl1) {
         sql += ` and tr4sss.is_tl_1 = true`
     }
-    if (isTl2)
-    {
+    if (isTl2) {
         sql += ` and tr4sss.is_tl_2 = true`
     }
-    if (isGl)
-    {
+    if (isGl) {
         sql += ` and tr4sss.is_gl = true`
     }
-    if (isSh)
-    {
+    if (isSh) {
         sql += ` and tr4sss.is_sh = true`
     }
 
     //console.log('sql sign checker', sql);
     const query = await db.query(sql)
-    if (query && query.rowCount > 0)
-    {
+    if (query && query.rowCount > 0) {
         return query.rows
     }
 
     return null
 }
+
+const genLessThanMonth = async (
+    db,
+    kanbanRow = {},
+    shiftRows = [],
+    monthNum,
+    yearNum,
+    lineId = 0,
+    groupId = 0,
+    shouldGeneratePlan = true
+) => {
+    const result = [];
+
+    if (kanbanRow.precition_val < 30) {
+        if (!shiftRows || shiftRows.length == 0) {
+            if (lineId == 8 || lineId == 9) {
+                shiftRows = await shiftByGroupId(
+                    db,
+                    yearNum,
+                    monthNum,
+                    lineId,
+                    groupId
+                )
+            } else {
+                shiftRows = await nonShift(
+                    db,
+                    yearNum,
+                    monthNum
+                )
+            }
+        }
+        /**
+         * exclude Morning Shift and Holiday
+         * @type {number[]}
+         */
+        const excludeDateIdxs = shiftRows
+            .filter((item) => {
+                return !item.is_holiday && item.shift_type !== 'morning_shift';
+            })
+            .map((item) => {
+                return parseInt(item.date_num);
+            });
+
+        const period = scheduleHelper.generatePeriodicSchedule(
+            `${yearNum}-${padTwoDigits(monthNum)}`,
+            kanbanRow.precition_val,
+            1,
+            {exceptionDateIdxs: excludeDateIdxs}
+        );
+
+        for (let sIndex = 0; sIndex < shiftRows.length; sIndex++) {
+            const planTime = period.find((item) => {
+                return item === shiftRows[sIndex].date;
+            });
+
+            result.push({
+                main_schedule_id: null,
+                group_id: groupId,
+                line_id: lineId,
+                kanban_id: kanbanRow.kanban_id,
+                zone_id: kanbanRow.zone_id,
+                freq_id: kanbanRow.freq_id,
+                schedule_id: shiftRows[sIndex].schedule_id,
+                shift_type: lineId == 8 || lineId == 9 ? shiftRows[sIndex].shift_type : null,
+                plan_time: planTime == dateFormatted(shiftRows[sIndex].date) && shouldGeneratePlan ? planTime : null,
+                is_holiday: shiftRows[sIndex].is_holiday,
+            });
+        }
+    }
+
+    return result;
+};
 
 const genDailySchedulePlan = async (
     db,
@@ -210,12 +269,9 @@ const genDailySchedulePlan = async (
     shouldGeneratePlan = true
 ) => {
     let result = []
-    if (kanbanRow.precition_val == 1)
-    {
-        if (!shiftRows || shiftRows.length == 0)
-        {
-            if (lineId == 8 || lineId == 9)
-            {
+    if (kanbanRow.precition_val == 1) {
+        if (!shiftRows || shiftRows.length == 0) {
+            if (lineId == 8 || lineId == 9) {
                 shiftRows = await shiftByGroupId(
                     db,
                     yearNum,
@@ -223,9 +279,7 @@ const genDailySchedulePlan = async (
                     lineId,
                     groupId
                 )
-            }
-            else
-            {
+            } else {
                 shiftRows = await nonShift(
                     db,
                     yearNum,
@@ -234,19 +288,15 @@ const genDailySchedulePlan = async (
             }
         }
 
-        for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
-        {
+        for (let sIndex = 0; sIndex < shiftRows.length; sIndex++) {
             let planTime = null
             if (
                 !shiftRows[sIndex].is_holiday
                 && (lineId == 8 || lineId == 9)
                 && shiftRows[sIndex].shift_type == 'morning_shift'
-            )
-            {
+            ) {
                 planTime = dateFormatted(shiftRows[sIndex].date)
-            }
-            else if (!shiftRows[sIndex].is_holiday && lineId != 8 && lineId != 9)
-            {
+            } else if (!shiftRows[sIndex].is_holiday && lineId != 8 && lineId != 9) {
                 planTime = dateFormatted(shiftRows[sIndex].date)
             }
 
@@ -278,14 +328,11 @@ const genWeeklySchedulePlan = async (
     groupId,
     shouldGeneratePlan = true
 ) => {
-    const result = []
+    const result = [];
 
-    if (kanbanRow.precition_val == 7)
-    {
-        if (!shiftRows || shiftRows.length == 0)
-        {
-            if (lineId == 8 || lineId == 9)
-            {
+    if (kanbanRow.precition_val == 7) {
+        if (!shiftRows || shiftRows.length == 0) {
+            if (lineId == 8 || lineId == 9) {
                 shiftRows = await shiftByGroupId(
                     db,
                     yearNum,
@@ -293,9 +340,7 @@ const genWeeklySchedulePlan = async (
                     lineId,
                     groupId
                 )
-            }
-            else
-            {
+            } else {
                 shiftRows = await nonShift(
                     db,
                     yearNum,
@@ -304,13 +349,11 @@ const genWeeklySchedulePlan = async (
             }
         }
 
-        let planTimeWeeklyArr = []
+        let planTimeWeeklyArr = [];
 
-        if (shouldGeneratePlan)
-        {
+        if (shouldGeneratePlan) {
             const morningShift = shiftRows.filter((item) => {
-                if (lineId == 8 || lineId == 9)
-                {
+                if (lineId == 8 || lineId == 9) {
                     return item.shift_type == 'morning_shift' && !item.is_holiday
                 }
 
@@ -319,19 +362,15 @@ const genWeeklySchedulePlan = async (
 
             let lastWeekNum = 0
 
-            for (let i = 0; i < morningShift.length; i++)
-            {
-                if (lastWeekNum != morningShift[i].week_num)
-                {
+            for (let i = 0; i < morningShift.length; i++) {
+                if (lastWeekNum != morningShift[i].week_num) {
                     const plan = morningShift.filter((item) => {
                         return item.week_num == morningShift[i].week_num
                     })
 
-                    if (plan.length > 0)
-                    {
+                    if (plan.length > 0) {
                         planTimeWeeklyArr.push(dateFormatted(plan[getRandomInt(0, plan.length - 1)].date))
-                    } else
-                    {
+                    } else {
                         planTimeWeeklyArr.push(dateFormatted(morningShift[i].date))
                     }
 
@@ -340,8 +379,7 @@ const genWeeklySchedulePlan = async (
             }
         }
 
-        for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
-        {
+        for (let sIndex = 0; sIndex < shiftRows.length; sIndex++) {
 
             /*  const exists = result.find((item) =>
                  lineId == item.line_id
@@ -370,7 +408,7 @@ const genWeeklySchedulePlan = async (
                 shift_type: lineId == 8 || lineId == 9 ? shiftRows[sIndex].shift_type : null,
                 plan_time: planTime == dateFormatted(shiftRows[sIndex].date) && shouldGeneratePlan ? planTime : null,
                 is_holiday: shiftRows[sIndex].is_holiday,
-            })
+            });
         }
     }
 
@@ -388,12 +426,9 @@ const genMonthlySchedulePlan = async (
     shouldGeneratePlan = true
 ) => {
     const result = []
-    if (kanbanRow.precition_val >= 30)
-    {
-        if (!shiftRows || shiftRows.length == 0)
-        {
-            if (lineId == 8 || lineId == 9)
-            {
+    if (kanbanRow.precition_val >= 30) {
+        if (!shiftRows || shiftRows.length == 0) {
+            if (lineId == 8 || lineId == 9) {
                 shiftRows = await shiftByGroupId(
                     db,
                     yearNum,
@@ -401,9 +436,7 @@ const genMonthlySchedulePlan = async (
                     lineId,
                     groupId
                 )
-            }
-            else
-            {
+            } else {
                 shiftRows = await nonShift(
                     db,
                     yearNum,
@@ -413,8 +446,7 @@ const genMonthlySchedulePlan = async (
         }
 
         let planTime = null
-        if (shouldGeneratePlan)
-        {
+        if (shouldGeneratePlan) {
             const lastMonthPlanSql = `select
                                         tms."date"
                                     from
@@ -435,8 +467,7 @@ const genMonthlySchedulePlan = async (
 
             const lastPlanTimeQuery = await db.query(lastMonthPlanSql)
 
-            if (lastPlanTimeQuery.rows && lastPlanTimeQuery.rowCount > 0)
-            {
+            if (lastPlanTimeQuery.rows && lastPlanTimeQuery.rowCount > 0) {
                 planTime = moment(lastPlanTimeQuery.rows[0].date, 'YYYY-MM-DD')
                     .clone()
                     .add(kanbanRow.precition_val, 'd')
@@ -445,8 +476,7 @@ const genMonthlySchedulePlan = async (
                 if (
                     kanbanRow.precition_val == 30
                     && moment(planTime).day() != 6
-                )
-                {
+                ) {
                     //console.log('platime before', planTime)
                     planTime = moment(planTime)
                         .clone()
@@ -455,16 +485,14 @@ const genMonthlySchedulePlan = async (
                     //console.log('platime after', planTime)
                 }
                 //2 MONTH should plan on week day
-                else if (kanbanRow.precition_val > 30 && moment(planTime).day() == 6 || moment(planTime).day() == 7)
-                {
+                else if (kanbanRow.precition_val > 30 && moment(planTime).day() == 6 || moment(planTime).day() == 7) {
                     planTime = moment(planTime)
                         .clone()
                         .weekday(getRandomInt(0, 5)) // generate random number 0 - 5 for weekday
                 }
             }
 
-            if (!planTime && kanbanRow.precition_val > 30)
-            {
+            if (!planTime && kanbanRow.precition_val > 30) {
                 // determine validity of kanban precition_val should plan if not already exists before (specially for > 1 month)
                 //#region existing validity
                 const scheduleExistsSql = `select 
@@ -478,21 +506,18 @@ const genMonthlySchedulePlan = async (
                                                 and tr4ss.freq_id = '${kanbanRow.freq_id}'`
 
                 const scheduleExists = await db.query(scheduleExistsSql)
-                if (scheduleExists.rowCount > 0)
-                {
+                if (scheduleExists.rowCount > 0) {
                     return result
                 }
                 //#endregion
             }
 
             const morningShift = shiftRows.filter((item) => {
-                if (kanbanRow.precition_val == 30)
-                {
+                if (kanbanRow.precition_val == 30) {
                     return item.is_holiday
                 }
 
-                if (lineId == 8 || lineId == 9)
-                {
+                if (lineId == 8 || lineId == 9) {
                     return item.shift_type == 'morning_shift'
                 }
 
@@ -500,8 +525,7 @@ const genMonthlySchedulePlan = async (
             });
 
             planTime = morningShift[getRandomInt(0, morningShift.length - 1)].date;
-            if (!planTime)
-            {
+            if (!planTime) {
                 const lastDay = moment(`${yearNum}-${padTwoDigits(monthNum)}-01`, 'YYYY-MM-DD')
                     .endOf('month')
                     .format('D');
@@ -510,8 +534,7 @@ const genMonthlySchedulePlan = async (
             }
         }
 
-        for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
-        {
+        for (let sIndex = 0; sIndex < shiftRows.length; sIndex++) {
             /* const exists = result.find((item) =>
                 lineId == item.line_id
                 && item.group_id == groupId
@@ -560,8 +583,7 @@ const mapSchemaPlanKanban4S = async (
 ) => {
     const result = []
 
-    if (validate)
-    {
+    if (validate) {
         const find = await findScheduleTransaction4S(
             db,
             yearNum,
@@ -573,18 +595,15 @@ const mapSchemaPlanKanban4S = async (
             kanbanId
         )
 
-        if (find || (find?.length ?? 0) > 0)
-        {
+        if (find || (find?.length ?? 0) > 0) {
             //console.log('exists', JSON.stringify(find));
             return result;
         }
     }
 
 
-    if (!shiftRows || shiftRows.length == 0)
-    {
-        if (lineId == 8 || lineId == 9)
-        {
+    if (!shiftRows || shiftRows.length == 0) {
+        if (lineId == 8 || lineId == 9) {
             shiftRows = await shiftByGroupId(
                 db,
                 yearNum,
@@ -592,9 +611,7 @@ const mapSchemaPlanKanban4S = async (
                 lineId,
                 groupId
             )
-        }
-        else
-        {
+        } else {
             shiftRows = await nonShift(
                 db,
                 yearNum,
@@ -643,18 +660,15 @@ const mapSchemaPlanKanban4S = async (
         shouldGeneratePlan
     )
 
-    if (monthly.length > 0)
-    {
+    if (monthly.length > 0) {
         result.push(...monthly)
     }
 
-    if (weekly.length > 0)
-    {
+    if (weekly.length > 0) {
         result.push(...weekly)
     }
 
-    if (daily.length > 0)
-    {
+    if (daily.length > 0) {
         result.push(...daily)
     }
 
@@ -662,16 +676,16 @@ const mapSchemaPlanKanban4S = async (
 }
 
 /**
-* function genMonthlySubScheduleSchema
-* 
-* @param {number} yearNum
-* @param {number} monthNum
-* @param {Object} lineGroup
-* @param {Array<*>} shiftRows
-* @param {pg.QueryResultRow} shiftRows 
-* 
-* @returns {Promise<Array<*>>} []
-*/
+ * function genMonthlySubScheduleSchema
+ *
+ * @param {number} yearNum
+ * @param {number} monthNum
+ * @param {Object} lineGroup
+ * @param {Array<*>} shiftRows
+ * @param {pg.QueryResultRow} shiftRows
+ *
+ * @returns {Promise<Array<*>>} []
+ */
 const genMonthlySubScheduleSchema = async (
     db,
     yearNum,
@@ -688,18 +702,15 @@ const genMonthlySubScheduleSchema = async (
         lineGroup.group_id
     )
 
-    if (kanbanRows.length == 0)
-    {
+    if (kanbanRows.length == 0) {
         return result
     }
     //#endregion
 
     //#region processing sub schedule schema
     {
-        if (!shiftRows || (shiftRows?.length ?? 0) == 0)
-        {
-            if (lineGroup.line_id == 8 || lineGroup.line_id == 9)
-            {
+        if (!shiftRows || (shiftRows?.length ?? 0) == 0) {
+            if (lineGroup.line_id == 8 || lineGroup.line_id == 9) {
                 shiftRows = await shiftByGroupId(
                     db,
                     yearNum,
@@ -707,9 +718,7 @@ const genMonthlySubScheduleSchema = async (
                     lineGroup.line_id,
                     lineGroup.group_id,
                 )
-            }
-            else
-            {
+            } else {
                 shiftRows = await nonShift(
                     db,
                     yearNum,
@@ -718,8 +727,7 @@ const genMonthlySubScheduleSchema = async (
             }
         }
 
-        for (let kIndex = 0; kIndex < kanbanRows.length; kIndex++)
-        {
+        for (let kIndex = 0; kIndex < kanbanRows.length; kIndex++) {
             const allPlan = await mapSchemaPlanKanban4S(
                 db,
                 lineGroup.line_id,
@@ -733,8 +741,7 @@ const genMonthlySubScheduleSchema = async (
                 shiftRows
             )
 
-            if (allPlan.length > 0)
-            {
+            if (allPlan.length > 0) {
                 result.push(...allPlan)
             }
         }
@@ -747,13 +754,13 @@ const genMonthlySubScheduleSchema = async (
 
 
 /**
-* 
-* @param {number} yearNum 
-* @param {number} monthNum 
-* @param {Array<*>} lineGroup 
-* @param {Array<*>} shiftRows 
-* @returns {Promise<Array<*>>}
-*/
+ *
+ * @param {number} yearNum
+ * @param {number} monthNum
+ * @param {Object<*>} lineGroup
+ * @param {Array<*>} shiftRows
+ * @returns {Promise<Array<*>>}
+ */
 const genMonthlySignCheckerSchema = async (db, yearNum, monthNum, lineGroup, shiftRows = []) => {
     const result = {
         tl1: [],
@@ -771,16 +778,13 @@ const genMonthlySignCheckerSchema = async (db, yearNum, monthNum, lineGroup, shi
     )
 
     // will skip generating if already exists
-    if (find && find.length > 0)
-    {
+    if (find && find.length > 0) {
         //console.log('should skip generating sign checker');
         return result
     }
 
-    if (!shiftRows || shiftRows.length == 0)
-    {
-        if (lineGroup.line_id == 8 || lineGroup.line_id == 9)
-        {
+    if (!shiftRows || shiftRows.length == 0) {
+        if (lineGroup.line_id == 8 || lineGroup.line_id == 9) {
             shiftRows = await shiftByGroupId(
                 db,
                 yearNum,
@@ -788,9 +792,7 @@ const genMonthlySignCheckerSchema = async (db, yearNum, monthNum, lineGroup, shi
                 lineGroup.line_id,
                 lineGroup.group_id
             )
-        }
-        else
-        {
+        } else {
             shiftRows = await nonShift(
                 db,
                 yearNum,
@@ -801,10 +803,8 @@ const genMonthlySignCheckerSchema = async (db, yearNum, monthNum, lineGroup, shi
 
     //#region scheduler generate tl1 & tl2 sign checker
     {
-        for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
-        {
-            if (!shiftRows[sIndex].is_holiday)
-            {
+        for (let sIndex = 0; sIndex < shiftRows.length; sIndex++) {
+            if (!shiftRows[sIndex].is_holiday) {
                 result.tl1.push({
                     main_schedule_id: null,
                     group_id: lineGroup.group_id,
@@ -832,8 +832,7 @@ const genMonthlySignCheckerSchema = async (db, yearNum, monthNum, lineGroup, shi
 
     //#region scheduler generate gl sign checker
     {
-        try
-        {
+        try {
             const glSignSql = `
                     with
                         week as (
@@ -904,16 +903,13 @@ const genMonthlySignCheckerSchema = async (db, yearNum, monthNum, lineGroup, shi
             //logger(glSignSql)
             const glSignQuery = await db.query(glSignSql)
 
-            for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
-            {
+            for (let sIndex = 0; sIndex < shiftRows.length; sIndex++) {
                 const exists = result.gl.find((g) => g.group_id == lineGroup.group_id && g.line_id == lineGroup.line_id)
-                if (exists)
-                {
+                if (exists) {
                     continue
                 }
 
-                for (let glIndex = 0; glIndex < glSignQuery.rows.length; glIndex++)
-                {
+                for (let glIndex = 0; glIndex < glSignQuery.rows.length; glIndex++) {
                     result.gl.push({
                         main_schedule_id: null,
                         group_id: lineGroup.group_id,
@@ -928,8 +924,7 @@ const genMonthlySignCheckerSchema = async (db, yearNum, monthNum, lineGroup, shi
 
             //logger(result.gl.length)
             //console.log('result.gl', result.gl)
-        } catch (error)
-        {
+        } catch (error) {
             console.log('error glSignQuery', error)
             throw error
         }
@@ -942,11 +937,9 @@ const genMonthlySignCheckerSchema = async (db, yearNum, monthNum, lineGroup, shi
         result.gl.forEach((gl) => tempSh.push(Object.assign({}, gl)))
 
 
-        for (var i = 0; i < tempSh.length; ++i)
-        {
+        for (var i = 0; i < tempSh.length; ++i) {
 
-            if (tempSh[i + 1])
-            {
+            if (tempSh[i + 1]) {
                 let tempEndDate = tempSh[i].end_date
 
                 tempSh[i].col_span = tempSh[i].col_span + tempSh[i + 1].col_span
@@ -954,8 +947,7 @@ const genMonthlySignCheckerSchema = async (db, yearNum, monthNum, lineGroup, shi
                 tempSh[i].end_date = moment(tempSh[i + 1].end_date, 'YYYY-MM-DD').format('YYYY-MM-DD')
                 tempSh[i].is_sh = true
 
-                if (moment(tempSh[i].end_date).valueOf() < moment(tempSh[i].start_date).valueOf())
-                {
+                if (moment(tempSh[i].end_date).valueOf() < moment(tempSh[i].start_date).valueOf()) {
                     tempSh[i].end_date = tempEndDate
                 }
 
@@ -966,13 +958,10 @@ const genMonthlySignCheckerSchema = async (db, yearNum, monthNum, lineGroup, shi
                 if (
                     tempSh[i].line_id == tempSh[i + 1].line_id
                     && tempSh[i].group_id == tempSh[i + 1].group_id
-                )
-                {
+                ) {
                     tempSh.splice(i + 1, 1)
                 }
-            }
-            else
-            {
+            } else {
                 delete tempSh[i].is_gl
                 tempSh[i].is_sh = true
 
@@ -989,11 +978,11 @@ const genMonthlySignCheckerSchema = async (db, yearNum, monthNum, lineGroup, shi
 
 /**
  * function genSingleMonthlySubScheduleSchema
- * 
- * @param {kanbamRows} kanbanRow 
- * @param {lineGroup} lineGroup 
- * @param {Array<*>} shiftRows 
- * @param {string} planTime 
+ *
+ * @param {kanbamRows} kanbanRow
+ * @param {lineGroup} lineGroup
+ * @param {Array<*>} shiftRows
+ * @param {string} planTime
  * @returns {Array<*>}
  */
 const genSingleMonthlySubScheduleSchema = async (
@@ -1003,8 +992,7 @@ const genSingleMonthlySubScheduleSchema = async (
     planTime = ''
 ) => {
     const result = []
-    for (let sIndex = 0; sIndex < shiftRows.length; sIndex++)
-    {
+    for (let sIndex = 0; sIndex < shiftRows.length; sIndex++) {
         result.push({
             uuid: uuid(),
             main_schedule_id: kanbanRow.main_schedule_id,
@@ -1023,10 +1011,10 @@ const genSingleMonthlySubScheduleSchema = async (
 }
 
 /**
-* 
-* @param {signChecker} signCheckerSchema 
-* @returns {Object}
-*/
+ *
+ * @param {signChecker} signCheckerSchema
+ * @returns {Object}
+ */
 const genSingleSignCheckerSqlFromSchema = async (
     db,
     yearNum,
@@ -1035,10 +1023,8 @@ const genSingleSignCheckerSqlFromSchema = async (
     shiftRows = [],
     mainScheduleId
 ) => {
-    if (!shiftRows || shiftRows.length == 0)
-    {
-        if (lineGroup.line_id == 8 || lineGroup.line_id == 9)
-        {
+    if (!shiftRows || shiftRows.length == 0) {
+        if (lineGroup.line_id == 8 || lineGroup.line_id == 9) {
             shiftRows = await shiftByGroupId(
                 db,
                 yearNum,
@@ -1046,9 +1032,7 @@ const genSingleSignCheckerSqlFromSchema = async (
                 lineGroup.line_id,
                 lineGroup.group_id
             )
-        }
-        else
-        {
+        } else {
             shiftRows = await nonShift(
                 db,
                 yearNum,
@@ -1060,8 +1044,7 @@ const genSingleSignCheckerSqlFromSchema = async (
     const signCheckerSchema = await genMonthlySignCheckerSchema(db, yearNum, monthNum, lineGroup, shiftRows)
     const signCheckersTemp = []
 
-    for (let tl1Index = 0; tl1Index < signCheckerSchema.tl1.length; tl1Index++)
-    {
+    for (let tl1Index = 0; tl1Index < signCheckerSchema.tl1.length; tl1Index++) {
         signCheckersTemp.push({
             main_schedule_id: mainScheduleId,
             uuid: uuid(),
@@ -1074,8 +1057,7 @@ const genSingleSignCheckerSqlFromSchema = async (
         })
     }
 
-    for (let tl2Index = 0; tl2Index < signCheckerSchema.tl2.length; tl2Index++)
-    {
+    for (let tl2Index = 0; tl2Index < signCheckerSchema.tl2.length; tl2Index++) {
         signCheckersTemp.push({
             main_schedule_id: mainScheduleId,
             uuid: uuid(),
@@ -1088,8 +1070,7 @@ const genSingleSignCheckerSqlFromSchema = async (
         })
     }
 
-    for (let glIndex = 0; glIndex < signCheckerSchema.gl.length; glIndex++)
-    {
+    for (let glIndex = 0; glIndex < signCheckerSchema.gl.length; glIndex++) {
         signCheckersTemp.push({
             main_schedule_id: mainScheduleId,
             uuid: uuid(),
@@ -1102,8 +1083,7 @@ const genSingleSignCheckerSqlFromSchema = async (
         })
     }
 
-    for (let shIndex = 0; shIndex < signCheckerSchema.sh.length; shIndex++)
-    {
+    for (let shIndex = 0; shIndex < signCheckerSchema.sh.length; shIndex++) {
         signCheckersTemp.push({
             main_schedule_id: mainScheduleId,
             uuid: uuid(),
@@ -1122,8 +1102,7 @@ const genSingleSignCheckerSqlFromSchema = async (
 
 
 const clear4sTransactionRows = async (db, flagCreatedBy) => {
-    if (flagCreatedBy)
-    {
+    if (flagCreatedBy) {
         console.log('clearing start')
 
         await db.query(`DELETE FROM ${table.tb_r_4s_schedule_sign_checkers} WHERE created_by = '${flagCreatedBy}'`)
@@ -1143,17 +1122,17 @@ const clear4sTransactionRows = async (db, flagCreatedBy) => {
 }
 
 /**
- * 
- * @param {databasePool} db 
- * @param {number} lineId 
- * @param {number} groupId 
- * @param {number} precitionVal 
- * @param {number} freqId 
- * @param {number} zoneId 
- * @param {number} kanbanId 
- * @param {number} monthNum 
- * @param {number} yearNum 
- * @param {Array<Any>|null>} shiftRows 
+ *
+ * @param {databasePool} db
+ * @param {number} lineId
+ * @param {number} groupId
+ * @param {number} precitionVal
+ * @param {number} freqId
+ * @param {number} zoneId
+ * @param {number} kanbanId
+ * @param {number} monthNum
+ * @param {number} yearNum
+ * @param {Array<Any>|null>} shiftRows
  */
 const createNewKanbanSingleLineSchedule = async (
     db,
@@ -1168,8 +1147,7 @@ const createNewKanbanSingleLineSchedule = async (
     shiftRows = [],
     flagInsertBy = ''
 ) => {
-    try
-    {
+    try {
         const find = await findScheduleTransaction4S(
             db,
             yearNum,
@@ -1180,8 +1158,7 @@ const createNewKanbanSingleLineSchedule = async (
 
         let mainScheduleData = null
 
-        if (!find || find.length == 0)
-        {
+        if (!find || find.length == 0) {
             const mainScheduleSql = `insert into ${table.tb_r_4s_main_schedules}
             (uuid, month_num, year_num, line_id, group_id, created_by) 
             values 
@@ -1190,17 +1167,13 @@ const createNewKanbanSingleLineSchedule = async (
 
             mainScheduleData = await db.query(mainScheduleSql)
             mainScheduleData = mainScheduleData.rows[0]
-        }
-        else
-        {
+        } else {
             mainScheduleData = await db.query(`select * from ${table.tb_r_4s_main_schedules} where main_schedule_id = '${find[0].main_schedule_id}'`)
             mainScheduleData = mainScheduleData.rows[0]
         }
 
-        if (!shiftRows || shiftRows.length == 0)
-        {
-            if (lineId == 8 || lineId == 9)
-            {
+        if (!shiftRows || shiftRows.length == 0) {
+            if (lineId == 8 || lineId == 9) {
                 shiftRows = await shiftByGroupId(
                     db,
                     yearNum,
@@ -1208,9 +1181,7 @@ const createNewKanbanSingleLineSchedule = async (
                     lineId,
                     groupId
                 )
-            }
-            else
-            {
+            } else {
                 shiftRows = await nonShift(
                     db,
                     yearNum,
@@ -1240,11 +1211,9 @@ const createNewKanbanSingleLineSchedule = async (
                 true
             )
 
-            if (subSchedule.length > 0)
-            {
+            if (subSchedule.length > 0) {
                 let subScheduleTemp = []
-                for (let i = 0; i < subSchedule.length; i++)
-                {
+                for (let i = 0; i < subSchedule.length; i++) {
                     subScheduleTemp.push({
                         uuid: uuid(),
                         main_schedule_id: mainScheduleData.main_schedule_id,
@@ -1259,8 +1228,7 @@ const createNewKanbanSingleLineSchedule = async (
                     })
                 }
 
-                if (subScheduleTemp.length > 0)
-                {
+                if (subScheduleTemp.length > 0) {
                     const subSchema = await bulkToSchema(subScheduleTemp)
                     const sqlInSub = `insert into ${table.tb_r_4s_sub_schedules} (${subSchema.columns}) values ${subSchema.values}`
                     console.log('sqlInSub', sqlInSub);
@@ -1283,10 +1251,8 @@ const createNewKanbanSingleLineSchedule = async (
             const signCheckersTemp = []
 
             const signCheckerTl1 = signCheckers.tl1
-            if (signCheckerTl1.length > 0)
-            {
-                for (let i = 0; i < signCheckerTl1.length; i++)
-                {
+            if (signCheckerTl1.length > 0) {
+                for (let i = 0; i < signCheckerTl1.length; i++) {
                     signCheckersTemp.push({
                         main_schedule_id: mainScheduleData.main_schedule_id,
                         uuid: uuid(),
@@ -1302,10 +1268,8 @@ const createNewKanbanSingleLineSchedule = async (
             }
 
             const signCheckerTl2 = signCheckers.tl2
-            if (signCheckerTl2.length > 0)
-            {
-                for (let i = 0; i < signCheckerTl2.length; i++)
-                {
+            if (signCheckerTl2.length > 0) {
+                for (let i = 0; i < signCheckerTl2.length; i++) {
                     signCheckersTemp.push({
                         main_schedule_id: mainScheduleData.main_schedule_id,
                         uuid: uuid(),
@@ -1321,10 +1285,8 @@ const createNewKanbanSingleLineSchedule = async (
             }
 
             const signChckerGl = signCheckers.gl
-            if (signChckerGl.length > 0)
-            {
-                for (let i = 0; i < signChckerGl.length; i++)
-                {
+            if (signChckerGl.length > 0) {
+                for (let i = 0; i < signChckerGl.length; i++) {
                     signCheckersTemp.push({
                         main_schedule_id: mainScheduleData.main_schedule_id,
                         uuid: uuid(),
@@ -1340,10 +1302,8 @@ const createNewKanbanSingleLineSchedule = async (
             }
 
             const signChckerSh = signCheckers.sh
-            if (signChckerSh.length > 0)
-            {
-                for (let i = 0; i < signChckerSh.length; i++)
-                {
+            if (signChckerSh.length > 0) {
+                for (let i = 0; i < signChckerSh.length; i++) {
                     signCheckersTemp.push({
                         main_schedule_id: mainScheduleData.main_schedule_id,
                         uuid: uuid(),
@@ -1358,8 +1318,7 @@ const createNewKanbanSingleLineSchedule = async (
                 }
             }
 
-            if (signCheckersTemp.length > 0)
-            {
+            if (signCheckersTemp.length > 0) {
                 const sgSchema = await bulkToSchema(signCheckersTemp)
                 const sqlInSign = `insert into ${table.tb_r_4s_schedule_sign_checkers} (${sgSchema.columns}) values ${sgSchema.values}`
                 console.log('sqlInSign', sqlInSign);
@@ -1368,21 +1327,21 @@ const createNewKanbanSingleLineSchedule = async (
         }
 
         //#endregion
-    }
-    catch (e)
-    {
+    } catch (e) {
         throw e
     }
 }
 
 module.exports = {
-    findScheduleTransaction4S: findScheduleTransaction4S,
+    findScheduleTransaction4S,
     findSignCheckerTransaction4S: findSignCheckerTransaction4S,
     genSingleMonthlySubScheduleSchema: genSingleMonthlySubScheduleSchema,
     genMonthlySubScheduleSchema: genMonthlySubScheduleSchema,
-    genMonthlySignCheckerSchema: genMonthlySignCheckerSchema,
+    genMonthlySignCheckerSchema,
     genSingleSignCheckerSqlFromSchema: genSingleSignCheckerSqlFromSchema,
     clear4sTransactionRows: clear4sTransactionRows,
     mapSchemaPlanKanban4S: mapSchemaPlanKanban4S,
-    createNewKanbanSingleLineSchedule: createNewKanbanSingleLineSchedule
+    createNewKanbanSingleLineSchedule: createNewKanbanSingleLineSchedule,
+    genLessThanMonth,
+    genMonthlySchedulePlan
 }

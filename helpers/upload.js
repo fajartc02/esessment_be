@@ -28,7 +28,7 @@ const storageEngine = multer.diskStorage({
 
         console.log(file);
 
-        const path = `./uploads/${req.body.dest}/`;
+        const path = `./uploads/${req.body.dest || req.query.dest}/`;
         if (!fs.existsSync(path)) {
             fs.mkdirSync(path, { recursive: true });
         }

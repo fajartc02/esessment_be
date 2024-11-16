@@ -36,7 +36,7 @@ console.log({
     host: process.env.DB_HOST,
     ssl: false
 });
-console.log(`SERVER PORT: ${process.env.PORT}`);
+console.log(`SERVER PORT: ${process.env.PORT}`, 'SERVER HOST :', process.env.APP_HOST);
 
 var app = express();
 app.use(cors())
