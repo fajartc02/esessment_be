@@ -30,11 +30,10 @@ const generatePeriodicSchedule = (yearMonthStr, intervalDays, startDay = 1, {exc
     const schedule = [];
 
     while (startDay <= daysInMonth) {
-        if (Array.isArray(exceptionDateIdxs) && exceptionDateIdxs.includes(startDay)) {
-            continue;
+        if (!(Array.isArray(exceptionDateIdxs) && exceptionDateIdxs.includes(startDay))) {
+            schedule.push(`${year}-${padTwoDigits(month)}-${padTwoDigits(startDay)}`);
         }
 
-        schedule.push(`${year}-${padTwoDigits(month)}-${padTwoDigits(startDay)}`);
         startDay += intervalDays;
     }
 

@@ -3,7 +3,7 @@ const {totalDaysOfYear} = require("./date");
 module.exports = {
     padTwoDigits: (number) => {
         if (number) {
-            return (parseInt(number) < 10) ? '0' + number.toString() : number.toString();
+            return (parseInt(number) < 10) ? '0' + parseInt(number).toString() : parseInt(number).toString();
         }
 
         return null
@@ -55,6 +55,7 @@ module.exports = {
             && !period.toLowerCase().includes("monthly")
             && !period.toLowerCase().includes("year")
             && !period.toLowerCase().includes("yearly")
+            && !period.toLowerCase().includes("2d")
         ) {
             return null;
         }

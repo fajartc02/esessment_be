@@ -243,7 +243,7 @@ module.exports = {
                 const body = {
                     ...req.body,
                     uuid: uuid(),
-                    judgment_id: ` (select judgment_id from ${table.tb_m_judgments} where uuid = '${req.body.judgment_id}') `,
+                    judgment_id: req.body.judgment_id ? ` (select judgment_id from ${table.tb_m_judgments} where uuid = '${req.body.judgment_id}') `: '1',
                     main_schedule_id: ` (select main_schedule_id from ${table.tb_r_4s_main_schedules} where uuid = '${req.body.main_schedule_id}') `,
                     item_check_kanban_id: ` (select item_check_kanban_id from ${table.tb_m_4s_item_check_kanbans} where uuid = '${req.body.item_check_kanban_id}') `,
                 }
@@ -265,7 +265,6 @@ module.exports = {
                             /* and main_schedule_id = (select main_schedule_id from ${table.tb_r_4s_main_schedules} where uuid = '${req.body.main_schedule_id}') */
                     `
                 )
-
                 if (checkExists.rowCount > 0)
                 {
                     const attr = attrsUserUpdateData(req, body)

@@ -198,7 +198,7 @@ const genLessThanMonth = async (
 ) => {
     const result = [];
 
-    if (kanbanRow.precition_val < 30) {
+    if (kanbanRow.precition_val < 7) {
         if (!shiftRows || shiftRows.length == 0) {
             if (lineId == 8 || lineId == 9) {
                 shiftRows = await shiftByGroupId(
@@ -222,7 +222,8 @@ const genLessThanMonth = async (
          */
         const excludeDateIdxs = shiftRows
             .filter((item) => {
-                return !item.is_holiday && item.shift_type !== 'morning_shift';
+                const a = !(!item.is_holiday && (!item.shift_type || item.shift_type !== 'morning_shift'));
+                return a;
             })
             .map((item) => {
                 return parseInt(item.date_num);
@@ -425,7 +426,8 @@ const genMonthlySchedulePlan = async (
     yearNum = 0,
     shouldGeneratePlan = true
 ) => {
-    const result = []
+    const result = [];
+
     if (kanbanRow.precition_val >= 30) {
         if (!shiftRows || shiftRows.length == 0) {
             if (lineId == 8 || lineId == 9) {
@@ -1336,12 +1338,13 @@ module.exports = {
     findScheduleTransaction4S,
     findSignCheckerTransaction4S: findSignCheckerTransaction4S,
     genSingleMonthlySubScheduleSchema: genSingleMonthlySubScheduleSchema,
-    genMonthlySubScheduleSchema: genMonthlySubScheduleSchema,
+    genMonthlySubScheduleSchema,
     genMonthlySignCheckerSchema,
     genSingleSignCheckerSqlFromSchema: genSingleSignCheckerSqlFromSchema,
     clear4sTransactionRows: clear4sTransactionRows,
     mapSchemaPlanKanban4S: mapSchemaPlanKanban4S,
     createNewKanbanSingleLineSchedule: createNewKanbanSingleLineSchedule,
     genLessThanMonth,
-    genMonthlySchedulePlan
+    genMonthlySchedulePlan,
+    genWeeklySchedulePlan
 }

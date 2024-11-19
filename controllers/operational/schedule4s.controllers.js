@@ -926,7 +926,7 @@ module.exports = {
             item.findings = findings.map((item) => {
               item.kaizen_file = item.kaizen_file ? `${process.env.APP_HOST}/file?path=${item.kaizen_file}` : null;
               return item;
-            })
+            }).reverse();
           }
           else
           {

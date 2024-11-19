@@ -103,10 +103,14 @@ module.exports = {
                         total_page: +countRows.count > 0 ? Math.ceil(countRows.count / +limit) : 0,
                         total_data: countRows.count,
                         limit: limit,
-                        list: findingQuery.rows,
-                    }
+                        list: findingQuery.rows.map((item) => {
+                            item.kaizen_file = item.kaizen_file ? process.env.APP_HOST + "/file?path=" + item.kaizen_file : null;
+                            return item;
+                        }),
+                    };
                 } else {
-                    result = result[0]
+                    result = result[0];
+                    result.kaizen_file = result.kaizen_file ? process.env.APP_HOST + "/file?path=" + result.kaizen_file : null;
                 }
             }
 
@@ -119,12 +123,16 @@ module.exports = {
     post4sFinding: async (req, res) => {
         try {
 
+            const rawSubScheduleId = ` (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}') `;
+            const rawScheduleItemCheckKanbanId = ` (select schedule_item_check_kanban_id from ${table.tb_r_4s_schedule_item_check_kanbans} where uuid = '${req.body.schedule_item_check_kanban_id}') `;
+            const rawFindingPicId = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.finding_pic_id}') `;
+
             const insertBody = {
                 ...req.body,
                 uuid: uuid(),
-                sub_schedule_id: ` (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}') `,
-                schedule_item_check_kanban_id: ` (select schedule_item_check_kanban_id from ${table.tb_r_4s_schedule_item_check_kanbans} where uuid = '${req.body.schedule_item_check_kanban_id}') `,
-                finding_pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.finding_pic_id}') `,
+                sub_schedule_id: rawSubScheduleId,
+                schedule_item_check_kanban_id: rawScheduleItemCheckKanbanId,
+                finding_pic_id: rawFindingPicId,
             }
 
             if (req.body.actual_pic_id) {
@@ -132,8 +140,21 @@ module.exports = {
             }
 
             const transaction = await queryTransaction(async (db) => {
-                const attrsInsert = await attrsUserInsertData(req, insertBody)
-                return await queryPostTransaction(db, table.tb_r_4s_findings, attrsInsert)
+                let exists = await queryCustom(`select * from ${table.tb_r_4s_findings} where sub_schedule_id = ${rawSubScheduleId} and schedule_item_check_kanban_id = ${rawScheduleItemCheckKanbanId}`);
+                if (exists.rowCount > 0) {
+                    delete insertBody.uuid;
+                    const attrsUserUpdate = await attrsUserUpdateData(req, insertBody);
+
+                    return await queryPutTransaction(
+                        db,
+                        table.tb_r_4s_findings,
+                        attrsUserUpdate,
+                        `WHERE finding_id = ${exists.rows[0].finding_id}`
+                    );
+                } else {
+                    const attrsInsert = await attrsUserInsertData(req, insertBody)
+                    return await queryPostTransaction(db, table.tb_r_4s_findings, attrsInsert)
+                }
             })
 
             response.success(res, "Success to add 4s finding", {
