@@ -196,6 +196,7 @@ const childrenSubSchedule = async (
                       ${byPic}
               ) a order by date_num      
            `
+
   //console.log('childrensql', childrenSql)
   //logger(childrenSql, 'childrenSql')
   //const children = await queryCustom(childrenSql, false)
@@ -336,8 +337,8 @@ const subScheduleRows = async (
     scheduleSql = `
             select row_number () over (
                             order by
-                            freq_nm
-                        )::integer as no, * from ( ${originScheduleSql} ) a order by freq_nm ${qLimit} ${qOffset}
+                            precition_val
+                        )::integer as no, * from ( ${originScheduleSql} ) a order by precition_val ${qLimit} ${qOffset}
         `
   }
 
@@ -922,7 +923,10 @@ module.exports = {
           )
           if (findings.length > 0)
           {
-            item.findings = findings
+            item.findings = findings.map((item) => {
+              item.kaizen_file = item.kaizen_file ? `${process.env.APP_HOST}/file?path=${item.kaizen_file}` : null;
+              return item;
+            })
           }
           else
           {

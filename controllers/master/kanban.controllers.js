@@ -1,20 +1,19 @@
 const moment = require("moment")
-const { uuid } = require("uuidv4")
+const {uuid} = require("uuidv4")
 const fs = require('fs')
 const table = require("../../config/table")
-const { queryGET, queryPUT, queryPostTransaction, queryPutTransaction, queryCustom } = require("../../helpers/query")
+const {queryGET, queryPUT, queryPostTransaction, queryPutTransaction, queryCustom} = require("../../helpers/query")
 const response = require("../../helpers/response")
 const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData")
 const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData")
 const multipleUUidToIds = require("../../helpers/multipleUuidToId")
-const { queryTransaction } = require('../../helpers/query')
+const {queryTransaction} = require('../../helpers/query')
 const removeFileIfExist = require('../../helpers/removeFileIfExist')
-const { mapSchemaPlanKanban4S, genSingleSignCheckerSqlFromSchema } = require('../../services/4s.services')
+const {mapSchemaPlanKanban4S, genSingleSignCheckerSqlFromSchema} = require('../../services/4s.services')
 
 const uploadDest = (dest = '', fileName = null) => {
     const r = `./uploads/${dest}`
-    if (fileName)
-    {
+    if (fileName) {
         r.concat(`/${fileName}`)
     }
 
@@ -23,9 +22,8 @@ const uploadDest = (dest = '', fileName = null) => {
 
 module.exports = {
     getKanbans: async (req, res) => {
-        try
-        {
-            let { id, line_id, freq_id, zone_id, limit, current_page } = req.query
+        try {
+            let {id, line_id, freq_id, zone_id, limit, current_page} = req.query
             const fromCondition = `  
                 ${table.tb_m_kanbans} tmk 
                 join ${table.tb_m_zones} tmz on tmk.zone_id = tmz.zone_id 
@@ -58,6 +56,10 @@ module.exports = {
                         tmk.kanban_no,
                         tmk.area_nm,
                         tmk.kanban_imgs,
+                        case 
+                            when tmk.sop_file is not null and tmk.sop_file != '' then 
+                                '${process.env.APP_HOST}' || '/file?path=' || tmk.sop_file
+                        end as sop_file,
                         tmz.created_by,
                         tmz.created_dt
                     from
@@ -66,28 +68,23 @@ module.exports = {
                         1 = 1
                 `
             //#region filter
-            if (id)
-            {
+            if (id) {
                 filterCondition.push(` tmk.uuid = '${id}' `)
             }
-            if (line_id)
-            {
+            if (line_id) {
                 filterCondition.push(` tml.uuid = '${line_id}' `)
             }
-            if (zone_id)
-            {
+            if (zone_id) {
                 filterCondition.push(` tmz.uuid = '${zone_id}' `)
             }
-            if (freq_id)
-            {
+            if (freq_id) {
                 filterCondition.push(` tmf.uuid = '${freq_id}' `)
             }
 
             const qOffset = (limit != -1 && limit) && current_page > 1 ? `OFFSET ${limit * (current_page - 1)}` : ``
             const qLimit = (limit != -1 && limit) ? `LIMIT ${limit}` : ``
 
-            if (filterCondition.length > 0)
-            {
+            if (filterCondition.length > 0) {
                 filterCondition = filterCondition.join(' and ')
                 kanbanSql = kanbanSql.concat(` and ${filterCondition} `)
             }
@@ -99,11 +96,9 @@ module.exports = {
             const nullId = id == null || id == -1 || id == ''
             let result = kanbanQuery.rows
 
-            if (kanbanQuery.rows.length > 0)
-            {
+            if (kanbanQuery.rows.length > 0) {
                 kanbanQuery.rows.map((item) => {
-                    if (item.kanban_imgs)
-                    {
+                    if (item.kanban_imgs) {
                         item.kanban_imgs = item.kanban_imgs.split('; ').map((img, index) => ({
                             index: index,
                             img: `${process.env.IMAGE_URL}${img}`
@@ -113,8 +108,7 @@ module.exports = {
                     return item
                 })
 
-                if (nullId)
-                {
+                if (nullId) {
                     const count = await queryCustom(`select count(tmk.kanban_id)::integer as count from ${fromCondition} where ${filterCondition}`)
                     const countRows = count.rows[0]
                     result = {
@@ -124,36 +118,30 @@ module.exports = {
                         limit: limit,
                         list: kanbanQuery.rows,
                     }
-                }
-                else
-                {
+                } else {
                     result = result[0]
                 }
             }
 
             response.success(res, "Success to get kanbans", result)
-        } catch (error)
-        {
+        } catch (error) {
             console.log(error)
             response.failed(res, "Error to get kanbans")
         }
     },
     postKanbans: async (req, res) => {
-        try
-        {
+        try {
             const uploadPath = uploadDest(`${req.body.dest}/`)
             const files = req.files
             let kanban_imgs = []
 
-            if (files && files.length > 0)
-            {
+            if (files && files.length > 0) {
                 kanban_imgs = files.map((file) => {
                     return uploadDest(`${req.body.dest}/${file.filename}`)
                 })
             }
 
-            try
-            {
+            try {
                 const transaction = await queryTransaction(async (db) => {
                     delete req.body.dest
 
@@ -164,8 +152,7 @@ module.exports = {
                         zone_id: ` (select zone_id from ${table.tb_m_zones} where uuid = '${req.body.zone_id}') `,
                     }
 
-                    if (kanban_imgs.length > 0)
-                    {
+                    if (kanban_imgs.length > 0) {
                         insertBody.kanban_imgs = kanban_imgs.join('; ')
                     }
 
@@ -191,35 +178,27 @@ module.exports = {
                 })
 
                 response.success(res, "Success to add kanban", transaction)
-            }
-            catch (error)
-            {
-                if (kanban_imgs.length > 0)
-                {
-                    if (fs.existsSync(uploadPath))
-                    {
-                        fs.rmdirSync(uploadPath, { recursive: true })
+            } catch (error) {
+                if (kanban_imgs.length > 0) {
+                    if (fs.existsSync(uploadPath)) {
+                        fs.rmdirSync(uploadPath, {recursive: true})
                     }
                 }
 
                 console.log('postKanbans', error)
                 response.failed(res, error)
             }
-        }
-        catch (error)
-        {
+        } catch (error) {
             console.log(error)
             response.failed(res, error)
         }
     },
     editKanbans: async (req, res) => {
-        try
-        {
+        try {
             const files = req.files
             let newKanbanImgs = []
 
-            if (files && files.length > 0)
-            {
+            if (files && files.length > 0) {
                 newKanbanImgs = files.map((file) => {
                     return uploadDest(`${req.body.dest}/${file.filename}`)
                 })
@@ -233,10 +212,9 @@ module.exports = {
 
             delete req.body.dest
 
-            try
-            {
+            try {
                 const transaction = await queryTransaction(async (dbPool) => {
-                    const { kanban_id, zone_id, freq_id } = await multipleUUidToIds([
+                    const {kanban_id, zone_id, freq_id} = await multipleUUidToIds([
                         {
                             table: table.tb_m_kanbans,
                             col: 'kanban_id',
@@ -260,27 +238,21 @@ module.exports = {
                         freq_id: freq_id
                     }
 
-                    if (newKanbanImgs.length > 0)
-                    {
+                    if (newKanbanImgs.length > 0) {
                         updateBody.kanban_imgs = newKanbanImgs.join('; ')
 
                         // only delete when transaction done and successfully
                         // deleting an file where kanban_no is equal existing kanban
-                        if (existingKanbans.kanban_no == req.body.kanban_no)
-                        {
+                        if (existingKanbans.kanban_no == req.body.kanban_no) {
                             existingKanbans.kanban_imgs.split('; ').forEach((item) => {
-                                if (fs.existsSync(item))
-                                {
+                                if (fs.existsSync(item)) {
                                     fs.unlinkSync(item)
                                 }
                             })
-                        }
-                        else
-                        {
+                        } else {
                             // delete older path includes file
-                            if (fs.existsSync(oldPath))
-                            {
-                                fs.rmdirSync(oldPath, { recursive: true })
+                            if (fs.existsSync(oldPath)) {
+                                fs.rmdirSync(oldPath, {recursive: true})
                             }
                         }
                     }
@@ -295,27 +267,19 @@ module.exports = {
                 })
 
                 response.success(res, "Success to edit kanban", transaction)
-            }
-            catch (error)
-            {
-                if (newKanbanImgs.length > 0)
-                {
-                    if (existingKanbans.kanban_no == req.body.kanban_no)
-                    {
+            } catch (error) {
+                if (newKanbanImgs.length > 0) {
+                    if (existingKanbans.kanban_no == req.body.kanban_no) {
                         newKanbanImgs.forEach((item) => {
-                            if (fs.existsSync(item))
-                            {
+                            if (fs.existsSync(item)) {
                                 fs.unlinkSync(item)
                             }
                         })
-                    }
-                    else
-                    {
+                    } else {
                         console.log('new path exists', newPath)
-                        if (fs.existsSync(newPath))
-                        {
+                        if (fs.existsSync(newPath)) {
                             console.log('new path exists')
-                            fs.rmdirSync(newPath, { recursive: true })
+                            fs.rmdirSync(newPath, {recursive: true})
                         }
                     }
                 }
@@ -323,16 +287,13 @@ module.exports = {
                 console.log(error)
                 response.failed(res, error)
             }
-        }
-        catch (error)
-        {
+        } catch (error) {
             console.log(error)
             response.failed(res, error)
         }
     },
     deleteKanbans: async (req, res) => {
-        try
-        {
+        try {
             let obj = {
                 deleted_dt: moment().format().split("+")[0].split("T").join(" "),
                 deleted_by: req.user.fullname,
@@ -345,10 +306,25 @@ module.exports = {
                 `WHERE uuid = '${req.params.id}'`
             )
             response.success(res, "Success to soft delete kanban", result)
-        } catch (error)
-        {
+        } catch (error) {
             console.log(error)
             response.failed(res, error)
         }
     },
+    uploadSopFile: async (req, res) => {
+        try
+        {
+            const sop_file = `./${req.file.path}`
+            const attrsUserUpdate = await attrsUserUpdateData(req, {
+                sop_file: sop_file
+            })
+
+            await queryPUT(table.tb_m_kanbans, attrsUserUpdate, `WHERE uuid = '${req.body.kanban_id}'`);
+            response.success(res, 'Success to upload sop file', {});
+        }
+        catch (error)
+        {
+            response.failed(res, 'Error to upload sop file ' + error?.message ?? '')
+        }
+    }
 }
