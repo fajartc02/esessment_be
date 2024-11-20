@@ -20,8 +20,8 @@ const formatting = require("../../helpers/formatting");
 const _4Service = require("../../services/4s.services");
 
 const now = moment();
-const flagCreatedBy = `Injection CrankShaft ${now.format('YYYY-MM-DD HH:mm')} 01`;
-const generatedMonth = 9;
+const flagCreatedBy = `Injection CrankShaft ${now.format('YYYY-MM-DD HH:mm')} 03`;
+const generatedMonth = 11;
 
 console.log('env', {
     env: process.env.NODE_ENV,
@@ -45,20 +45,6 @@ const main = async () => {
         const lineQuery = await db.query(`select * from tb_m_lines where line_nm in ('Crank Shaft') and deleted_dt is null limit 1`)
         const lineRow = lineQuery.rows[0]
 
-        /*{
-                "Date Update": "08/01/2024",
-                "Zone": "Zone 1",
-                "No Kanban": "C - 02 - 01",
-                "Area": "Oil Pan, shuter, & Lifter sliper",
-                "Item Check Kanban": "Oil Pan",
-                "Metode 4S": "Cleaning (menit)",
-                "Control Point": "Control Point",
-                "Time": 5,
-                "Periode": "2D",
-                "Group": "WHITE",
-                "Total Waktu 4S": 10,
-                "Actual Check": "06/01/2024"
-            },*/
 
         const sql = (
             {
@@ -133,7 +119,7 @@ const main = async () => {
             }
         }
 
-        const json = JSON.parse(await readFile(path.resolve(__dirname, '../json/Transaction_4sCrankShaft_15112024.json'), "utf8"));
+        const json = JSON.parse(await readFile(path.resolve(__dirname, '../json/Transaction_112024_4sCrankShaft_20112024.json'), "utf8"));
 
         // generate grouped by kanban no/name, this should distinct from duplicated item check generated json
         const groupedKanbans = formatting.arrayObjectGroupBy(json, 'No Kanban');
@@ -351,56 +337,126 @@ const main = async () => {
             //endregion
 
             //region generate actual checker
-            for (let i = 0; i < json.length; i++) {
-                const itemCheckSql = sql({
-                    isItemCheck: true,
-                    itemCheckName: json[i]['Item Check Kanban']
-                });
+            if (subSchedulesHasPlanCheck.length) {
+                for (let j = 0; j < groupedKanbans[kanbanNames[i]].length; j++) {
+                    const itemCheckSql = sql({
+                        isItemCheck: true,
+                        itemCheckName: groupedKanbans[kanbanNames[i]][j]['Item Check Kanban']
+                    });
 
-                let itemCheckQuery = (await db.query(itemCheckSql)).rows;
-                if (!itemCheckQuery.length) {
+                    let itemCheckQuery = (await db.query(itemCheckSql)).rows;
+                    if (!itemCheckQuery.length) {
 
-                } else {
-                    itemCheckQuery = itemCheckQuery[0];
+                    } else {
+                        itemCheckQuery = itemCheckQuery[0];
+                        //const checkers = [];
 
-                    const checkers = [];
-
-                    if (subSchedulesHasPlanCheck.length) {
-                        for (let j = 0; j < subSchedulesHasPlanCheck.length; j++) {
+                        for (let k = 0; k < subSchedulesHasPlanCheck.length; k++) {
                             const scheduleItemCheckKanbans = {
                                 uuid: uuid(),
                                 main_schedule_id: mainSchedule.main_schedule_id,
                                 item_check_kanban_id: itemCheckQuery.item_check_kanban_id,
                                 judgment_id: 1,
-                                actual_time: json[i]['Time'],
-                                checked_date: subSchedulesHasPlanCheck[j].plan_time,
-                                sub_schedule_id: `( select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where ${whereSubScheduleRaw(subSchedulesHasPlanCheck[j])} )`,
+                                actual_time: groupedKanbans[kanbanNames[i]][j]['Time'],
+                                checked_date: subSchedulesHasPlanCheck[k].plan_time,
+                                sub_schedule_id: `( select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where ${whereSubScheduleRaw(subSchedulesHasPlanCheck[k])} )`,
                                 ...commonInObj,
                             };
 
-                            checkers.push(scheduleItemCheckKanbans);
+                            //checkers.push(scheduleItemCheckKanbans);
+
+                            const schema = await bulkToSchema([scheduleItemCheckKanbans]);
+                            const sqlInSub = `insert into ${table.tb_r_4s_schedule_item_check_kanbans} (${schema.columns}) values ${schema.values} returning *`;
+                            console.log(sqlInSub);
+                            const inserted = (await db.query(sqlInSub)).rows;
                         }
-                    }
 
+                        /*if (checkers.length) {
 
-                    if (checkers.length) {
-                        const schema = await bulkToSchema(checkers);
-                        const sqlInSub = `insert into ${table.tb_r_4s_schedule_item_check_kanbans} (${schema.columns}) values ${schema.values} returning *`;
-                        const inserted = (await db.query(sqlInSub)).rows;
+                        }*/
                     }
                 }
             }
             //endregion
-
         }
         //endregion
+
+        const rawNotListedSchedule = `s`;
 
     } catch (e) {
         throw e;
     }
 };
 
-main()
+const mainUpdateItemCheckNotGenerated = async () => {
+    const db = database;
+    db.connect((e) => {
+
+    });
+
+    try {
+        const flagCreatedBy = `Injection Update CrankShaft ${now.format('YYYY-MM-DD HH:mm')} 01`;
+        const sqlItemCheck4S = `select
+                                            tr4sms.main_schedule_id,
+                                            tr4sss.sub_schedule_id,
+                                            tr4sss.schedule_id,
+                                            tr4sss.plan_time,
+                                            tr4sss.actual_time,
+                                            tm4sick.item_check_kanban_id,
+                                            tmk.kanban_id,
+                                            tm4sick.item_check_nm,
+                                            tmk.kanban_no,
+                                            tm4sick.standart_time
+                                        from
+                                            tb_m_4s_item_check_kanbans tm4sick
+                                                join public.tb_m_kanbans tmk on tm4sick.kanban_id = tmk.kanban_id
+                                                join public.tb_r_4s_sub_schedules tr4sss on tmk.kanban_id = tr4sss.kanban_id
+                                                join public.tb_r_4s_main_schedules tr4sms on tr4sss.main_schedule_id = tr4sms.main_schedule_id
+                                        where
+                                              tr4sms.month_num in (9, 10, 11)
+                                          and tr4sms.year_num = 2024
+                                          and tr4sms.line_id = 6
+                                          and plan_time is not null`;
+
+        const queryItemCheck4S = (await db.query(sqlItemCheck4S)).rows;
+        for (let i = 0; i < queryItemCheck4S.length; i++) {
+            const sqlFindExists = `select 
+                                            * 
+                                           from 
+                                                ${table.tb_r_4s_schedule_item_check_kanbans} 
+                                           where 
+                                                sub_schedule_id = ${queryItemCheck4S[i].schedule_id} 
+                                                and main_schedule_id = ${queryItemCheck4S[i].main_schedule_id}
+                                                and item_check_kanban_id = ${queryItemCheck4S[i].item_check_kanban_id}`;
+
+            const queryFindExists = (await db.query(sqlFindExists)).rows;
+            if (!queryFindExists.rowCount) {
+                const schema = await bulkToSchema([{
+                    uuid: uuid(),
+                    main_schedule_id: queryItemCheck4S[i].main_schedule_id,
+                    item_check_kanban_id: queryItemCheck4S[i].item_check_kanban_id,
+                    judgment_id: 1,
+                    actual_time: queryItemCheck4S[i].standart_time,
+                    checked_date: queryItemCheck4S[i].plan_time,
+                    sub_schedule_id: queryItemCheck4S[i].sub_schedule_id,
+                    created_by: flagCreatedBy,
+                    changed_by: flagCreatedBy,
+                    created_dt: moment().format('YYYY-MM-DD HH:mm:ss'),
+                    changed_dt: moment().format('YYYY-MM-DD HH:mm:ss'),
+                }]);
+
+                const sqlInSub = `insert into ${table.tb_r_4s_schedule_item_check_kanbans} (${schema.columns}) values ${schema.values} returning *`;
+                console.log(sqlInSub);
+                await db.query(sqlInSub);
+            }
+        }
+    } catch (e) {
+        throw e;
+    }
+};
+
+/*
+mainUpdateItemCheckNotGenerated()
     .then((r) => {
         console.log('successfully generated');
         process.exit();
@@ -408,4 +464,4 @@ main()
     .catch((e) => {
         console.log('error generated', e);
         process.exit()
-    });
+    });*/
