@@ -920,7 +920,8 @@ module.exports = {
               deleted_dt is null 
               and schedule_item_check_kanban_id = '${item.schedule_item_check_kanban_id}'
               and sub_schedule_id = '${subScheduleQuery.sub_schedule_id}'`
-          )
+          );
+
           if (findings.length > 0)
           {
             item.findings = findings.map((item) => {

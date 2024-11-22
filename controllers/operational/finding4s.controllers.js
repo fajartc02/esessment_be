@@ -140,7 +140,13 @@ module.exports = {
             }
 
             const transaction = await queryTransaction(async (db) => {
-                let exists = await queryCustom(`select * from ${table.tb_r_4s_findings} where sub_schedule_id = ${rawSubScheduleId} and schedule_item_check_kanban_id = ${rawScheduleItemCheckKanbanId}`);
+                let exists = await queryCustom(`select *
+                                                    from
+                                                        ${table.tb_r_4s_findings}
+                                                    where
+                                                          sub_schedule_id = ${rawSubScheduleId}
+                                                      and schedule_item_check_kanban_id = ${rawScheduleItemCheckKanbanId}
+                                                      and deleted_dt is null`);
                 if (exists.rowCount > 0) {
                     delete insertBody.uuid;
                     const attrsUserUpdate = await attrsUserUpdateData(req, insertBody);
