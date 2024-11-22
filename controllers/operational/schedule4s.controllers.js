@@ -1022,8 +1022,8 @@ module.exports = {
                     db,
                     table.tb_r_4s_sub_schedules,
                     attrsUpdate,
-                    `WHERE ${updateCondition}`
-                )
+                    `WHERE sub_schedule_id = (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.params.id}' limit 1)`
+                );
 
                 if (req.body.plan_date && req.body.before_plan_date) {
                     //#region update plan_date validation
