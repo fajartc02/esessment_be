@@ -18,7 +18,7 @@ const table = {
 
     // comments
     tb_r_observations_comments: 'tb_r_observations_comments',
-
+    tb_r_4s_comments: 'tb_r_4s_comments',
     tb_r_obs_members: 'tb_r_obs_members',
     tb_r_obs_checker: 'tb_r_obs_checker',
     tb_r_obs_results: 'tb_r_obs_results',
