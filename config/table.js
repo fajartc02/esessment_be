@@ -44,6 +44,7 @@ const table = {
     tb_r_4s_schedule_item_check_kanbans: 'tb_r_4s_schedule_item_check_kanbans',
     tb_r_4s_findings: 'tb_r_4s_findings',
     v_4s_finding_list: 'v_4s_finding_list',
+    tb_r_history_4s_item_check_kanbans: 'tb_r_history_4s_item_check_kanbans',
     //#endregion
 
     //#region om

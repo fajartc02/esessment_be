@@ -72,7 +72,6 @@ module.exports = {
             if (req.query.start_date && req.query.end_date) {
                 filterCondition.push(` vfl.finding_date between '${req.query.start_date}' and '${req.query.end_date}' `)
             }
-
             const qOffset = (limit != -1 && limit) && current_page > 1 ? `OFFSET ${limit * (current_page - 1)}` : ``
             const qLimit = (limit != -1 && limit) ? `LIMIT ${limit}` : ``
 
@@ -133,6 +132,13 @@ module.exports = {
                 sub_schedule_id: rawSubScheduleId,
                 schedule_item_check_kanban_id: rawScheduleItemCheckKanbanId,
                 finding_pic_id: rawFindingPicId,
+            };
+
+            if (insertBody.deleted_dt) {
+                delete insertBody.deleted_dt
+            }
+            if (insertBody.deleted_by) {
+                delete insertBody.deleted_by
             }
 
             if (req.body.actual_pic_id) {
@@ -161,11 +167,10 @@ module.exports = {
                     const attrsInsert = await attrsUserInsertData(req, insertBody)
                     return await queryPostTransaction(db, table.tb_r_4s_findings, attrsInsert)
                 }
-            })
-
+            });
             response.success(res, "Success to add 4s finding", {
                 finding_id: transaction.rows[0].uuid
-            })
+            });
         } catch (error) {
             console.log(error)
             response.failed(res, error)

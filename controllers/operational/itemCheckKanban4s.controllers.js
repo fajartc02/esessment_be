@@ -13,13 +13,12 @@ const {
 const response = require("../../helpers/response")
 const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData")
 const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData")
-const { uuid } = require("uuidv4")
+const {uuid} = require("uuidv4")
 
 module.exports = {
     getItemCheckKanban4s: async (req, res) => {
-        try
-        {
-            const { main_schedule_id, kanban_id } = req.query
+        try {
+            const {main_schedule_id, kanban_id} = req.query
 
             let scheduleItemCheckKanbanSql =
                 `
@@ -56,18 +55,15 @@ module.exports = {
                 `
 
             let filterCondition = []
-            if (main_schedule_id)
-            {
+            if (main_schedule_id) {
                 filterCondition.push(` trmsc.uuid = '${main_schedule_id}' `)
             }
 
-            if (kanban_id)
-            {
+            if (kanban_id) {
                 filterCondition.push(` tmk.uuid = '${kanban_id}' `)
             }
 
-            if (filterCondition.length > 0)
-            {
+            if (filterCondition.length > 0) {
                 filterCondition = filterCondition.join(' and ')
                 scheduleItemCheckKanbanSql = scheduleItemCheckKanbanSql.concat(` and ${filterCondition} `)
             }
@@ -77,16 +73,14 @@ module.exports = {
             const result = scheduleItemCheckKanbanQuery.rows
 
             response.success(res, "Success to get 4s schedule item check kanban", result)
-        } catch (e)
-        {
+        } catch (e) {
             console.log(e)
             response.failed(res, "Error to get 4s schedule item check kanban")
         }
     },
     getAllItemCheckKanban4s: async (req, res) => {
-        try
-        {
-            const { main_schedule_id, kanban_id } = req.query
+        try {
+            const {main_schedule_id, kanban_id} = req.query
 
             const itemCheckSql =
                 `
@@ -122,8 +116,7 @@ module.exports = {
             const itemCheckQuery = await queryCustom(itemCheckSql)
             let result = []
 
-            if (itemCheckQuery && itemCheckQuery.rows.length > 0)
-            {
+            if (itemCheckQuery && itemCheckQuery.rows.length > 0) {
                 const childrenSql = (
                     freq = '',
                     mainScheduleRealId = 0,
@@ -165,8 +158,7 @@ module.exports = {
                         `
 
                     let result = ''
-                    switch (freq.toLowerCase())
-                    {
+                    switch (freq.toLowerCase()) {
                         case 'day':
                             result = sql()
                             break;
@@ -197,13 +189,10 @@ module.exports = {
                     //console.log(`cSql ${item.freq_nm}`, cSql)
                     const children = await queryCustom(cSql, false)
                     children.rows = children.rows.map((child) => {
-                        if (child.week)
-                        {
+                        if (child.week) {
                             child.offset = child.week
                             delete child.week
-                        }
-                        else if (child.month)
-                        {
+                        } else if (child.month) {
                             child.offset = child.month
                             delete child.month
                         }
@@ -230,26 +219,32 @@ module.exports = {
             }
 
             response.success(res, "Success to get 4s item check kanban", result)
-        } catch (error)
-        {
+        } catch (error) {
             console.log(error)
             response.failed(res, "Error to get 4s item check kanban")
         }
     },
     postItemCheckKanban4s: async (req, res) => {
-        try
-        {
+        try {
+            const sqlFindMasterItemCheck = `select * from ${table.tb_m_4s_item_check_kanbans} where uuid = '${req.body.item_check_kanban_id}'`;
+            let queryFindMasterItemCheck = (await queryCustom(sqlFindMasterItemCheck)).rows;
+            if (!queryFindMasterItemCheck.length) {
+                response.failed(res, "Error to add 4s schedule item check kanban, can't find item check");
+                return;
+            }
+
+            queryFindMasterItemCheck = queryFindMasterItemCheck[0];
+
             const transaction = await queryTransaction(async (db) => {
                 const body = {
                     ...req.body,
                     uuid: uuid(),
-                    judgment_id: req.body.judgment_id ? ` (select judgment_id from ${table.tb_m_judgments} where uuid = '${req.body.judgment_id}') `: '1',
+                    judgment_id: req.body.judgment_id ? ` (select judgment_id from ${table.tb_m_judgments} where uuid = '${req.body.judgment_id}') ` : '1',
                     main_schedule_id: ` (select main_schedule_id from ${table.tb_r_4s_main_schedules} where uuid = '${req.body.main_schedule_id}') `,
                     item_check_kanban_id: ` (select item_check_kanban_id from ${table.tb_m_4s_item_check_kanbans} where uuid = '${req.body.item_check_kanban_id}') `,
                 }
 
-                if (req.body.sub_schedule_id)
-                {
+                if (req.body.sub_schedule_id) {
                     body.sub_schedule_id = ` (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}') `;
                 }
 
@@ -264,39 +259,64 @@ module.exports = {
                             and sub_schedule_id = (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}')
                             /* and main_schedule_id = (select main_schedule_id from ${table.tb_r_4s_main_schedules} where uuid = '${req.body.main_schedule_id}') */
                     `
-                )
-                if (checkExists.rowCount > 0)
-                {
-                    const attr = attrsUserUpdateData(req, body)
-                    return await queryPutTransaction(
+                );
+
+                let result;
+                if (checkExists.rowCount > 0) {
+                    const attr = attrsUserUpdateData(req, body);
+                    result = await queryPutTransaction(
                         db,
                         table.tb_r_4s_schedule_item_check_kanbans,
                         attr,
                         `where schedule_item_check_kanban_id = '${checkExists.rows[0].schedule_item_check_kanban_id}'`
-                    )
+                    );
+                } else {
+                    const attrInsert = attrsUserInsertData(req, body);
+                    result = await queryPostTransaction(db, table.tb_r_4s_schedule_item_check_kanbans, attrInsert);
                 }
-                else
-                {
-                    const attrInsert = attrsUserInsertData(req, body)
-                    return await queryPostTransaction(db, table.tb_r_4s_schedule_item_check_kanbans, attrInsert)
+
+                if (result.rowCount) {
+                    result = result.rows[0];
                 }
-            })
+
+                if (req.body.standart_time) {
+                    const attrInsertHistory = attrsUserInsertData(req, [{
+                        item_check_kanban_id: queryFindMasterItemCheck.item_check_kanban_id,
+                        item_check_nm: queryFindMasterItemCheck.item_check_nm,
+                        method: queryFindMasterItemCheck.method,
+                        control_point: queryFindMasterItemCheck.control_point,
+                        ilustration_imgs: queryFindMasterItemCheck.ilustration_imgs,
+                        standart_time: req.body.standart_time,
+                    }]);
+
+                    await queryPostTransaction(db, table.tb_r_history_4s_item_check_kanbans, attrInsertHistory);
+                }
+
+                return result;
+            });
 
             const result = {
-                schedule_item_check_kanban_id: transaction.rows[0].uuid
+                schedule_item_check_kanban_id: transaction.uuid
             }
 
-            response.success(res, "Success to add 4s schedule item check kanban", result)
-        } catch (e)
-        {
+            response.success(res, "Success to add 4s schedule item check kanban", result);
+        } catch (e) {
             console.log(e)
-            response.failed(res, "Error to add 4s schedule item check kanban")
+            response.failed(res, "Error to add 4s schedule item check kanban");
         }
     },
     editItemCheckKanban4s: async (req, res) => {
-        try
-        {
-            const itemCheckKanbanUuid = req.params.id
+        try {
+            const sqlFindMasterItemCheck = `select * from ${table.tb_m_4s_item_check_kanbans} where uuid = '${req.body.item_check_kanban_id}'`;
+            let queryFindMasterItemCheck = (await queryCustom(sqlFindMasterItemCheck)).rows;
+            if (!queryFindMasterItemCheck.length) {
+                response.failed(res, "Error to add 4s schedule item check kanban, can't find item check");
+                return;
+            }
+
+            queryFindMasterItemCheck = queryFindMasterItemCheck[0];
+
+            const scheduleItemCheckKanbanUuid = req.params.id
             //const { actual_time, judgement } = req.body
 
             const transaction = await queryTransaction(async (db) => {
@@ -306,28 +326,45 @@ module.exports = {
                 }
 
                 const attrsUserUpdate = await attrsUserUpdateData(req, updateBody)
-                return await queryPutTransaction(
+                let result = await queryPutTransaction(
                     db,
                     table.tb_r_4s_schedule_item_check_kanbans,
                     attrsUserUpdate,
-                    `WHERE uuid = '${itemCheckKanbanUuid}'`
-                )
-            })
+                    `WHERE uuid = '${scheduleItemCheckKanbanUuid}'`
+                );
+
+                if (result.rowCount) {
+                    result = result.rows[0];
+                }
+
+                if (req.body.standart_time) {
+                    const attrInsertHistory = attrsUserInsertData(req, [{
+                        item_check_kanban_id: queryFindMasterItemCheck.item_check_kanban_id,
+                        item_check_nm: queryFindMasterItemCheck.item_check_nm,
+                        method: queryFindMasterItemCheck.method,
+                        control_point: queryFindMasterItemCheck.control_point,
+                        ilustration_imgs: queryFindMasterItemCheck.ilustration_imgs,
+                        standart_time: req.body.standart_time,
+                    }]);
+
+                    await queryPostTransaction(db, table.tb_r_history_4s_item_check_kanbans, attrInsertHistory);
+                }
+
+                return result;
+            });
 
             const result = {
                 schedule_item_check_kanban_id: transaction.rows[0].uuid
             }
 
             response.success(res, "Success to edit 4s schedule item check kanban", result)
-        } catch (error)
-        {
+        } catch (error) {
             console.log(error)
             response.failed(res, "Error to edit 4s schedule item check kanban")
         }
     },
     deleteItemCheckKanban4s: async (req, res) => {
-        try
-        {
+        try {
             let obj = {
                 deleted_dt: moment().format().split("+")[0].split("T").join(" "),
                 deleted_by: req.user.fullname,
@@ -340,8 +377,7 @@ module.exports = {
                 `WHERE uuid = '${req.params.id}'`
             )
             response.success(res, "Success to soft delete 4s schedule item check kanban", result)
-        } catch (error)
-        {
+        } catch (error) {
             console.log(error)
             response.failed(res, error)
         }

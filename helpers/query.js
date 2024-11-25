@@ -21,6 +21,59 @@ const poolQuery = async (raw) => {
   }
 };
 
+const mapWhereCond = (obj) => {
+  if (typeof obj !== "object") {
+    return null;
+  }
+
+  if (Object.keys(obj).length === 0) {
+    return null;
+  }
+
+  let result = [];
+
+  for (const key in obj) {
+    if (obj[key]) {
+      if (typeof obj[key] == "string") {
+        if (obj[key].toLowerCase().includes("is null")) {
+          result.push(`${key} is null`);
+        } else if (obj[key].toLowerCase().includes("is not null")) {
+          result.push(`${key} is not null`);
+        } else if (
+            obj[key].toLowerCase().includes("select")
+            || obj[key].toLowerCase().includes("now")
+            || obj[key].toLowerCase().includes("extract")
+        ) {
+          if (key === "") {
+            result.push(`${obj[key]}`);
+          } else {
+            result.push(`${key} = ${obj[key]}`);
+          }
+
+        } else if (key.toLowerCase().includes("lower")) {
+          result.push(`${key} = '${obj[key]}'`);
+        } else if (key.toLowerCase().includes("like_")) {
+          result.push(`lower(${key.replace("like_", "")}) like '%${obj[key]}%'`);
+        } else {
+          result.push(`${key} = '${obj[key]}'`);
+        }
+      } else if (typeof obj[key] == "object") {
+        if (obj[key].isDate && obj[key].value) {
+          result.push(`${key}::date = ${obj[key].value}`);
+        } else if (obj[key].isDateBetween && obj[key].startDate && obj[key].endDate) {
+          result.push(`${key}::date between '${obj[key].startDate}' and '${obj[key].endDate}'`);
+        }
+      } else {
+        result.push(`${key} = '${obj[key]}'`);
+      }
+    } else if (typeof obj[key] === "number" || typeof obj[key] === "boolean") {
+      result.push(`${key} = ${obj[key]}`);
+    }
+  }
+
+  return result.join("\n and ");
+};
+
 module.exports = {
   queryGET: async (table, whereCond = false, cols = null) => {
     return new Promise(async (resolve, reject) => {
@@ -305,4 +358,5 @@ module.exports = {
     });
   },
   poolQuery,
+  mapWhereCond
 };

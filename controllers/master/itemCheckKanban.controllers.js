@@ -1,5 +1,13 @@
 const table = require("../../config/table")
-const { queryPUT, queryCustom, queryPOST, queryPostTransaction, queryPutTransaction, queryTransaction, queryGET } = require("../../helpers/query")
+const {
+    queryPUT,
+    queryCustom,
+    queryPOST,
+    queryPostTransaction,
+    queryPutTransaction,
+    queryTransaction,
+    queryGET
+} = require("../../helpers/query")
 
 const response = require("../../helpers/response")
 const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData")
@@ -8,12 +16,13 @@ const multipleUUidToIds = require("../../helpers/multipleUuidToId")
 
 const fs = require('fs')
 const moment = require("moment")
-const { uuid } = require("uuidv4")
+const {uuid} = require("uuidv4")
+
+const historyItemCheckServices = require("../../services/historyItemCheckKanban4s.services");
 
 const uploadDest = (dest = '', fileName = null) => {
     const r = `./uploads/${dest}`
-    if (fileName)
-    {
+    if (fileName) {
         r.concat(`/${fileName}`)
     }
 
@@ -23,16 +32,17 @@ const uploadDest = (dest = '', fileName = null) => {
 module.exports = {
     /**
      * @param {*} req
-     * @param {*} res 
+     * @param {*} res
      * @param {JSON} req.query.id is determine for detail usecase
      */
     getItemCheckKanbans: async (req, res) => {
-        try
-        {
-            let { id, kanban_id, limit, current_page } = req.query
+        try {
+            let {id, kanban_id, limit, current_page} = req.query
             const fromCondition = ` 
                         ${table.tb_m_4s_item_check_kanbans} tmic
                         join ${table.tb_m_kanbans} tmk on tmic.kanban_id = tmk.kanban_id 
+                        ${historyItemCheckServices.leftJoinLateralLast('tmic')}
+                        ${historyItemCheckServices.leftJoinLateralLast('tmic', {isCount: true, optionalAlias: 'trh4sick_count'})}
                 `
 
             current_page = parseInt(current_page ?? 1)
@@ -57,19 +67,19 @@ module.exports = {
                         tmic.control_point,
                         tmic.ilustration_imgs,
                         tmic.created_by,
-                        tmic.created_dt
+                        tmic.created_dt,
+                        trh4sick.standart_time as before_standart_time,
+                        trh4sick_count.total_history
                     from
                         ${fromCondition}
                     where
                         1 = 1
                 `
             //#region filter
-            if (id)
-            {
+            if (id) {
                 filterCondition.push(` tmic.uuid = '${id}' `)
             }
-            if (kanban_id)
-            {
+            if (kanban_id) {
                 filterCondition.push(` tmk.uuid = '${kanban_id}' `)
             }
 
@@ -85,11 +95,9 @@ module.exports = {
             const nullId = id == null || id == -1 || id == ''
             let result = itemChecks.rows
 
-            if (result.length > 0)
-            {
+            if (result.length > 0) {
                 result.map((item) => {
-                    if (item.ilustration_imgs)
-                    {
+                    if (item.ilustration_imgs) {
                         item.ilustration_imgs = item.ilustration_imgs.split('; ').map((img, index) => ({
                             index: index,
                             img: `${process.env.IMAGE_URL}${img}`,
@@ -101,8 +109,7 @@ module.exports = {
                     return item
                 })
 
-                if (nullId)
-                {
+                if (nullId) {
                     const count = await queryCustom(`select count(tmic.item_check_kanban_id)::integer as count from ${fromCondition} where 1 = 1 ${filterCondition}`)
                     const countRows = count.rows[0]
                     result = {
@@ -112,23 +119,19 @@ module.exports = {
                         limit: limit,
                         list: itemChecks.rows,
                     }
-                }
-                else
-                {
+                } else {
                     result = result[0]
                 }
             }
 
             response.success(res, "Success to get item check kanbans", result)
-        } catch (error)
-        {
+        } catch (error) {
             console.log(error)
             response.failed(res, "Error to get item check kanbans")
         }
     },
     postItemCheck: async (req, res) => {
-        try
-        {
+        try {
             const uploadPath = uploadDest(`${req.body.dest}/`)
             const existing = await queryGET(
                 table.tb_m_4s_item_check_kanbans,
@@ -140,15 +143,13 @@ module.exports = {
 
             const files = req.files
             let ilustration_imgs = []
-            if (files && files.length > 0)
-            {
+            if (files && files.length > 0) {
                 ilustration_imgs = files.map((file) => {
                     return uploadDest(`${req.body.dest}/${file.filename}`)
                 })
             }
 
-            try
-            {
+            try {
                 const transaction = await queryTransaction(async (db) => {
                     delete req.body.dest
 
@@ -158,8 +159,7 @@ module.exports = {
                         kanban_id: ` (select kanban_id from ${table.tb_m_kanbans} where uuid = '${req.body.kanban_id}') `,
                     }
 
-                    if (ilustration_imgs.length > 0)
-                    {
+                    if (ilustration_imgs.length > 0) {
                         insertBody.ilustration_imgs = ilustration_imgs.join('; ')
                     }
 
@@ -171,43 +171,32 @@ module.exports = {
                 })
 
                 response.success(res, "Success to add item check kanban", transaction)
-            }
-            catch (error)
-            {
+            } catch (error) {
                 console.log('postItemCheck', error)
 
-                if (ilustration_imgs.length > 0)
-                {
+                if (ilustration_imgs.length > 0) {
                     //determine not deleting existing path when exists
-                    if (existing.length == 0)
-                    {
-                        if (fs.existsSync(uploadPath))
-                        {
-                            fs.rmdirSync(uploadPath, { recursive: true })
+                    if (existing.length == 0) {
+                        if (fs.existsSync(uploadPath)) {
+                            fs.rmdirSync(uploadPath, {recursive: true})
                         }
                     }
 
                 }
 
-                if (error.code == '23505')
-                {
+                if (error.code == '23505') {
                     response.failed(res, 'Duplicate! Item check kanban name within kanban_id already exists')
-                }
-                else
-                {
+                } else {
                     response.failed(res, error)
                 }
             }
-        }
-        catch (error)
-        {
+        } catch (error) {
             console.log(error)
             response.failed(res, error)
         }
     },
     editItemCheck: async (req, res) => {
-        try
-        {
+        try {
             let existing = await queryGET(
                 table.tb_m_4s_item_check_kanbans,
                 `where uuid = '${req.params.id}'`,
@@ -224,8 +213,7 @@ module.exports = {
             const files = req.files
             let newIlustrationImgs = []
 
-            if (files && files != null && files != 'null' && files.length > 0)
-            {
+            if (files && files != null && files != 'null' && files.length > 0) {
                 newIlustrationImgs = files.map((file) => {
                     return uploadDest(`${req.body.dest}/${file.filename}`)
                 })
@@ -241,14 +229,13 @@ module.exports = {
              * @type {Array<String>}
              */
             let previousImgPath = req.body.previous_img_paths
-                && req.body.previous_img_paths != null
-                && req.body.previous_img_paths != 'null'
-                && req.body.previous_img_paths != ''
+            && req.body.previous_img_paths != null
+            && req.body.previous_img_paths != 'null'
+            && req.body.previous_img_paths != ''
                 ? JSON.parse(req.body.previous_img_paths) ?? []
                 : []
 
-            try
-            {
+            try {
                 const transaction = await queryTransaction(async (db) => {
                     delete req.body.dest
                     delete req.body.previous_img_paths
@@ -259,17 +246,14 @@ module.exports = {
                     }
 
                     let ilustration_imgs = []
-                    if (previousImgPath && previousImgPath.length > 0)
-                    {
+                    if (previousImgPath && previousImgPath.length > 0) {
                         const deleteds = previousImgPath.filter((path) => {
                             return path.is_deleted
                         })
 
-                        if (deleteds.length > 0)
-                        {
+                        if (deleteds.length > 0) {
                             deleteds.forEach((d) => {
-                                if (fs.existsSync(d.path))
-                                {
+                                if (fs.existsSync(d.path)) {
                                     fs.unlinkSync(d.path)
                                 }
                             })
@@ -284,8 +268,7 @@ module.exports = {
                             })
                     }
 
-                    if (newIlustrationImgs.length > 0)
-                    {
+                    if (newIlustrationImgs.length > 0) {
                         /* if (existing.ilustration_imgs && existing.ilustration_imgs.split('; ').length > 0)
                         {
                             if (oldDest == newDest)
@@ -311,8 +294,7 @@ module.exports = {
                         })
                     }
 
-                    if (ilustration_imgs.length > 0)
-                    {
+                    if (ilustration_imgs.length > 0) {
                         updateBody.ilustration_imgs = ilustration_imgs.join('; ')
                     }
 
@@ -327,49 +309,35 @@ module.exports = {
                 })
 
                 response.success(res, "Success to edit item check kanban", transaction)
-            }
-            catch (error)
-            {
-                if (newIlustrationImgs.length > 0)
-                {
-                    if (oldDest == newDest)
-                    {
+            } catch (error) {
+                if (newIlustrationImgs.length > 0) {
+                    if (oldDest == newDest) {
                         newIlustrationImgs.forEach((item) => {
-                            if (fs.existsSync(item))
-                            {
+                            if (fs.existsSync(item)) {
                                 fs.unlinkSync(item)
                             }
                         })
-                    }
-                    else
-                    {
-                        if (fs.existsSync(uploadDest(`${newDest}/`)))
-                        {
-                            fs.rmdirSync(uploadDest(`${newDest}/`), { recursive: true })
+                    } else {
+                        if (fs.existsSync(uploadDest(`${newDest}/`))) {
+                            fs.rmdirSync(uploadDest(`${newDest}/`), {recursive: true})
                         }
                     }
                 }
 
-                if (error.code == '23505')
-                {
+                if (error.code == '23505') {
                     response.failed(res, 'Duplicate! Item check kanban name within kanban_id already exists')
-                }
-                else
-                {
+                } else {
                     console.log('editItemCheck', error)
                     response.failed(res, error)
                 }
             }
-        }
-        catch (error)
-        {
+        } catch (error) {
             console.log('editItemCheck', error)
             response.failed(res, error)
         }
     },
     deleteItemCheck: async (req, res) => {
-        try
-        {
+        try {
             let obj = {
                 deleted_dt: moment().format().split("+")[0].split("T").join(" "),
                 deleted_by: req.user.fullname,
@@ -382,10 +350,18 @@ module.exports = {
                 `WHERE uuid = '${req.params.id}'`
             )
             response.success(res, "Success to soft delete item check kanban", result)
-        } catch (error)
-        {
+        } catch (error) {
             console.log(error)
             response.failed(res, error)
+        }
+    },
+    getHistoryItemCheckKanbans: async (req, res) => {
+        try {
+            const result = await historyItemCheckServices.query.findDynamic(req.query);
+            response.success(res, "Success to get history item check kanban 4S", result);
+        } catch (error) {
+            console.log(error)
+            response.failed(res, `error to get detail history item check kanban 4S, Detail >>> ${error}`);
         }
     },
 }

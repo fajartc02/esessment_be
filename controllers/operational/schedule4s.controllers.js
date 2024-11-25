@@ -831,7 +831,8 @@ module.exports = {
               trsic.actual_time::REAL actual_time,
               trsic.checked_date,
               tmju.judgment_nm,
-              tmju.is_abnormal
+              tmju.is_abnormal,
+              trh4ic.standart_time::real as before_standart_time
           from
               ${table.tb_m_4s_item_check_kanbans} tmic
               join ${table.tb_m_kanbans} tmk on tmic.kanban_id = tmk.kanban_id 
@@ -843,13 +844,27 @@ module.exports = {
                 where 
                   item_check_kanban_id = tmic.item_check_kanban_id
                   and checked_date::date = '${subScheduleQuery.plan_time}'::date
+                  and deleted_dt is null
                 order by
                   schedule_item_check_kanban_id desc
                 limit 1
               ) trsic on true
               left join ${table.tb_m_judgments} tmju on trsic.judgment_id = tmju.judgment_id
+              left join lateral (
+                  select 
+                    * 
+                  from 
+                    ${table.tb_r_history_4s_item_check_kanbans} 
+                  where 
+                    item_check_kanban_id = tmic.item_check_kanban_id 
+                    and created_dt::date >= '${subScheduleQuery.plan_time}'::date  /* determine check sheet history should only fetch when created history greater than equal schedule date */
+                  order by 
+                    created_dt desc 
+                  limit 1
+              ) trh4ic on true
           where
               tmk.kanban_id = '${subScheduleQuery.kanban_real_id}'
+              and tmic.deleted_dt is null
           order by 
             tmic.created_dt
         `
@@ -864,7 +879,6 @@ module.exports = {
               and schedule_item_check_kanban_id = '${item.schedule_item_check_kanban_id}'
               and sub_schedule_id = '${subScheduleQuery.sub_schedule_id}'`
                     );
-
                     if (findings.length > 0) {
                         item.findings = findings.map((item) => {
                             item.kaizen_file = item.kaizen_file ? `${process.env.APP_HOST}/file?path=${item.kaizen_file}` : null;
@@ -877,8 +891,8 @@ module.exports = {
                     item.findings = []
                 }
 
-                return item
-            }))
+                return item;
+            }));
 
             subScheduleQuery.item_check_kanbans = itemCheckKanbans.rows
             subScheduleQuery.main_schedule_id = subScheduleQuery.main_schedule_uuid
