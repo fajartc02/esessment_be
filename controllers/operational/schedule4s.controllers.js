@@ -859,7 +859,7 @@ module.exports = {
                                                       where 
                                                         trh4ick.item_check_kanban_id = tmic.item_check_kanban_id 
                                                         and trh4ick.standart_time is not null
-                                                        and tr4ss.plan_time::date <= '${subScheduleQuery.plan_time}'::date  /* determine check sheet history should only fetch when created history greater than equal schedule date */
+                                                        and tr4ss.plan_time::date < '${subScheduleQuery.plan_time}'::date  /* determine check sheet history should only fetch when created history greater than equal schedule date */
                                                       order by 
                                                         trh4ick.created_dt desc 
                                                       limit 1
