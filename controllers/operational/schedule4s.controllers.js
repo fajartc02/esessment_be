@@ -827,12 +827,17 @@ module.exports = {
                                                   tmic.item_check_nm,
                                                   tmic.method,
                                                   tmic.control_point,
-                                                  tmic.standart_time::REAL as standart_time,
                                                   trsic.actual_time::REAL actual_time,
                                                   trsic.checked_date,
                                                   tmju.judgment_nm,
                                                   tmju.is_abnormal,
-                                                  trh4ic.standart_time::real as before_standart_time
+                                                  trh4ic.standart_time::real as before_standart_time,
+                                                  case 
+                                                    when trh4ic.standart_time is null then
+                                                        trsic.standart_time::real
+                                                    else
+                                                        tmic.standart_time::real
+                                                  end as standart_time
                                               from
                                                   ${table.tb_m_4s_item_check_kanbans} tmic
                                                   join ${table.tb_m_kanbans} tmk on tmic.kanban_id = tmk.kanban_id 
