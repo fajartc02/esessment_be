@@ -282,7 +282,7 @@ module.exports = {
                     result = result.rows[0];
                 }
 
-                if (req.body.standart_time && req.body.sub_schedule_id) {
+                if (req.body.standart_time && req.body.sub_schedule_id && req.body.standart_time !== queryFindMasterItemCheck.standart_time) {
                     const attrInsertHistory = attrsUserInsertData(req, {
                         item_check_kanban_id: queryFindMasterItemCheck.item_check_kanban_id,
                         standart_time: queryFindMasterItemCheck.standart_time,
