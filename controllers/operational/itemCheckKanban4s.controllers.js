@@ -236,16 +236,18 @@ module.exports = {
             queryFindMasterItemCheck = queryFindMasterItemCheck[0];
 
             const transaction = await queryTransaction(async (db) => {
+                const rawSubScheduleId = ` (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}') `;
                 const body = {
                     ...req.body,
                     uuid: uuid(),
                     judgment_id: req.body.judgment_id ? ` (select judgment_id from ${table.tb_m_judgments} where uuid = '${req.body.judgment_id}') ` : '1',
                     main_schedule_id: ` (select main_schedule_id from ${table.tb_r_4s_main_schedules} where uuid = '${req.body.main_schedule_id}') `,
                     item_check_kanban_id: ` (select item_check_kanban_id from ${table.tb_m_4s_item_check_kanbans} where uuid = '${req.body.item_check_kanban_id}') `,
+                    standart_time: req.body.standart_time,
                 }
 
                 if (req.body.sub_schedule_id) {
-                    body.sub_schedule_id = ` (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}') `;
+                    body.sub_schedule_id = rawSubScheduleId;
                 }
 
                 let checkExists = await db.query(
@@ -279,17 +281,27 @@ module.exports = {
                     result = result.rows[0];
                 }
 
-                if (req.body.standart_time) {
-                    const attrInsertHistory = attrsUserInsertData(req, [{
+                if (req.body.standart_time && req.body.sub_schedule_id) {
+                    const attrInsertHistory = attrsUserInsertData(req, {
                         item_check_kanban_id: queryFindMasterItemCheck.item_check_kanban_id,
                         item_check_nm: queryFindMasterItemCheck.item_check_nm,
                         method: queryFindMasterItemCheck.method,
                         control_point: queryFindMasterItemCheck.control_point,
                         ilustration_imgs: queryFindMasterItemCheck.ilustration_imgs,
-                        standart_time: req.body.standart_time,
-                    }]);
+                        standart_time: queryFindMasterItemCheck.standart_time,
+                        sub_schedule_id: rawSubScheduleId
+                    });
+
+                    delete attrInsertHistory.changed_dt;
+                    delete attrInsertHistory.changed_by;
 
                     await queryPostTransaction(db, table.tb_r_history_4s_item_check_kanbans, attrInsertHistory);
+                    await db.query(`update 
+                                      ${table.tb_m_4s_item_check_kanbans} 
+                                    set 
+                                        standart_time = '${req.body.standart_time}' 
+                                    where 
+                                        item_check_kanban_id = '${queryFindMasterItemCheck.item_check_kanban_id}'`);
                 }
 
                 return result;

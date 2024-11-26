@@ -131,7 +131,8 @@ const childrenSubSchedule = async (
                         true::boolean
                       else
                         false::boolean
-                    end as has_tl2_sign        
+                    end as has_tl2_sign,
+                    comment.total_comment        
                   from
                       ${fromSubScheduleSql}
                       left join lateral (
@@ -186,6 +187,9 @@ const childrenSubSchedule = async (
                                                       /* and main_schedule_id = tbrcs.main_schedule_id
                                                       and checked_date::date = tbrcs.plan_time::date */
                       ) item_check on true
+                     left join lateral (
+                         select count(*)::real as total_comment from ${table.tb_r_4s_comments} where sub_schedule_id = tbrcs.sub_schedule_id
+                      ) comment on true
                   where
                       tbrcs.deleted_dt is null
                       and tbrcs.main_schedule_id = ${mainScheduleRealId}
@@ -797,17 +801,15 @@ module.exports = {
         try {
             const sub_schedule_uuid = req.params.id
 
-            const subScheduleSql = `
-          select 
-            ${selectSubScheduleSql},
-            date(tbrcs.plan_time) as plan_time,
-            date(tbrcs.actual_time) as actual_time
-          from
-            ${fromSubScheduleSql}
-          where
-            tbrcs.uuid = '${sub_schedule_uuid}'
-          limit 1
-        `
+            const subScheduleSql = `select 
+                                            ${selectSubScheduleSql},
+                                            date(tbrcs.plan_time) as plan_time,
+                                            date(tbrcs.actual_time) as actual_time
+                                          from
+                                            ${fromSubScheduleSql}
+                                          where
+                                            tbrcs.uuid = '${sub_schedule_uuid}'
+                                          limit 1`
 
             let subScheduleQuery = await queryCustom(subScheduleSql, false)
             if (subScheduleQuery.rows.length == 0) {
@@ -816,59 +818,57 @@ module.exports = {
 
             subScheduleQuery = subScheduleQuery.rows[0]
 
-            const itemCheckKanbans = await queryCustom(
-                `
-          select
-              tmic.uuid as item_check_kanban_id,
-              tmk.uuid as kanban_id,
-              tmju.uuid as judgment_id,
-              trsic.uuid as schedule_item_check_kanban_id,
-              tmk.kanban_no,
-              tmic.item_check_nm,
-              tmic.method,
-              tmic.control_point,
-              tmic.standart_time::REAL as standart_time,
-              trsic.actual_time::REAL actual_time,
-              trsic.checked_date,
-              tmju.judgment_nm,
-              tmju.is_abnormal,
-              trh4ic.standart_time::real as before_standart_time
-          from
-              ${table.tb_m_4s_item_check_kanbans} tmic
-              join ${table.tb_m_kanbans} tmk on tmic.kanban_id = tmk.kanban_id 
-              left join lateral (
-                select 
-                  * 
-                from 
-                  ${table.tb_r_4s_schedule_item_check_kanbans}
-                where 
-                  item_check_kanban_id = tmic.item_check_kanban_id
-                  and checked_date::date = '${subScheduleQuery.plan_time}'::date
-                  and deleted_dt is null
-                order by
-                  schedule_item_check_kanban_id desc
-                limit 1
-              ) trsic on true
-              left join ${table.tb_m_judgments} tmju on trsic.judgment_id = tmju.judgment_id
-              left join lateral (
-                  select 
-                    * 
-                  from 
-                    ${table.tb_r_history_4s_item_check_kanbans} 
-                  where 
-                    item_check_kanban_id = tmic.item_check_kanban_id 
-                    and created_dt::date >= '${subScheduleQuery.plan_time}'::date  /* determine check sheet history should only fetch when created history greater than equal schedule date */
-                  order by 
-                    created_dt desc 
-                  limit 1
-              ) trh4ic on true
-          where
-              tmk.kanban_id = '${subScheduleQuery.kanban_real_id}'
-              and tmic.deleted_dt is null
-          order by 
-            tmic.created_dt
-        `
-            )
+            const sqlItemCheckKanbans = `select
+                                                  tmic.uuid as item_check_kanban_id,
+                                                  tmk.uuid as kanban_id,
+                                                  tmju.uuid as judgment_id,
+                                                  trsic.uuid as schedule_item_check_kanban_id,
+                                                  tmk.kanban_no,
+                                                  tmic.item_check_nm,
+                                                  tmic.method,
+                                                  tmic.control_point,
+                                                  tmic.standart_time::REAL as standart_time,
+                                                  trsic.actual_time::REAL actual_time,
+                                                  trsic.checked_date,
+                                                  tmju.judgment_nm,
+                                                  tmju.is_abnormal,
+                                                  trh4ic.standart_time::real as before_standart_time
+                                              from
+                                                  ${table.tb_m_4s_item_check_kanbans} tmic
+                                                  join ${table.tb_m_kanbans} tmk on tmic.kanban_id = tmk.kanban_id 
+                                                  left join lateral (
+                                                    select 
+                                                      * 
+                                                    from 
+                                                      ${table.tb_r_4s_schedule_item_check_kanbans}
+                                                    where 
+                                                      item_check_kanban_id = tmic.item_check_kanban_id
+                                                      and checked_date::date = '${subScheduleQuery.plan_time}'::date
+                                                      and deleted_dt is null
+                                                    order by
+                                                      schedule_item_check_kanban_id desc
+                                                    limit 1
+                                                  ) trsic on true
+                                                  left join ${table.tb_m_judgments} tmju on trsic.judgment_id = tmju.judgment_id
+                                                  left join lateral (
+                                                      select 
+                                                        trh4ick.* 
+                                                      from 
+                                                        ${table.tb_r_history_4s_item_check_kanbans} trh4ick
+                                                        join ${table.tb_r_4s_sub_schedules} tr4ss on trh4ick.sub_schedule_id = tr4ss.sub_schedule_id
+                                                      where 
+                                                        trh4ick.item_check_kanban_id = tmic.item_check_kanban_id 
+                                                        and tr4ss.plan_time::date <= '${subScheduleQuery.plan_time}'::date  /* determine check sheet history should only fetch when created history greater than equal schedule date */
+                                                      order by 
+                                                        trh4ick.created_dt desc 
+                                                      limit 1
+                                                  ) trh4ic on true
+                                              where
+                                                  tmk.kanban_id = '${subScheduleQuery.kanban_real_id}'
+                                                  and tmic.deleted_dt is null
+                                              order by 
+                                                tmic.created_dt`;
+            const itemCheckKanbans = await queryCustom(sqlItemCheckKanbans);
 
             itemCheckKanbans.rows = await Promise.all(itemCheckKanbans.rows.map(async (item) => {
                 if (item.schedule_item_check_kanban_id) {
