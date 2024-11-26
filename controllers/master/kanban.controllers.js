@@ -89,7 +89,7 @@ module.exports = {
                 kanbanSql = kanbanSql.concat(` and ${filterCondition} `)
             }
 
-            kanbanSql = kanbanSql.concat(` order by tmk.created_dt ${qLimit} ${qOffset} `)
+            kanbanSql = kanbanSql.concat(` order by tmf.precition_val ${qLimit} ${qOffset} `)
             //#endregion
 
             let kanbanQuery = await queryCustom(kanbanSql)

@@ -197,8 +197,7 @@ const childrenSubSchedule = async (
                       and tbrcs.zone_id = '${zoneRealId}'
                       and tbrcs.kanban_id = '${kanbanRealId}'
                       ${byPic}
-              ) a order by date_num      
-           `
+              ) a order by date_num`
 
     //console.log('childrensql', childrenSql)
     //logger(childrenSql, 'childrenSql')
