@@ -44,7 +44,7 @@ module.exports = {
                     select
                         row_number () over (
                             order by
-                            tmk.created_dt
+                            tmf.precition_val
                         )::integer as no,
                         tml.uuid as line_id,
                         tmz.uuid as zone_id,
