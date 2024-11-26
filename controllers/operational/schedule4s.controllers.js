@@ -833,11 +833,10 @@ module.exports = {
                                                   tmju.is_abnormal,
                                                   trh4ic.standart_time::real as before_standart_time,
                                                   case 
-                                                    when trsic.standart_time is not null then
+                                                    when trsic.standart_time is not null then 
                                                         trsic.standart_time::real
-                                                    else
-                                                        tmic.standart_time::real
-                                                  end as standart_time
+                                                    else  tmic.standart_time::real
+                                                    end as standart_time    
                                               from
                                                   ${table.tb_m_4s_item_check_kanbans} tmic
                                                   join ${table.tb_m_kanbans} tmk on tmic.kanban_id = tmk.kanban_id 

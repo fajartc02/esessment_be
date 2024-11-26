@@ -244,7 +244,7 @@ module.exports = {
                     judgment_id: req.body.judgment_id ? ` (select judgment_id from ${table.tb_m_judgments} where uuid = '${req.body.judgment_id}') ` : '1',
                     main_schedule_id: ` (select main_schedule_id from ${table.tb_r_4s_main_schedules} where uuid = '${req.body.main_schedule_id}') `,
                     item_check_kanban_id: ` (select item_check_kanban_id from ${table.tb_m_4s_item_check_kanbans} where uuid = '${req.body.item_check_kanban_id}') `,
-                    standart_time: req.body.standart_time,
+                    standart_time: queryFindMasterItemCheck.standart_time,
                 }
 
                 if (req.body.sub_schedule_id) {
