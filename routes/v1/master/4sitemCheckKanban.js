@@ -14,7 +14,7 @@ router.put("/edit/:id", auth.verifyToken, upload.array('ilustration_imgs'), edit
 router.delete("/delete/:id", auth.verifyToken, deleteItemCheck)
 router.post("/add", auth.verifyToken, upload.array('ilustration_imgs'), postItemCheck)
 router.get("/get", auth.verifyToken, getItemCheckKanbans)
-router.get("/get/history", auth.verifyToken, getHistoryItemCheckKanbans);
+router.get("/get/history/:item_check_kanban_id", auth.verifyToken, getHistoryItemCheckKanbans);
 
 
 module.exports = router

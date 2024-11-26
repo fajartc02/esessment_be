@@ -101,6 +101,7 @@ const childrenSubSchedule = async (
         byPic = ` and tbrcs.pic_id = '${planPicRealId}' `
     }
 
+
     let childrenSql = `
               select * from (
                  select
@@ -857,6 +858,7 @@ module.exports = {
                                                         join ${table.tb_r_4s_sub_schedules} tr4ss on trh4ick.sub_schedule_id = tr4ss.sub_schedule_id
                                                       where 
                                                         trh4ick.item_check_kanban_id = tmic.item_check_kanban_id 
+                                                        and trh4ick.standart_time is not null
                                                         and tr4ss.plan_time::date <= '${subScheduleQuery.plan_time}'::date  /* determine check sheet history should only fetch when created history greater than equal schedule date */
                                                       order by 
                                                         trh4ick.created_dt desc 

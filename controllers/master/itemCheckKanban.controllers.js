@@ -357,7 +357,10 @@ module.exports = {
     },
     getHistoryItemCheckKanbans: async (req, res) => {
         try {
-            const result = await historyItemCheckServices.query.findDynamic(req.query);
+            const result = await historyItemCheckServices.query.findDynamic({
+                ...req.query,
+                item_check_kanban_id: req.params.item_check_kanban_id
+            });
             response.success(res, "Success to get history item check kanban 4S", result);
         } catch (error) {
             console.log(error)

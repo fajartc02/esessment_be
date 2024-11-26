@@ -14,6 +14,7 @@ const response = require("../../helpers/response")
 const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData")
 const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData")
 const {uuid} = require("uuidv4")
+const moment = require("moment/moment");
 
 module.exports = {
     getItemCheckKanban4s: async (req, res) => {
@@ -284,12 +285,10 @@ module.exports = {
                 if (req.body.standart_time && req.body.sub_schedule_id) {
                     const attrInsertHistory = attrsUserInsertData(req, {
                         item_check_kanban_id: queryFindMasterItemCheck.item_check_kanban_id,
-                        item_check_nm: queryFindMasterItemCheck.item_check_nm,
-                        method: queryFindMasterItemCheck.method,
-                        control_point: queryFindMasterItemCheck.control_point,
-                        ilustration_imgs: queryFindMasterItemCheck.ilustration_imgs,
                         standart_time: queryFindMasterItemCheck.standart_time,
-                        sub_schedule_id: rawSubScheduleId
+                        sub_schedule_id: rawSubScheduleId,
+                        created_by: req.user.noreg,
+                        created_dt: moment().format('YYYY-MM-DD HH:mm:ss'),
                     });
 
                     delete attrInsertHistory.changed_dt;

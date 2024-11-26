@@ -255,12 +255,92 @@ module.exports = {
                 const kaizen_file = `./${req.file.path}`
                 const attrsUserUpdate = await attrsUserUpdateData(req, {
                     kaizen_file: kaizen_file
-                })
+                });
 
-                await queryPUT(table.tb_r_4s_findings, attrsUserUpdate, `WHERE uuid = '${req.body.finding_id}'`);
+                const sqlFindFinding = `select
+                                                    tr4sf.*,
+                                                    tr4ssick.item_check_kanban_id,
+                                                    tr4ssick.sub_schedule_id,
+                                                    tm4sick.item_check_nm,
+                                                    tm4sick.control_point,
+                                                    tm4sick.method,
+                                                    tm4sick.ilustration_imgs,
+                                                    tm4sick.standart_time
+                                                from
+                                                    tb_r_4s_findings tr4sf
+                                                        join public.tb_r_4s_schedule_item_check_kanbans tr4ssick
+                                                             on tr4sf.schedule_item_check_kanban_id = tr4ssick.schedule_item_check_kanban_id
+                                                        join tb_m_4s_item_check_kanbans tm4sick on tr4ssick.item_check_kanban_id = tm4sick.item_check_kanban_id
+                                                where 
+                                                    tr4sf.uuid = '${req.body.finding_id}'`;
+
+                let queryFindFinding = (await queryCustom(sqlFindFinding)).rows;
+                if (!queryFindFinding.length) {
+                    response.failed(res, 'Error to upload 4s kaizen finding, finding not found');
+                    return;
+                }
+
+                queryFindFinding = queryFindFinding[0];
+
+                await queryTransaction(async (db) => {
+                    await queryPutTransaction(
+                        db,
+                        table.tb_r_4s_findings,
+                        attrsUserUpdate,
+                        `WHERE uuid = '${req.body.finding_id}'`
+                    );
+
+                    if (queryFindFinding.kaizen_file) {
+                        /*const sqlFindAvailHistory = `select
+                                                                * 
+                                                            from 
+                                                                ${table.tb_r_history_4s_item_check_kanbans} 
+                                                            where 
+                                                                item_check_kanban_id = '${queryFindFinding.item_check_kanban_id}' 
+                                                                and sub_schedule_id = '${queryFindFinding.sub_schedule_id}'
+                                                            order by history_item_check_kanban_id desc limit 1`;
+                        let queryFindAvailHistory = (await db.query(sqlFindAvailHistory)).rows;
+                        if (queryFindAvailHistory.length) {
+                            queryFindAvailHistory = queryFindAvailHistory[0];
+                            await queryPutTransaction(
+                                db,
+                                table.tb_r_history_4s_item_check_kanbans,
+                                {
+                                    kaizen_file: queryFindFinding.kaizen_file,
+                                },
+                                `where history_item_check_kanban_id = '${queryFindAvailHistory.history_item_check_kanban_id}'`
+                            );
+                        } else {
+                            await queryPostTransaction(
+                                db,
+                                table.tb_r_history_4s_item_check_kanbans,
+                                {
+                                    item_check_kanban_id: queryFindFinding.item_check_kanban_id,
+                                    sub_schedule_id: queryFindFinding.sub_schedule_id,
+                                    kaizen_file: queryFindFinding.kaizen_file,
+                                    created_by: req.user.noreg,
+                                    created_dt: moment().format('YYYY-MM-DD HH:mm:ss'),
+                                }
+                            );
+                        }*/
+
+                        await queryPostTransaction(
+                            db,
+                            table.tb_r_history_4s_item_check_kanbans,
+                            {
+                                item_check_kanban_id: queryFindFinding.item_check_kanban_id,
+                                sub_schedule_id: queryFindFinding.sub_schedule_id,
+                                kaizen_file: queryFindFinding.kaizen_file,
+                                created_by: req.user.noreg,
+                                created_dt: moment().format('YYYY-MM-DD HH:mm:ss'),
+                            }
+                        );
+                    }
+                });
+
                 response.success(res, 'Success to upload 4s kaizen finding', req.body.kaizen_file);
             } catch (error) {
-                response.failed(res, 'Error to upload 4s kaizen finding ' + error?.message ?? '')
+                response.failed(res, 'Error to upload 4s kaizen finding ' + error?.message ?? '');
             }
         } catch (error) {
             console.log(error);

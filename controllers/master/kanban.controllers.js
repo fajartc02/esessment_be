@@ -38,7 +38,7 @@ module.exports = {
 
             let filterCondition = [
                 'tmk.deleted_dt is null '
-            ]
+            ];
 
             let kanbanSql = `
                     select
