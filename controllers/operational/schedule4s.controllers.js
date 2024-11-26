@@ -833,7 +833,7 @@ module.exports = {
                                                   tmju.is_abnormal,
                                                   trh4ic.standart_time::real as before_standart_time,
                                                   case 
-                                                    when trh4ic.standart_time is null and trsic.standart_time is not null then
+                                                    when trsic.standart_time is not null then
                                                         trsic.standart_time::real
                                                     else
                                                         tmic.standart_time::real
