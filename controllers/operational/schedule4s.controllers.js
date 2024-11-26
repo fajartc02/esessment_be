@@ -913,6 +913,7 @@ module.exports = {
             console.log(error)
             response.failed(res, error)
         }
+
     },
     get4sCountTotalSummary: async (req, res) => {
         try {

@@ -266,6 +266,7 @@ module.exports = {
 
                 let result;
                 if (checkExists.rowCount > 0) {
+                    delete body.uuid;
                     const attr = attrsUserUpdateData(req, body);
                     result = await queryPutTransaction(
                         db,
