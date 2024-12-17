@@ -288,7 +288,6 @@ module.exports = {
                                 }
                             }
                         } */
-
                         newIlustrationImgs.forEach((n) => {
                             ilustration_imgs.push(n)
                         })

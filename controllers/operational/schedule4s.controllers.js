@@ -197,12 +197,13 @@ const childrenSubSchedule = async (
                       and tbrcs.freq_id = '${freqRealId}'
                       and tbrcs.zone_id = '${zoneRealId}'
                       and tbrcs.kanban_id = '${kanbanRealId}'
-                      ${byPic}
+                      
               ) a order by date_num`
 
     //console.log('childrensql', childrenSql)
     //logger(childrenSql, 'childrenSql')
     //const children = await queryCustom(childrenSql, false)
+
     const startTime = Date.now();
     const children = await poolQuery(childrenSql);
     const timeTaken = Date.now() - startTime;
@@ -873,6 +874,7 @@ module.exports = {
                                                   and tmic.deleted_dt is null
                                               order by 
                                                 tmic.created_dt`;
+
             const itemCheckKanbans = await queryCustom(sqlItemCheckKanbans);
 
             itemCheckKanbans.rows = await Promise.all(itemCheckKanbans.rows.map(async (item) => {

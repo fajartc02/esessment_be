@@ -30,6 +30,7 @@ const {uuid} = require('uuidv4')
 const {addBusinessDaysToDate} = require('../helpers/date')
 const {shiftByGroupId, nonShift} = require('./shift.services')
 const scheduleHelper = require("../helpers/schedule.helper");
+const {database} = require("../config/database");
 
 const dateFormatted = (date = '') => (moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD'))
 
@@ -1334,6 +1335,50 @@ const createNewKanbanSingleLineSchedule = async (
     }
 }
 
+
+const clearRowSeeder = async (db , flagCreatedBy) => {
+    console.log('clearing start')
+    //await db.query(`SET session_replication_role = 'replica'`)
+
+    //#region clear transaction with flag
+    {
+        await db.query(`DELETE FROM ${table.tb_r_4s_schedule_sign_checkers} WHERE created_by = '${flagCreatedBy}'`)
+        const lastTransSignChecker = await db.query(`SELECT *, date(created_dt) as created_date FROM ${table.tb_r_4s_schedule_sign_checkers} ORDER BY sign_checker_id DESC LIMIT 1`)
+        await db.query(`ALTER TABLE ${table.tb_r_4s_schedule_sign_checkers} ALTER COLUMN sign_checker_id RESTART WITH ${(lastTransSignChecker.rows[0]?.sign_checker_id ?? 0) + 1}`)
+
+        await db.query(`DELETE FROM ${table.tb_r_4s_sub_schedules} WHERE created_by = '${flagCreatedBy}'`)
+        const lastTransSubSchedule = await db.query(`SELECT *, date(created_dt) as created_date FROM ${table.tb_r_4s_sub_schedules} ORDER BY sub_schedule_id DESC LIMIT 1`)
+        await db.query(`ALTER TABLE ${table.tb_r_4s_sub_schedules} ALTER COLUMN sub_schedule_id RESTART WITH ${(lastTransSubSchedule.rows[0]?.sub_schedule_id ?? 0) + 1}`)
+
+        await db.query(`DELETE FROM ${table.tb_r_4s_main_schedules} WHERE created_by = '${flagCreatedBy}'`)
+        const lastTransMainSchedule = await db.query(`SELECT *, date(created_dt) as created_date FROM ${table.tb_r_4s_main_schedules} ORDER BY main_schedule_id DESC LIMIT 1`)
+        await db.query(`ALTER TABLE ${table.tb_r_4s_main_schedules} ALTER COLUMN main_schedule_id RESTART WITH ${(lastTransMainSchedule.rows[0]?.main_schedule_id ?? 0) + 1}`)
+    }
+    //#endregion
+
+    //#region clear master data with flag
+    {
+        await db.query(`DELETE FROM ${table.tb_m_4s_item_check_kanbans} WHERE created_by = '${flagCreatedBy}'`)
+        const lastItemCheck = await db.query(`SELECT *, date(created_dt) as created_date FROM ${table.tb_m_4s_item_check_kanbans} ORDER BY item_check_kanban_id DESC LIMIT 1`)
+        await db.query(`ALTER TABLE ${table.tb_m_4s_item_check_kanbans} ALTER COLUMN item_check_kanban_id RESTART WITH ${(lastItemCheck.rows[0]?.item_check_kanban_id ?? 0) + 1}`)
+
+        await db.query(`DELETE FROM ${table.tb_m_kanbans} WHERE created_by = '${flagCreatedBy}'`)
+        const lastKanban = await db.query(`SELECT *, date(created_dt) as created_date FROM ${table.tb_m_kanbans} ORDER BY kanban_id DESC LIMIT 1`)
+        await db.query(`ALTER TABLE ${table.tb_m_kanbans} ALTER COLUMN kanban_id RESTART WITH ${(lastKanban.rows[0]?.kanban_id ?? 0) + 1}`)
+
+        await db.query(`DELETE FROM ${table.tb_m_zones} WHERE created_by = '${flagCreatedBy}'`)
+        const lastZone = await db.query(`SELECT *, date(created_dt) as created_date FROM ${table.tb_m_zones} ORDER BY zone_id DESC LIMIT 1`)
+        await db.query(`ALTER TABLE ${table.tb_m_zones} ALTER COLUMN zone_id RESTART WITH ${(lastZone.rows[0]?.zone_id ?? 0) + 1}`)
+
+        await db.query(`DELETE FROM ${table.tb_m_freqs} WHERE created_by = '${flagCreatedBy}'`)
+        const lastFreq = await db.query(`SELECT *, date(created_dt) as created_date FROM ${table.tb_m_freqs} ORDER BY freq_id DESC LIMIT 1`)
+        await db.query(`ALTER TABLE ${table.tb_m_freqs} ALTER COLUMN freq_id RESTART WITH ${(lastFreq.rows[0]?.freq_id ?? 0) + 1}`)
+    }
+    //#endregion
+
+    console.log('clear rows transaction completed', flagCreatedBy);
+};
+
 module.exports = {
     findScheduleTransaction4S,
     findSignCheckerTransaction4S: findSignCheckerTransaction4S,
@@ -1346,5 +1391,6 @@ module.exports = {
     createNewKanbanSingleLineSchedule: createNewKanbanSingleLineSchedule,
     genLessThanMonth,
     genMonthlySchedulePlan,
-    genWeeklySchedulePlan
+    genWeeklySchedulePlan,
+    clearRowSeeder
 }
