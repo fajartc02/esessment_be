@@ -296,17 +296,18 @@ const subScheduleRows = async (
     const whereMainSchedule = `(select main_schedule_id from ${table.tb_r_4s_main_schedules} where uuid = '${main_schedule_id}')`
     const originScheduleSql = `
           select * from (
-            select distinct on (tbrcs.freq_id, tbrcs.zone_id, tbrcs.kanban_id)
-              ${selectSubScheduleSql}  
-          from
-             ${fromSubScheduleSql}
-          where
-            tbrcs.main_schedule_id = ${whereMainSchedule}
+                select distinct on (tbrcs.freq_id, tbrcs.zone_id, tbrcs.kanban_id)
+                  ${selectSubScheduleSql}  
+              from
+                 ${fromSubScheduleSql}
+              where
+                tbrcs.main_schedule_id = ${whereMainSchedule}
+              order by
+                tbrcs.freq_id, tbrcs.zone_id, tbrcs.kanban_id, tbrcs.pic_id nulls last
           ) a 
           where
             1 = 1
-            ${filterCondition.length > 0 ? `and ${filterCondition.join('and')}` : ''} 
-        `
+            ${filterCondition.length > 0 ? `and ${filterCondition.join('and')}` : ''}`
     let scheduleSql = `${originScheduleSql}`
 
     if (limit && current_page) {
