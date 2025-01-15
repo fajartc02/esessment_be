@@ -4,7 +4,7 @@ const moment = require('moment')
 module.exports = {
     /**
      * 
-     * @returns {Promise<pg.QueryResultRow>}
+     * @returns {Promise<pg.QueryResultRow> | string}
      */
     lineGroupRows: async (db, currentYear, currentMonth, onlySql = false) => {
         const lineGroupQuery =

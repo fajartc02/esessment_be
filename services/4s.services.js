@@ -681,8 +681,8 @@ const mapSchemaPlanKanban4S = async (
 /**
  * function genMonthlySubScheduleSchema
  *
- * @param {number} yearNum
- * @param {number} monthNum
+ * @param {number|string} yearNum
+ * @param {number|string} monthNum
  * @param {Object} lineGroup
  * @param {Array<*>} shiftRows
  * @param {pg.QueryResultRow} shiftRows
@@ -1133,8 +1133,8 @@ const clear4sTransactionRows = async (db, flagCreatedBy) => {
  * @param {number} freqId
  * @param {number} zoneId
  * @param {number} kanbanId
- * @param {number} monthNum
- * @param {number} yearNum
+ * @param {number | string} monthNum
+ * @param {number | string} yearNum
  * @param {Array<Any>|null>} shiftRows
  */
 const createNewKanbanSingleLineSchedule = async (
@@ -1214,6 +1214,18 @@ const createNewKanbanSingleLineSchedule = async (
                 true
             )
 
+            console.log('kanbans', {
+                lineId,
+                groupId,
+                precitionVal,
+                freqId,
+                zoneId,
+                kanbanId,
+                monthNum,
+                yearNum,
+                subScheduleLength: subSchedule.length
+            });
+
             if (subSchedule.length > 0) {
                 let subScheduleTemp = []
                 for (let i = 0; i < subSchedule.length; i++) {
@@ -1234,7 +1246,7 @@ const createNewKanbanSingleLineSchedule = async (
                 if (subScheduleTemp.length > 0) {
                     const subSchema = await bulkToSchema(subScheduleTemp)
                     const sqlInSub = `insert into ${table.tb_r_4s_sub_schedules} (${subSchema.columns}) values ${subSchema.values}`
-                    console.log('sqlInSub', sqlInSub);
+                    //console.log('sqlInSub', sqlInSub);
                     await db.query(sqlInSub)
                 }
             }
@@ -1331,12 +1343,13 @@ const createNewKanbanSingleLineSchedule = async (
 
         //#endregion
     } catch (e) {
+        console.error('error createNewKanbanSingleLineSchedule()', e);
         throw e
     }
 }
 
 
-const clearRowSeeder = async (db , flagCreatedBy) => {
+const clearRowSeeder = async (db, flagCreatedBy) => {
     console.log('clearing start')
     //await db.query(`SET session_replication_role = 'replica'`)
 

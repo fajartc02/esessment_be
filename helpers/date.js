@@ -1,8 +1,15 @@
-const { padTwoDigits } = require('./formatting')
 const moment = require('moment')
 
 function daysInYear(year) {
     return (new Date(year + 1, 0, 1) - new Date(year, 0, 1)) / 1000 / 60 / 60 / 24
+}
+
+function padTwoDigits(number)  {
+    if (number) {
+        return (parseInt(number) < 10) ? '0' + parseInt(number).toString() : parseInt(number).toString();
+    }
+
+    return null
 }
 
 module.exports = {
@@ -13,6 +20,7 @@ module.exports = {
         var result = [];
         while (date.getMonth() == monthIndex)
         {
+            let a = padTwoDigits(date.getMonth() + 1);
             result.push({
                 date: `${date.getFullYear()}-${padTwoDigits(date.getMonth() + 1)}-${padTwoDigits(date.getDate())}`,
                 is_holiday: names[date.getDay()] == 'sat' || names[date.getDay()] == 'sun',

@@ -11,7 +11,7 @@
         "yearly-scheduler": "SET NODE_ENV=local && node ./schedulers/yearDates.scheduler.js",
         "4s-scheduler": "SET NODE_ENV=dev && node ./schedulers/4s.scheduler.js",
         "om-scheduler": "SET NODE_ENV=dev && node ./schedulers/om.scheduler.js",
-        "4s-camshaft-28112024": "SET NODE_ENV=local && node ./design/seeders/28112024.4sCamShaft.excel.seeder.js"
+        "4s-camshaft-trans": "SET NODE_ENV=dev && node ./design/transaction/4sCamShaft.transaction.js"
     },
     "dependencies": {
         "axios": "^1.4.0",

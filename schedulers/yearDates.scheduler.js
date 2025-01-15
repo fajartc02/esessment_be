@@ -123,7 +123,7 @@ const main = async () => {
     })
 }
 
-clear4sRows()
+/*clear4sRows()
     .then((r) => {
         main()
             .then((result) => {
@@ -135,7 +135,7 @@ clear4sRows()
     })
     .catch((error) => {
         process.exit()
-    })
+    })*/
 
 
 /* main()
@@ -145,3 +145,5 @@ clear4sRows()
     .catch((error) => {
         process.exit()
     }) */
+
+module.exports = main;

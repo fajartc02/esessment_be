@@ -1,7 +1,7 @@
 const envFilePath = process.env.NODE_ENV?.trim() == 'production'
     ? './.env'
     : (process.env.NODE_ENV?.trim() == 'dev' ? './dev.env' : './local.env')
-require('dotenv').config({ path: envFilePath })
+require('dotenv').config({path: envFilePath})
 
 var express = require('express');
 var path = require('path');
@@ -11,19 +11,28 @@ const cors = require('cors')
 
 //#region cron
 const cron = require('node-cron');
-cron.schedule('0 0 1 * *', async () => {
-    const _4sSchedule = require('./schedulers/4s.scheduler')
-    const omSchedule = require('./schedulers/om.scheduler')
+const _4sSchedule = require('./schedulers/4s.scheduler')
+const omSchedule = require('./schedulers/om.scheduler')
+const yearlyDates = require('./schedulers/yearDates.scheduler');
 
+global.appRoot = path.resolve(__dirname);
+
+// monthly
+cron.schedule('0 0 1 * *', async () => {
     _4sSchedule()
     omSchedule()
+});
+
+// yearly
+cron.schedule('0 0 1 1 *', async () => {
+    yearlyDates()
 });
 //#endregion
 
 
 var routerV1 = require('./routes/v1/index');
 
-const { database } = require('./config/database')
+const {database} = require('./config/database')
 
 database.connect()
 console.log('DB Connecttion:');
@@ -42,8 +51,8 @@ var app = express();
 app.use(cors())
 
 app.use(logger('dev'));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({limit: '50mb'}));
+app.use(express.urlencoded({extended: false}));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
