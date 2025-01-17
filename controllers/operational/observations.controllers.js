@@ -243,6 +243,11 @@ module.exports = {
         obser.checkers = await checkersData.map((mp) => {
           return mp.checker_nm;
         });
+        obser.comments = await queryGET(
+          table.tb_r_observations_comments,
+          `WHERE observation_id = (SELECT observation_id FROM ${table.tb_r_observations} WHERE uuid = '${obser.observation_id}')`,
+          ["id"]
+        )
         obser.checkers.length > 1
           ? (obser.is_wajik = true)
           : (obser.is_wajik = false);
@@ -432,9 +437,9 @@ module.exports = {
         let resFindingId = resFindingIdData[0]?.uuid ?? null;
         check.findings = resFindingId
           ? await queryGET(
-              table.v_finding_list,
-              `WHERE finding_obs_id = '${resFindingId}'`
-            )
+            table.v_finding_list,
+            `WHERE finding_obs_id = '${resFindingId}'`
+          )
           : [];
         check.judgment_id =
           (await idToUuid(
@@ -460,11 +465,11 @@ module.exports = {
           containerCT.push(+item.stw_ct5);
           avg = item.stw_ct1
             ? (item.stw_ct1 +
-                item.stw_ct2 +
-                item.stw_ct3 +
-                item.stw_ct4 +
-                item.stw_ct5) /
-              5
+              item.stw_ct2 +
+              item.stw_ct3 +
+              item.stw_ct4 +
+              item.stw_ct5) /
+            5
             : null;
           perc = +(
             ((Math.max(...containerCT) - Math.min(...containerCT)) / 2 / avg) *
