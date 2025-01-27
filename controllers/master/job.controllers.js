@@ -19,16 +19,16 @@ const condDataNotDeleted = `WHERE tmj.deleted_dt IS NULL`;
 const orderBy = `ORDER BY tmj.job_nm ASC`;
 
 module.exports = {
-    getJob: async(req, res) => {
+    getJob: async (req, res) => {
         try {
             let { id, line_id, pos_id, limit, currentPage, totalPage, job_no } =
-            req.query;
+                req.query;
             let containerQuery = "";
             let qLimit = ``;
             let qOffset =
                 limit != -1 && limit && currentPage > 1 ?
-                `OFFSET ${limit * (currentPage - 1)}` :
-                ``;
+                    `OFFSET ${limit * (currentPage - 1)}` :
+                    ``;
             if (limit != -1 && limit) qLimit = `LIMIT ${limit}`;
             if (id) containerQuery += ` AND tmj.uuid = '${id}'`;
             if (line_id && line_id != -1 && line_id != "null")
@@ -39,7 +39,7 @@ module.exports = {
             console.log(containerQuery);
             let q = `
                 SELECT
-                    row_number() over(order by tmj.created_dt DESC) as no, 
+                    row_number() over(order by tmj.job_nm ASC) as no, 
                     tmj.uuid as id,
                     tmj.uuid,
                     tmj.job_no,
@@ -90,7 +90,7 @@ module.exports = {
             response.failed(res, "Error to get job");
         }
     },
-    postJob: async(req, res) => {
+    postJob: async (req, res) => {
         try {
             /* 
                                                                                                     pos_id,job_type_id,machine_id, job_nm, attachment, job_no, 
@@ -133,7 +133,7 @@ module.exports = {
             response.failed(res, error);
         }
     },
-    editJob: async(req, res) => {
+    editJob: async (req, res) => {
         try {
             console.log(req.body);
             if (req.body.machine_id != "null" && req.body.machine_id) {
@@ -164,7 +164,7 @@ module.exports = {
                 );
                 let isFileExist = jobs[0].attachment;
                 if (isFileExist) {
-                    fs.unlink(isFileExist, function(err) {
+                    fs.unlink(isFileExist, function (err) {
                         // console.log(err);
                         if (err) {
                             // 1.a JIKA ERROR MAKA KIRIM MSG KE FE
@@ -192,7 +192,7 @@ module.exports = {
             response.failed(res, error);
         }
     },
-    deleteJob: async(req, res) => {
+    deleteJob: async (req, res) => {
         try {
             let obj = {
                 deleted_dt: moment().format().split("+")[0].split("T").join(" "),
