@@ -224,6 +224,7 @@ module.exports = {
                 ORDER BY tml.line_nm,tmp.pos_nm ASC
             `);
       let mapObs = await observations.rows.map(async (obser) => {
+        console.log('obserDAta', obser);
         let obserId = await uuidToId(
           table.tb_r_observations,
           "observation_id",
@@ -266,10 +267,19 @@ module.exports = {
           containerGroup.push(item);
           continue;
         }
+        for (let idxChecker = 0; idxChecker < item.checkers.length; idxChecker++) {
+          const checkerChild = item.checkers[idxChecker];
+          let isCheckerAvail = posAvail.checkers.find(checkerParent => checkerParent === checkerChild);
+          console.log(posAvail)
+          if (!isCheckerAvail) {
+            posAvail.checkers.unshift(checkerChild);
+            continue;
+          }
+        }
         posAvail.children.push(item);
       }
       let resAwait = await Promise.all(containerGroup);
-      // console.log(resAwait);
+
       response.success(res, "Success to get schedule observation", resAwait);
     } catch (error) {
       console.log(error);
