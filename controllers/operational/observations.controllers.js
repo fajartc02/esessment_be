@@ -444,19 +444,27 @@ module.exports = {
           `WHERE obs_result_id = ${check.obs_result_id}`,
           ["uuid"]
         );
-        let resFindingId = resFindingIdData[0]?.uuid ?? null;
-        check.findings = resFindingId
-          ? await queryGET(
-            table.v_finding_list,
-            `WHERE finding_obs_id = '${resFindingId}'`
-          )
-          : [];
+        console.log('resFindingIdData: ', resFindingIdData)
+        let resFindingId = `finding_obs_id = '${resFindingIdData[0]?.uuid}'` ?? null;
+        if (resFindingIdData.length > 1) {
+          // resFindingId = resFindingIdData[resFindingIdData.length - 1]?.uuid
+          resFindingId = resFindingIdData.map(item => {
+            return `finding_obs_id = '${item.uuid}'`
+          })
+          resFindingId = resFindingId.join(' OR ')
+        }
+        console.log('resFindingId: ', resFindingId)
+        check.findings = await queryGET(
+          table.v_finding_list,
+          `WHERE ${resFindingId}`
+        )
         check.judgment_id =
           (await idToUuid(
             table.tb_m_judgments,
             "judgment_id",
             check.judgment_id
           )) ?? null;
+        console.log(check.findings, ': check.findings')
         return check;
       });
 
