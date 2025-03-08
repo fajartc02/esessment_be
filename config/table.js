@@ -13,6 +13,7 @@ const table = {
     tb_m_job_types: 'tb_m_job_types',
     tb_m_factors: 'tb_m_factors',
     tb_m_categories: 'tb_m_categories',
+    tb_m_sub_categories: 'tb_m_sub_categories',
     tb_m_judgments: 'tb_m_judgments',
     tb_r_observations: 'tb_r_observations',
 

@@ -4,6 +4,8 @@ const {
   addObservationCheck,
   addFindingObsCheck,
   addVideoObservation,
+  addObservationCheckV2,
+  updateObservationCheck,
 } = require("../../../controllers/operational/newObservation.controllers");
 const {
   addScheduleObservation,
@@ -38,6 +40,8 @@ router.post("/schedule", auth.verifyToken, addScheduleObservation);
 
 router.post("/single-check-obs", auth.verifyToken, editObservation);
 router.post("/single-check-category", auth.verifyToken, addObservationCheck);
+router.post("/single-check-category-v2", auth.verifyToken, addObservationCheckV2);
+router.put("/single-check-category/:obs_result_id", auth.verifyToken, updateObservationCheck);
 router.post("/single-check-finding", auth.verifyToken, addFindingObsCheck);
 router.post(
   "/upload-video/:observation_id",

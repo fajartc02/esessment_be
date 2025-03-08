@@ -22,6 +22,7 @@ const condDataNotDeleted = `deleted_dt IS NULL`;
 
 const moment = require("moment");
 const getLastIdDataNew = require("../../helpers/getLastIdDataNew");
+const uuidToIdV2 = require("../../helpers/uuidToIdV2");
 
 module.exports = {
   addScheduleObservation: async (req, res) => {
@@ -112,7 +113,10 @@ module.exports = {
                     tmjt.job_type_nm,
                     tmj.attachment as sop,
                     tmg.uuid as group_id,
-                    tmg.group_nm
+                    tmg.group_nm,
+                    tro.parent_revision_id,
+                    tro.reason_revision,
+                    (select plan_check_dt from tb_r_observations where observation_id = tro.parent_revision_id) as date_revision
                 FROM ${table.tb_r_observations} tro
                 JOIN ${table.tb_m_pos} tmp ON tmp.pos_id = tro.pos_id
                 JOIN ${table.tb_m_lines} tml ON tml.line_id = tmp.line_id
@@ -204,7 +208,11 @@ module.exports = {
                     EXTRACT('day' from  tro.plan_check_dt) as idxDate,
                     tro.comment_sh,
                     tro.comment_ammgr,
-                    tro.deleted_dt
+                    tro.deleted_dt,
+                    tro.is_new_form,
+                    tro.parent_revision_id,
+                    tro.reason_revision,
+                    (SELECT plan_check_dt FROM ${table.tb_r_observations} WHERE observation_id = tro.parent_revision_id) as date_revision
                 FROM ${table.tb_r_observations} tro
                 LEFT JOIN ${table.tb_m_pos} tmp
                     ON tro.pos_id = tmp.pos_id
@@ -425,6 +433,7 @@ module.exports = {
           "stw_ct3",
           "stw_ct4",
           "stw_ct5",
+          "sub_category_id"
         ]
       );
       let mapChecks = await resChecks.map(async (check) => {
@@ -746,6 +755,78 @@ module.exports = {
       response.failed(res, "Error to add CHECK observation");
     }
   },
+  // handling error if any missing data not inserted into table
+  addCheckObservationV2: async (req, res) => {
+    // observation_id
+    // category_id,judgement_id, factor_id(opt), findings ARRAY
+    try {
+      // console.log(req.body);
+      await queryTransaction(async (db) => {
+        req.body.results_check = JSON.parse(req.body.results_check);
+        req.body.findings = JSON.parse(req.body.findings);
+        // 1. UPDATE tb_r_observations ALREADY CHECK
+        const obsId = await uuidToIdV2(
+          table.tb_r_observations,
+          "observation_id",
+          req.body.observation_id,
+          db
+        );
+        const groupId = await uuidToIdV2(
+          table.tb_m_groups,
+          "group_id",
+          req.body.group_id,
+          db
+        );
+        let updateActual = {
+          actual_check_dt: req.body.actual_check_dt,
+          group_id: groupId,
+          comment_sh: req.body.comment_sh,
+          comment_ammgr: req.body.comment_ammgr,
+        };
+        let attrsUserUpd = await addAttrsUserUpdateData(req, updateActual);
+        await queryPutTransaction(db, table.tb_r_observations, attrsUserUpd,
+          `WHERE observation_id = '${obsId}'`)
+        return 'success'
+      })
+      // 2. INSERT tb_r_obs_results FROM req.body.results_check
+      let resultCheckData = req.body.results_check;
+
+      const lastIdResCheck =
+        (await getLastIdData(table.tb_r_obs_results, "obs_result_id")) + 1;
+      let mapResultChecks = await resultCheckData.map(async (item, i) => {
+        item.observation_id = obsId;
+        item.obs_result_id = lastIdResCheck + i;
+        item.uuid = req.uuid();
+        item.category_id = await uuidToId(
+          table.tb_m_categories,
+          "category_id",
+          item.category_id
+        );
+        item.judgment_id = await uuidToId(
+          table.tb_m_judgments,
+          "judgment_id",
+          item.judgment_id
+        );
+        return item;
+      });
+      let waitMapResCheck = await Promise.all(mapResultChecks);
+      const addAttrsUserInst = await attrsUserInsertData(req, waitMapResCheck);
+
+      req.body.group_id = await uuidToId(
+        table.tb_m_groups,
+        "group_id",
+        req.body.group_id
+      );
+      let resInstCheck = await queryBulkPOST(
+        table.tb_r_obs_results,
+        addAttrsUserInst
+      );
+      response.success(res, "Success to add CHECK observation");
+    } catch (error) {
+      console.log(error);
+      response.failed(res, "Error to add CHECK observation");
+    }
+  },
   editScheduleObservation: async (req, res) => {
     try {
       await queryTransaction(async (db) => {
@@ -791,7 +872,7 @@ module.exports = {
         body.pos_id = `(select pos_id FROM tb_m_pos WHERE uuid = '${body?.pos_id}')`;
         body.job_id = `(select job_id FROM tb_m_jobs WHERE uuid = '${body?.job_id}')`;
         body.group_id = `(select group_id FROM tb_m_groups WHERE uuid = '${body?.group_id}')`;
-        console.log(body);
+        console.log(body, 'body');
 
         await queryPutTransaction(
           db,

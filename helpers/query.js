@@ -2,7 +2,7 @@ const pg = require("pg");
 const { database, databasePool } = require("../config/database");
 const logger = require("./logger");
 
-const _defaultCallbackTrans = async (db = databasePool) => {};
+const _defaultCallbackTrans = async (db = databasePool) => { };
 
 const poolQuery = async (raw) => {
   let client;
@@ -40,9 +40,9 @@ const mapWhereCond = (obj) => {
         } else if (obj[key].toLowerCase().includes("is not null")) {
           result.push(`${key} is not null`);
         } else if (
-            obj[key].toLowerCase().includes("select")
-            || obj[key].toLowerCase().includes("now")
-            || obj[key].toLowerCase().includes("extract")
+          obj[key].toLowerCase().includes("select")
+          || obj[key].toLowerCase().includes("now")
+          || obj[key].toLowerCase().includes("extract")
         ) {
           if (key === "") {
             result.push(`${obj[key]}`);
@@ -276,6 +276,21 @@ module.exports = {
       throw error;
     }
   },
+  queryGetTransaction: async (dbPool, table, whereCond = "") => {
+    return new Promise(async (resolve, reject) => {
+      let q = `SELECT * FROM ${table} ${whereCond}`;
+      console.log(q);
+      //logger(q)
+      await dbPool
+        .query(q)
+        .then((result) => {
+          resolve(result.rows);
+        })
+        .catch((err) => {
+          reject(err);
+        });
+    });
+  },
   queryPostTransaction: async (dbPool, table, data) => {
     return new Promise(async (resolve, reject) => {
       let containerColumn = [];
@@ -284,7 +299,7 @@ module.exports = {
         containerColumn.push(key);
 
         let value = data[key];
-        if (typeof value === "string" && value.includes("select")) {
+        if (typeof value === "string" && `${value.toLowerCase()}`.includes("select")) {
           value = `${data[key]}`;
         } else {
           value = `'${data[key]}'`;

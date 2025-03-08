@@ -20,9 +20,10 @@ const condDataNotDeleted = `deleted_dt IS NULL`;
 
 const moment = require("moment");
 const removeFileIfExist = require("../../helpers/removeFileIfExist");
+const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData");
 
 module.exports = {
-    editObservation: async(req, res) => {
+    editObservation: async (req, res) => {
         try {
             const observation_id = req.body.observation_id;
             if (req.body.group_id) {
@@ -46,7 +47,7 @@ module.exports = {
             response.failed(res, "Error to get schedule observation");
         }
     },
-    addObservationCheck: async(req, res) => {
+    addObservationCheck: async (req, res) => {
         try {
             req.body.observation_id = await uuidToId(
                 table.tb_r_observations,
@@ -78,7 +79,71 @@ module.exports = {
             response.failed(res, "Error to add check observation");
         }
     },
-    addFindingObsCheck: async(req, res) => {
+    addObservationCheckV2: async (req, res) => {
+        try {
+            req.body.observation_id = await uuidToId(
+                table.tb_r_observations,
+                "observation_id",
+                req.body.observation_id
+            );
+            req.body.uuid = req.uuid();
+            const lastIdResCheck =
+                (await getLastIdData(table.tb_r_obs_results, "obs_result_id")) + 1;
+            req.body.obs_result_id = lastIdResCheck;
+            req.body.category_id = await uuidToId(
+                table.tb_m_categories,
+                "category_id",
+                req.body.category_id
+            );
+            console.log(req.body);
+            req.body.judgment_id = await uuidToId(
+                table.tb_m_judgments,
+                "judgment_id",
+                req.body.judgment_id
+            );
+            console.log(req.body);
+            const addAttrsUserInst = await attrsUserInsertData(req, req.body);
+            // console.log(addAttrsUserInst);
+            await queryPOST(table.tb_r_obs_results, addAttrsUserInst);
+            response.success(res, "success to add check observation");
+        } catch (error) {
+            console.log(error);
+            response.failed(res, "Error to add check observation");
+        }
+    },
+    updateObservationCheck: async (req, res) => {
+        try {
+            const obs_result_id = req.params.obs_result_id
+            req.body.observation_id = await uuidToId(
+                table.tb_r_observations,
+                "observation_id",
+                req.body.observation_id
+            );
+            req.body.uuid = req.uuid();
+            const lastIdResCheck =
+                (await getLastIdData(table.tb_r_obs_results, "obs_result_id")) + 1;
+            req.body.obs_result_id = lastIdResCheck;
+            req.body.category_id = await uuidToId(
+                table.tb_m_categories,
+                "category_id",
+                req.body.category_id
+            );
+            console.log(req.body);
+            req.body.judgment_id = await uuidToId(
+                table.tb_m_judgments,
+                "judgment_id",
+                req.body.judgment_id
+            );
+            const updateUserDataChanged = await attrsUserUpdateData(req, req.body);
+
+            await queryPUT(table.tb_r_obs_results, updateUserDataChanged, `WHERE obs_result_id = '${obs_result_id}'`);
+            response.success(res, "success to add check observation");
+        } catch (error) {
+            console.log(error);
+            response.failed(res, "Error to add check observation");
+        }
+    },
+    addFindingObsCheck: async (req, res) => {
         try {
             // let selectFindingData = await req.body.findings.find(async(finding) => await uuidToId(table.tb_m_categories, 'category_id', finding.category_id) == resCheckData.category_id)
             // let obs_result_id = resCheckData.obs_result_id
@@ -87,7 +152,7 @@ module.exports = {
             // selectFindingData.factor_id = await uuidToId(table.tb_m_factors, 'factor_id', selectFindingData.factor_id) ?? null
             // selectFindingData.cm_result_factor_id = await uuidToId(table.tb_m_factors, 'factor_id', selectFindingData.cm_result_factor_id) ?? null
 
-            const transaction = await queryTransaction(async(db) => {
+            const transaction = await queryTransaction(async (db) => {
                 req.body.category_id = req.body.category_id ?
                     `(select category_id from ${table.tb_m_categories} where uuid = '${req.body.category_id}')` :
                     null;
@@ -146,7 +211,7 @@ module.exports = {
             response.failed(res, "Error to add finding check observation");
         }
     },
-    addVideoObservation: async(req, res) => {
+    addVideoObservation: async (req, res) => {
         try {
             let resFile = `./${req.file.path}`;
             if (
