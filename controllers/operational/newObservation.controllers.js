@@ -21,6 +21,8 @@ const condDataNotDeleted = `deleted_dt IS NULL`;
 const moment = require("moment");
 const removeFileIfExist = require("../../helpers/removeFileIfExist");
 const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData");
+const { default: axios } = require("axios");
+const uuidToAbnormalityID = require("../../helpers/uuidToAbnormalityId");
 
 module.exports = {
     editObservation: async (req, res) => {
@@ -153,6 +155,37 @@ module.exports = {
             // selectFindingData.cm_result_factor_id = await uuidToId(table.tb_m_factors, 'factor_id', selectFindingData.cm_result_factor_id) ?? null
 
             const transaction = await queryTransaction(async (db) => {
+                // PROCESS FOR ADD ABNORMALITY DATA (WITHOUT TOKEN)
+                if (req.body.department_id) {
+
+                    // pic = departement terkait (OK) | ready FE {department_id}
+                    // tanoko/status = evaluation (OK in 4S | cm_judg in STW [BE Process]) {cm_judg}
+                    // line (OK) | ready FE {line_id}
+                    // problemLoc {finding_location}
+                    // Shift = userData.group_id (OK) | [BE Process] {pic_id}
+                    // Category (auto set with Ergonomic & Difficulty Job) [id: 4] BE Process
+                    // Problem = {finding_desc}
+                    // Countermeasure = {cm_desc}
+                    // problem date = finding_date
+                    // Countermeasure Date {cm_end_plan_date}
+                    const getGroupIdUser = await uuidToAbnormalityID(table.tb_m_users, 'group_id', req.body.cm_pic_id.pic_id, db)
+                    const getGroupAbnormalityID = await uuidToAbnormalityID(table.tb_m_groups, 'abnormality_id', getGroupIdUser, db, 'group_id')
+                    console.log(getGroupIdUser, 'getGroupIdUser', getGroupAbnormalityID)
+                    const responseAdd = await axios.post(`http://mt-system.id:4444/abnormality/problems/add`, {
+                        problem_date: moment(req.body.finding_date).format('YYYY-MM-DD'),
+                        countermeasure_date: moment(req.body.cm_end_plan_date).format('YYYY-MM-DD'),
+                        problem_desc: req.body.finding_desc,
+                        line_id: await uuidToAbnormalityID(table.tb_m_lines, 'abnormality_id', req.body.line_id, db),
+                        shift_id: getGroupAbnormalityID,
+                        department_id: await uuidToAbnormalityID(table.tb_m_system, 'abnormality_id', req.body.department_id, db),
+                        category_id: 4, // Ergonomic & Difficulty Job
+                        countermeasure: req.body.cm_desc,
+                        status_id: req.body.cm_judg ? 4 : 1,
+                        problem_loc: req.body.finding_location
+                    })
+                    console.log(responseAdd.response, 'responseAdd')
+                    delete req.body.department_id
+                }
                 req.body.category_id = req.body.category_id ?
                     `(select category_id from ${table.tb_m_categories} where uuid = '${req.body.category_id}')` :
                     null;
@@ -169,6 +202,7 @@ module.exports = {
                     `(select factor_id from ${table.tb_m_factors} where uuid = '${req.body.cm_result_factor_id}')` :
                     null;
                 console.log(req.body);
+
                 let resultFindingData = {
                     result_finding_id: `(select (result_finding_id + 1) from ${table.tb_r_result_findings} order by result_finding_id desc limit 1)`,
                     uuid: req.uuid(),
@@ -192,14 +226,13 @@ module.exports = {
                     finding_id: `(select (finding_id + 1) from ${table.tb_r_findings} order by finding_id desc limit 1)`,
                     uuid: req.uuid(),
                 };
-                console.log(findingData);
                 const attrsUserInsert = await attrsUserInsertData(req, findingData);
+
                 return await queryPostTransaction(
                     db,
                     table.tb_r_findings,
                     attrsUserInsert
                 );
-                // await queryPOST(table.)
             });
             response.success(
                 res,

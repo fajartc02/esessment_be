@@ -10,7 +10,7 @@ const moment = require("moment")
 const { uuid } = require("uuidv4")
 
 module.exports = {
-    getSystems: async(req, res) => {
+    getSystems: async (req, res) => {
         try {
             let systemType = req.params.system_type
             if (!systemType) {
@@ -28,17 +28,18 @@ module.exports = {
             const freqs = await queryGET(
                 table.tb_m_system,
                 `where deleted_dt is null ${whereType} order by system_desc`, [
-                    `row_number () over (
+                `row_number () over (
                             order by
                             created_dt
                         )::integer as no`,
-                    'uuid as id',
-                    'system_type',
-                    'system_value',
-                    'system_desc',
-                    'created_by',
-                    'created_dt'
-                ]
+                'uuid as id',
+                'system_type',
+                'system_value',
+                'system_desc',
+                'created_by',
+                'created_dt',
+                'abnormality_id'
+            ]
             )
 
             response.success(res, 'Success to get system', freqs)
@@ -47,7 +48,7 @@ module.exports = {
             response.failed(res, 'Error to get system')
         }
     },
-    postSystem: async(req, res) => {
+    postSystem: async (req, res) => {
         try {
             const insertBody = {
                 ...req.body,
@@ -62,7 +63,7 @@ module.exports = {
             response.failed(res, error)
         }
     },
-    editSystem: async(req, res) => {
+    editSystem: async (req, res) => {
         try {
             const updateBody = {
                 ...req.body,
@@ -81,7 +82,7 @@ module.exports = {
             response.failed(res, error)
         }
     },
-    deleteSystem: async(req, res) => {
+    deleteSystem: async (req, res) => {
         try {
             let obj = {
                 deleted_dt: moment().format().split("+")[0].split("T").join(" "),
