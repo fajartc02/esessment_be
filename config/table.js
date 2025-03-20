@@ -16,6 +16,7 @@ const table = {
     tb_m_sub_categories: 'tb_m_sub_categories',
     tb_m_judgments: 'tb_m_judgments',
     tb_r_observations: 'tb_r_observations',
+    tb_r_stw_sign: "tb_r_stw_sign",
 
     // comments
     tb_r_observations_comments: 'tb_r_observations_comments',

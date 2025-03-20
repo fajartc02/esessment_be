@@ -6,4 +6,5 @@ const auth = require("../../../helpers/auth");
 
 router.post("/schedule", auth.verifyToken, addScheduleObservationV2);
 
+
 module.exports = router;

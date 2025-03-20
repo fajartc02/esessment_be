@@ -19,6 +19,7 @@ const {
   countTotalSummarySTW,
   editScheduleObservation,
 } = require("../../../controllers/operational/observations.controllers");
+const { addSign, getSign } = require("../../../controllers/v2/operational/stwSign.controllers");
 const auth = require("../../../helpers/auth");
 const upload = require("../../../helpers/upload");
 
@@ -38,11 +39,15 @@ router.delete(
 router.get("/schedule/:id", auth.verifyToken, getDetailObservation);
 router.post("/schedule", auth.verifyToken, addScheduleObservation);
 
+router.post('/sign', auth.verifyToken, addSign);
+router.get('/sign', auth.verifyToken, getSign);
+
 router.post("/single-check-obs", auth.verifyToken, editObservation);
 router.post("/single-check-category", auth.verifyToken, addObservationCheck);
 router.post("/single-check-category-v2", auth.verifyToken, addObservationCheckV2);
 router.put("/single-check-category/:obs_result_id", auth.verifyToken, updateObservationCheck);
 router.post("/single-check-finding", auth.verifyToken, addFindingObsCheck);
+
 router.post(
   "/upload-video/:observation_id",
   auth.verifyToken,
