@@ -42,7 +42,7 @@ const currentMonth = currentDate.month() + 1 // need +1 to determine current mon
 const currentYear = currentDate.year()
 const flagCreatedBy = `SCHEDULERS ${currentDate.format('YYYY-MM-DD')}`
 
-const main = async () => {
+const main =  () => {
     try
     {
         const pool = new pg.Pool(config);
@@ -304,4 +304,6 @@ const main = async () => {
     process.exit()
 }) */
 
-module.exports = main
+main();
+
+//module.exports = main

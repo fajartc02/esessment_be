@@ -6,8 +6,8 @@ module.exports = {
      * 
      * @returns {Promise<pg.QueryResultRow> | string}
      */
-    lineGroupRows: async (db, currentYear, currentMonth, onlySql = false) => {
-        const lineGroupQuery =
+    lineGroupRows: async (db, currentYear, currentMonth, onlySql = false, { line_id } = {}) => {
+        let lineGroupQuery =
             `
                 select 
                     tml.line_id,
@@ -22,6 +22,18 @@ module.exports = {
         if (onlySql)
         {
             return lineGroupQuery
+        }
+
+        let clause = [];
+        if (line_id)
+        {
+            clause.push(`tml.line_id = ${line_id}`);
+        }
+
+        if (clause.length)
+        {
+            clause = `where ${clause.join(' and ')}`;
+            lineGroupQuery = lineGroupQuery.concat(clause);
         }
 
         const lgQuery = await db.query(lineGroupQuery)

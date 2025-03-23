@@ -42,7 +42,8 @@ const flagCreatedBy = `SCHEDULERS ${currentDate.format('YYYY-MM-DD')}`
 
 //#region scheduler main 
 const main = () => {
-    try {
+    try
+    {
         const pool = new pg.Pool(config);
         pool.connect(async (err, db, release) => {
             console.log('database connected');
@@ -50,7 +51,7 @@ const main = () => {
             {
 
                 //#region schedulers parent 
-                const lineGroups = await lineGroupRows(db, currentYear, currentMonth)
+                const lineGroups = await lineGroupRows(db, currentYear, currentMonth, false, {line_id: 8})
 
                 let mainScheduleBulkSchema = []
                 let subScheduleBulkSchema = []
@@ -62,6 +63,7 @@ const main = () => {
                 for (let lgIndex = 0; lgIndex < lineGroups.length; lgIndex++)
                 {
                     let shiftRows
+                    
                     if (lineGroups[lgIndex].line_nm.toLowerCase().includes('line'))
                     {
                         shiftRows = await shiftByGroupId(db, currentYear, currentMonth, lineGroups[lgIndex].line_id, lineGroups[lgIndex].group_id)
@@ -417,24 +419,25 @@ const main = () => {
             }
             catch (error)
             {
-                await clear4sTransactionRows(db, flagCreatedBy)
                 console.log('error 4s generate schedule, scheduler running', error)
                 logger(`error clear4sTransactionRows() 4s.scheduler for month=${currentMonth}-${currentYear}`, error)
+                await clear4sTransactionRows(db, flagCreatedBy)
             }
             finally
             {
                 release();
                 //process.exit();
             }
-        });    
+        });
 
         logger(`successfully run 4s.scheduler for month=${currentMonth}-${currentYear}`)
-    } catch (error) {
+    } catch (error)
+    {
         console.log('error final 4s generate schedule, scheduler running', error);
         logger(`error 4s.scheduler for month=${currentMonth}-${currentYear}`, error);
         //process.exit();
     }
-    
+
 }
 //#endregion
 
@@ -465,15 +468,15 @@ const main = () => {
         return 0
     }) */
 
-/* main()
-    .then((result) => {
-        process.exit()
-    })
-    .catch((error) => {
-        console.log('error', error);
-        process.exit()
-    }) */
+/*main()
+   .then(() => {
+       process.exit()
+   })
+   .catch((error) => {
+       console.log('error', error);
+       process.exit()
+   })*/
 
-/* main(); */
+//main();
 
 module.exports = main

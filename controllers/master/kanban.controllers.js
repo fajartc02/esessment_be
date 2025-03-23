@@ -31,6 +31,7 @@ module.exports = {
                     select * from ${table.tb_m_lines} where line_id = tmz.line_id
                 ) tml on tml.line_id = tmz.line_id 
                 join ${table.tb_m_freqs} tmf on tmk.freq_id = tmf.freq_id
+                join ${table.tb_m_groups} tmg on tmk.group_id = tmg.group_id
             `
 
             current_page = parseInt(current_page ?? 1)
@@ -50,12 +51,14 @@ module.exports = {
                         tmz.uuid as zone_id,
                         tmk.uuid as kanban_id,
                         tmf.uuid as freq_id,
+                        tmg.uuid as group_id,
                         tml.line_nm,
                         tmf.freq_nm,
                         tmz.zone_nm,
                         tmk.kanban_no,
                         tmk.area_nm,
                         tmk.kanban_imgs,
+                        tmg.group_nm,
                         case 
                             when tmk.sop_file is not null and tmk.sop_file != '' then 
                                 '${process.env.APP_HOST}' || '/file?path=' || tmk.sop_file
