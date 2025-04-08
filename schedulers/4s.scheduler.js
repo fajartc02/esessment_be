@@ -51,7 +51,7 @@ const main = () => {
             {
 
                 //#region schedulers parent 
-                const lineGroups = await lineGroupRows(db, currentYear, currentMonth, false, {line_id: 8})
+                const lineGroups = await lineGroupRows(db, currentYear, currentMonth, false)
 
                 let mainScheduleBulkSchema = []
                 let subScheduleBulkSchema = []
