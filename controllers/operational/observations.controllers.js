@@ -330,6 +330,7 @@ module.exports = {
                     tro.comment_sh,
                     tro.comment_ammgr,
                     tro.deleted_dt,
+                    tro.is_new_form,
                     CASE
                         WHEN tro.plan_check_dt < CURRENT_DATE AND tro.actual_check_dt IS NULL THEN '#ff0505'::text
                         WHEN tro.actual_check_dt IS NULL THEN '#00afef'::text
