@@ -7,6 +7,7 @@ const {
     queryPUT,
     queryTransaction,
     queryPostTransaction,
+    queryDELETE,
 } = require("../../helpers/query");
 
 const response = require("../../helpers/response");
@@ -136,6 +137,21 @@ module.exports = {
                 "judgment_id",
                 req.body.judgment_id
             );
+
+            const judgmentData = await queryGET(table.tb_m_judgments, `WHERE judgment_id = '${req.body.judgment_id}'`);
+            // console.log(judgmentData, 'judgmentsData');
+            if (!judgmentData[0].is_abnormal) {
+                const resultFindingData = await queryGET(table.tb_r_result_findings, `WHERE obs_result_id = '${obs_result_id}'`);
+                const isFindingDataBeforeAvail = resultFindingData.length > 0;
+                if (isFindingDataBeforeAvail) {
+                    // console.log(resultFindingData)
+                    resultFindingData.forEach(async (resultFinding) => {
+                        await queryDELETE(table.tb_r_findings, `WHERE finding_obs_id = '${resultFinding.result_finding_id}'`);
+                    });
+                    // const findingData = await queryGET(table.tb_r_findings, `WHERE finding_obs_id = '${resultFindingData[0].finding_id}'`);
+                    await queryDELETE(table.tb_r_result_findings, `WHERE obs_result_id = '${obs_result_id}'`);
+                }
+            }
             const updateUserDataChanged = await attrsUserUpdateData(req, req.body);
 
             await queryPUT(table.tb_r_obs_results, updateUserDataChanged, `WHERE obs_result_id = '${obs_result_id}'`);
@@ -186,6 +202,7 @@ module.exports = {
                     console.log(responseAdd.response, 'responseAdd')
                     delete req.body.department_id
                 }
+                delete req.body.department_id
                 req.body.category_id = req.body.category_id ?
                     `(select category_id from ${table.tb_m_categories} where uuid = '${req.body.category_id}')` :
                     null;
