@@ -25,7 +25,7 @@ console.log('env', {
     ssl: false
 })
 
-console.log(`4S Schedule Date Scheduler Running .....`)
+console.log(`Yearly Schedule Date Scheduler Running .....`)
 
 const currentDate = moment()
 const currentYear = currentDate.year()

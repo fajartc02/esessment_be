@@ -23,5 +23,6 @@
     "4s-crankshaft": "SET NODE_ENV=local && node ./design/seeders/4sCrankShaft_17092024.seeder.js",
     "trans-4s-crankshaft": "SET NODE_ENV=local && node ./design/transaction/4sCrankShaft.transaction.js",
     "4s-camshaft-28112024": "SET NODE_ENV=local && node ./design/seeders/28112024.4sCamShaft.excel.seeder.js",
-    "4s-camshaft-trans": "SET NODE_ENV=local && node ./design/transaction/4sCamShaft.transaction.js"
+    "4s-camshaft-trans": "SET NODE_ENV=local && node ./design/transaction/4sCamShaft.transaction.js",
+    "4s-mainline-14042025": "SET NODE_ENV=dev && node ./design/seeders/14042025.4sMainLine.excel.seeder.js"
 }

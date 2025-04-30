@@ -42,7 +42,7 @@ const currentMonth = currentDate.month() + 1 // need +1 to determine current mon
 const currentYear = currentDate.year()
 const flagCreatedBy = `SCHEDULERS ${currentDate.format('YYYY-MM-DD')}`
 
-const main =  () => {
+const main = () => {
     try
     {
         const pool = new pg.Pool(config);
@@ -283,13 +283,13 @@ const main =  () => {
         });
 
         logger(`successfully run om.scheduler for month=${currentMonth}-${currentYear}`)
-    } 
+    }
     catch (e)
     {
         console.log('error final om generate schedule, scheduler running', e);
         logger(`error om.scheduler for month=${currentMonth}-${currentYear}`, e);
         //process.exit();
-    } 
+    }
 }
 
 /* main() */
@@ -304,6 +304,6 @@ const main =  () => {
     process.exit()
 }) */
 
-main();
+//main();
 
-//module.exports = main
+module.exports = main

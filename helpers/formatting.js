@@ -32,7 +32,7 @@ module.exports = {
     },
     cleanString: (value) => {
         if (value) {
-            return value.replace(/ +/g, ' ').trim()
+            return String(value).replace(/ +/g, ' ').trim()
         }
 
         return null

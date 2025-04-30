@@ -63,7 +63,7 @@ const main = () => {
                 for (let lgIndex = 0; lgIndex < lineGroups.length; lgIndex++)
                 {
                     let shiftRows
-                    
+
                     if (lineGroups[lgIndex].line_nm.toLowerCase().includes('line'))
                     {
                         shiftRows = await shiftByGroupId(db, currentYear, currentMonth, lineGroups[lgIndex].line_id, lineGroups[lgIndex].group_id)
