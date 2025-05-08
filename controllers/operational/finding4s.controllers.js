@@ -18,8 +18,7 @@ const { uuid } = require("uuidv4")
 
 module.exports = {
     get4sFindingList: async (req, res) => {
-        try
-        {
+        try {
             let { id, line_id, freq_id, group_id, zone_id, kanban_id, limit, current_page } = req.query
             const fromCondition = `  
                 ${table.v_4s_finding_list} vfl 
@@ -52,32 +51,25 @@ module.exports = {
                         
                 `
             //#region filter
-            if (id)
-            {
+            if (id) {
                 filterCondition.push(` vfl.finding_id = '${id}' `)
             }
-            if (line_id)
-            {
+            if (line_id) {
                 filterCondition.push(` vfl.line_id = '${line_id}' `)
             }
-            if (zone_id)
-            {
+            if (zone_id) {
                 filterCondition.push(` vfl.zone_id = '${zone_id}' `)
             }
-            if (kanban_id)
-            {
+            if (kanban_id) {
                 filterCondition.push(` vfl.kanban_id = '${kanban_id}' `)
             }
-            if (freq_id)
-            {
+            if (freq_id) {
                 filterCondition.push(` vfl.freq_id = '${freq_id}' `)
             }
-            if (group_id)
-            {
+            if (group_id) {
                 filterCondition.push(` vfl.group_id = '${group_id}' `)
             }
-            if (req.query.start_date && req.query.end_date)
-            {
+            if (req.query.start_date && req.query.end_date) {
                 filterCondition.push(` vfl.finding_date between '${req.query.start_date}' and '${req.query.end_date}' `)
             }
             const qOffset = (limit != -1 && limit) && current_page > 1 ? `OFFSET ${limit * (current_page - 1)}` : ``
@@ -88,7 +80,7 @@ module.exports = {
             findingSql = findingSql.concat(` ${filterCondition} `)
             findingSql = findingSql.concat(
                 ` 
-                    order by vfl.plan_cm_date,
+                    order by vfl.plan_cm_date DESC,
                       case 
                           when cm_judg = true then 1
                           else 2
@@ -101,10 +93,8 @@ module.exports = {
             const nullId = id == null || id == -1 || id == ''
             let result = findingQuery.rows
 
-            if (result.length > 0)
-            {
-                if (nullId)
-                {
+            if (result.length > 0) {
+                if (nullId) {
                     const count = await queryCustom(`select count(*)::integer as count from ${fromCondition} where ${filterCondition}`)
                     const countRows = count.rows[0]
                     result = {
@@ -117,23 +107,20 @@ module.exports = {
                             return item;
                         }),
                     };
-                } else
-                {
+                } else {
                     result = result[0];
                     result.kaizen_file = result.kaizen_file ? process.env.APP_HOST + "/file?path=" + result.kaizen_file : null;
                 }
             }
 
             response.success(res, 'Success to get 4s finding list', result)
-        } catch (error)
-        {
+        } catch (error) {
             console.log(error);
             response.failed(res, 'Error to get 4s finding list')
         }
     },
     post4sFinding: async (req, res) => {
-        try
-        {
+        try {
 
             const rawSubScheduleId = ` (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}') `;
             const rawScheduleItemCheckKanbanId = ` (select schedule_item_check_kanban_id from ${table.tb_r_4s_schedule_item_check_kanbans} where uuid = '${req.body.schedule_item_check_kanban_id}') `;
@@ -147,51 +134,41 @@ module.exports = {
                 finding_pic_id: rawFindingPicId,
             };
 
-            if (req.body.line_id)
-            {
+            if (req.body.line_id) {
                 insertBody.line_id = `(select line_id from ${table.tb_m_lines} where uuid = '${req.body.line_id}')`
             }
 
-            if (req.body.group_id)
-            {
+            if (req.body.group_id) {
                 insertBody.group_id = `(select group_id from ${table.tb_m_groups} where uuid = '${req.body.group_id}')`
             }
 
-            if (req.body.zone_id)
-            {
+            if (req.body.zone_id) {
                 insertBody.zone_id = `(select zone_id from ${table.tb_m_zones} where uuid = '${req.body.zone_id}')`
             }
 
-            if (req.body.freq_id)
-            {
+            if (req.body.freq_id) {
                 insertBody.freq_id = `(select freq_id from ${table.tb_m_freqs} where uuid = '${req.body.freq_id}')`
             }
 
-            if (req.body.kanban_id)
-            {
+            if (req.body.kanban_id) {
                 insertBody.kanban_id = `(select kanban_id from ${table.tb_m_kanbans} where uuid = '${req.body.kanban_id}')`
             }
 
-            if (req.body.judgment_id)
-            {
+            if (req.body.judgment_id) {
                 insertBody.judgment_id = `(select judgment_id from ${table.tb_m_judgments} where uuid = '${req.body.judgment_id}')`
             }
-            else 
-            {
+            else {
                 insertBody.judgment_id = `(select judgment_id from ${table.tb_m_judgments} where lower(judgment_nm) = 'ng')`
             }
 
-            if (insertBody.deleted_dt)
-            {
+            if (insertBody.deleted_dt) {
                 delete insertBody.deleted_dt
             }
-            if (insertBody.deleted_by)
-            {
+            if (insertBody.deleted_by) {
                 delete insertBody.deleted_by
             }
 
-            if (req.body.actual_pic_id)
-            {
+            if (req.body.actual_pic_id) {
                 insertBody.actual_pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.actual_pic_id}') `
             }
 
@@ -201,8 +178,7 @@ module.exports = {
                     return await queryPostTransaction(db, table.tb_r_4s_findings, attrsInsert)
                 }
 
-                if (req.body.is_input)
-                {
+                if (req.body.is_input) {
                     return await insertion();
                 }
 
@@ -213,8 +189,7 @@ module.exports = {
                                                           sub_schedule_id = ${rawSubScheduleId}
                                                       and schedule_item_check_kanban_id = ${rawScheduleItemCheckKanbanId}
                                                       and deleted_dt is null`);
-                if (exists.rowCount > 0)
-                {
+                if (exists.rowCount > 0) {
                     delete insertBody.uuid;
                     const attrsUserUpdate = await attrsUserUpdateData(req, insertBody);
 
@@ -224,8 +199,7 @@ module.exports = {
                         attrsUserUpdate,
                         `WHERE finding_id = ${exists.rows[0].finding_id}`
                     );
-                } else
-                {
+                } else {
                     return await insertion();
                 }
             });
@@ -233,23 +207,19 @@ module.exports = {
             response.success(res, "Success to add 4s finding", {
                 finding_id: transaction.rows[0].uuid
             });
-        } catch (error)
-        {
+        } catch (error) {
             console.log(error)
             response.failed(res, error)
         }
     },
     edit4sFinding: async (req, res) => {
-        try
-        {
-            if (!req.params.id || req.params.id == null || req.params.id == 'null')
-            {
+        try {
+            if (!req.params.id || req.params.id == null || req.params.id == 'null') {
                 throw "finding id not provided"
             }
 
             const exists = await queryCustom(`select * from ${table.tb_r_4s_findings} where uuid = '${req.params.id}'`)
-            if (!exists)
-            {
+            if (!exists) {
                 throw "Can't find finding data by finding_id provide"
             }
 
@@ -260,8 +230,7 @@ module.exports = {
                 finding_pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.finding_pic_id}') `,
             }
 
-            if (req.body.actual_pic_id)
-            {
+            if (req.body.actual_pic_id) {
                 updateBody.actual_pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.actual_pic_id}') `
             }
 
@@ -278,15 +247,13 @@ module.exports = {
             response.success(res, "Success to edit 4s finding", {
                 finding_id: req.params.id
             })
-        } catch (error)
-        {
+        } catch (error) {
             console.log(error)
             response.failed(res, error)
         }
     },
     upload4sImageFinding: async (req, res) => {
-        try
-        {
+        try {
             const finding_img = `./${req.file.path}`
             const attrsUserUpdate = await attrsUserUpdateData(req, {
                 finding_img: finding_img
@@ -294,14 +261,12 @@ module.exports = {
 
             await queryPUT(table.tb_r_4s_findings, attrsUserUpdate, `WHERE uuid = '${req.body.finding_id}'`);
             response.success(res, 'Success to upload 4s image finding', req.body.finding_img);
-        } catch (error)
-        {
+        } catch (error) {
             response.failed(res, 'Error to upload 4s image finding ' + error?.message ?? '')
         }
     },
     delete4sFinding: async (req, res) => {
-        try
-        {
+        try {
             let obj = {
                 deleted_dt: moment().format().split("+")[0].split("T").join(" "),
                 deleted_by: req.user.fullname,
@@ -314,18 +279,15 @@ module.exports = {
                 `WHERE uuid = '${req.params.id}'`
             )
             response.success(res, "Success to soft delete freq", result)
-        } catch (error)
-        {
+        } catch (error) {
             console.log(error)
             response.failed(res, error)
         }
     },
     uploadKaizenFile: async (req, res) => {
-        try
-        {
+        try {
 
-            try
-            {
+            try {
                 const kaizen_file = `./${req.file.path}`
                 const attrsUserUpdate = await attrsUserUpdateData(req, {
                     kaizen_file: kaizen_file
@@ -349,16 +311,14 @@ module.exports = {
                                                     tr4sf.uuid = '${req.body.finding_id}'`;
 
                 let queryFindFinding = (await queryCustom(sqlFindFinding)).rows;
-                if (!queryFindFinding.length)
-                {
+                if (!queryFindFinding.length) {
                     response.failed(res, 'Error to upload 4s kaizen finding, finding not found');
                     return;
                 }
 
                 queryFindFinding = queryFindFinding[0];
 
-                if (!queryFindFinding.item_check_kanban_id && req.body.item_check_kanban_id)
-                {
+                if (!queryFindFinding.item_check_kanban_id && req.body.item_check_kanban_id) {
                     queryFindFinding.item_check_kanban_id = `(select item_check_kanban_id from ${table.tb_m_4s_item_check_kanbans} where uuid = '${req.body.item_check_kanban_id}')`;
                 }
 
@@ -370,8 +330,7 @@ module.exports = {
                         `WHERE uuid = '${req.body.finding_id}'`
                     );
 
-                    if (queryFindFinding.item_check_kanban_id)
-                    {
+                    if (queryFindFinding.item_check_kanban_id) {
                         await queryPostTransaction(
                             db,
                             table.tb_r_history_4s_item_check_kanbans,
@@ -385,8 +344,7 @@ module.exports = {
                         );
                     }
 
-                    if (queryFindFinding.kaizen_file)
-                    {
+                    if (queryFindFinding.kaizen_file) {
                         /*const sqlFindAvailHistory = `select
                                                                 * 
                                                             from 
@@ -423,12 +381,10 @@ module.exports = {
                 });
 
                 response.success(res, 'Success to upload 4s kaizen finding', req.body.kaizen_file);
-            } catch (error)
-            {
+            } catch (error) {
                 response.failed(res, 'Error to upload 4s kaizen finding ' + error?.message ?? '');
             }
-        } catch (error)
-        {
+        } catch (error) {
             console.log(error);
             response.failed(res, error);
         }
