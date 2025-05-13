@@ -44,6 +44,7 @@ module.exports = {
                     tmj.uuid,
                     tmj.job_no,
                     tmj.job_nm,
+                    tmj.cycle_time,
                     tmjt.job_type_nm,
                     tmjt.uuid as job_type_id,
                     tmp.uuid as pos_id,
@@ -186,6 +187,7 @@ module.exports = {
                 attrsUserUpdate,
                 `WHERE uuid = '${req.params.id}'`
             );
+            console.log(attrsUserUpdate, 'attrsUserUpdate');
             response.success(res, "Success to edit job", result);
         } catch (error) {
             console.log(error);
