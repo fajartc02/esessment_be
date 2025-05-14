@@ -104,6 +104,7 @@ module.exports = {
                     tro.actual_check_dt,
                     tro.created_dt,
                     tro.created_by,
+                    tro.is_new_form,
                     tmp.uuid as pos_id,
                     tmp.pos_nm,
                     tml.uuid as line_id,

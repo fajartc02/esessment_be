@@ -123,9 +123,9 @@ module.exports = {
                 req.body.observation_id
             );
             req.body.uuid = req.uuid();
-            const lastIdResCheck =
-                (await getLastIdData(table.tb_r_obs_results, "obs_result_id")) + 1;
-            req.body.obs_result_id = lastIdResCheck;
+            // const lastIdResCheck =
+            //     (await getLastIdData(table.tb_r_obs_results, "obs_result_id")) + 1;
+            req.body.obs_result_id = obs_result_id;
             req.body.category_id = await uuidToId(
                 table.tb_m_categories,
                 "category_id",
@@ -153,7 +153,7 @@ module.exports = {
                 }
             }
             const updateUserDataChanged = await attrsUserUpdateData(req, req.body);
-
+            console.log(updateUserDataChanged, 'updateUserDataChanged');
             await queryPUT(table.tb_r_obs_results, updateUserDataChanged, `WHERE obs_result_id = '${obs_result_id}'`);
             response.success(res, "success to add check observation");
         } catch (error) {
