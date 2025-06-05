@@ -1,15 +1,15 @@
 const moment = require("moment")
-const {uuid} = require("uuidv4")
+const { uuid } = require("uuidv4")
 const fs = require('fs')
 const table = require("../../config/table")
-const {queryGET, queryPUT, queryPostTransaction, queryPutTransaction, queryCustom} = require("../../helpers/query")
+const { queryGET, queryPUT, queryPostTransaction, queryPutTransaction, queryCustom } = require("../../helpers/query")
 const response = require("../../helpers/response")
 const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData")
 const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData")
 const multipleUUidToIds = require("../../helpers/multipleUuidToId")
-const {queryTransaction} = require('../../helpers/query')
+const { queryTransaction } = require('../../helpers/query')
 const removeFileIfExist = require('../../helpers/removeFileIfExist')
-const {mapSchemaPlanKanban4S, genSingleSignCheckerSqlFromSchema} = require('../../services/4s.services')
+const { mapSchemaPlanKanban4S, genSingleSignCheckerSqlFromSchema } = require('../../services/4s.services')
 
 const uploadDest = (dest = '', fileName = null) => {
     const r = `./uploads/${dest}`
@@ -23,7 +23,7 @@ const uploadDest = (dest = '', fileName = null) => {
 module.exports = {
     getKanbans: async (req, res) => {
         try {
-            let {id, line_id, freq_id, zone_id, limit, current_page} = req.query
+            let { id, line_id, freq_id, zone_id, limit, current_page } = req.query
             const fromCondition = `  
                 ${table.tb_m_kanbans} tmk 
                 join ${table.tb_m_zones} tmz on tmk.zone_id = tmz.zone_id 
@@ -153,6 +153,7 @@ module.exports = {
                         uuid: uuid(),
                         freq_id: ` (select freq_id from ${table.tb_m_freqs} where uuid = '${req.body.freq_id}') `,
                         zone_id: ` (select zone_id from ${table.tb_m_zones} where uuid = '${req.body.zone_id}') `,
+                        group_id: ` (select group_id from ${table.tb_m_groups} where uuid = '${req.body.group_id}') `,
                     }
 
                     if (kanban_imgs.length > 0) {
@@ -176,7 +177,6 @@ module.exports = {
                          findLineQuery.line_id,
                      )
                      const newSignCheckerSchema = await genSingleSignCheckerSqlFromSchema() */
-
                     return await queryPostTransaction(db, table.tb_m_kanbans, attrsInsert)
                 })
 
@@ -184,7 +184,7 @@ module.exports = {
             } catch (error) {
                 if (kanban_imgs.length > 0) {
                     if (fs.existsSync(uploadPath)) {
-                        fs.rmdirSync(uploadPath, {recursive: true})
+                        fs.rmdirSync(uploadPath, { recursive: true })
                     }
                 }
 
@@ -217,7 +217,7 @@ module.exports = {
 
             try {
                 const transaction = await queryTransaction(async (dbPool) => {
-                    const {kanban_id, zone_id, freq_id} = await multipleUUidToIds([
+                    const { kanban_id, zone_id, freq_id, group_id } = await multipleUUidToIds([
                         {
                             table: table.tb_m_kanbans,
                             col: 'kanban_id',
@@ -233,12 +233,18 @@ module.exports = {
                             col: 'freq_id',
                             uuid: req.body.freq_id
                         },
+                        {
+                            table: table.tb_m_groups,
+                            col: 'group_id',
+                            uuid: req.body.group_id
+                        }
                     ])
 
                     const updateBody = {
                         ...req.body,
                         zone_id: zone_id,
-                        freq_id: freq_id
+                        freq_id: freq_id,
+                        group_id
                     }
 
                     if (newKanbanImgs.length > 0) {
@@ -255,7 +261,7 @@ module.exports = {
                         } else {
                             // delete older path includes file
                             if (fs.existsSync(oldPath)) {
-                                fs.rmdirSync(oldPath, {recursive: true})
+                                fs.rmdirSync(oldPath, { recursive: true })
                             }
                         }
                     }
@@ -282,7 +288,7 @@ module.exports = {
                         console.log('new path exists', newPath)
                         if (fs.existsSync(newPath)) {
                             console.log('new path exists')
-                            fs.rmdirSync(newPath, {recursive: true})
+                            fs.rmdirSync(newPath, { recursive: true })
                         }
                     }
                 }
@@ -315,8 +321,7 @@ module.exports = {
         }
     },
     uploadSopFile: async (req, res) => {
-        try
-        {
+        try {
             const sop_file = `./${req.file.path}`
             const attrsUserUpdate = await attrsUserUpdateData(req, {
                 sop_file: sop_file
@@ -325,8 +330,7 @@ module.exports = {
             await queryPUT(table.tb_m_kanbans, attrsUserUpdate, `WHERE uuid = '${req.body.kanban_id}'`);
             response.success(res, 'Success to upload sop file', {});
         }
-        catch (error)
-        {
+        catch (error) {
             response.failed(res, 'Error to upload sop file ' + error?.message ?? '')
         }
     }
