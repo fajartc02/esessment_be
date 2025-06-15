@@ -121,7 +121,7 @@ module.exports = {
     },
     post4sFinding: async (req, res) => {
         try {
-
+            // add column identify for is_need_improvement flag & is_change_sop flag
             const rawSubScheduleId = ` (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}') `;
             const rawScheduleItemCheckKanbanId = ` (select schedule_item_check_kanban_id from ${table.tb_r_4s_schedule_item_check_kanbans} where uuid = '${req.body.schedule_item_check_kanban_id}') `;
             const rawFindingPicId = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.finding_pic_id}') `;
@@ -167,6 +167,7 @@ module.exports = {
             if (insertBody.deleted_by) {
                 delete insertBody.deleted_by
             }
+            console.log(insertBody, ' :insertBody');
 
             if (req.body.actual_pic_id) {
                 insertBody.actual_pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.actual_pic_id}') `
@@ -217,6 +218,7 @@ module.exports = {
             if (!req.params.id || req.params.id == null || req.params.id == 'null') {
                 throw "finding id not provided"
             }
+            console.log(req.body, ' :req.body');
 
             const exists = await queryCustom(`select * from ${table.tb_r_4s_findings} where uuid = '${req.params.id}'`)
             if (!exists) {
@@ -228,6 +230,11 @@ module.exports = {
                 sub_schedule_id: ` (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}') `,
                 schedule_item_check_kanban_id: ` (select schedule_item_check_kanban_id from ${table.tb_r_4s_schedule_item_check_kanbans} where uuid = '${req.body.schedule_item_check_kanban_id}') `,
                 finding_pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.finding_pic_id}') `,
+            }
+
+            if (!req.body.sub_schedule_id || !req.body.schedule_item_check_kanban_id) {
+                delete updateBody.sub_schedule_id
+                delete updateBody.schedule_item_check_kanban_id
             }
 
             if (req.body.actual_pic_id) {

@@ -2,7 +2,7 @@ const moment = require("moment")
 const { uuid } = require("uuidv4")
 const fs = require('fs')
 const table = require("../../config/table")
-const { queryGET, queryPUT, queryPostTransaction, queryPutTransaction, queryCustom } = require("../../helpers/query")
+const { queryGET, queryPUT, queryPostTransaction, queryPutTransaction, queryCustom, queryPOST } = require("../../helpers/query")
 const response = require("../../helpers/response")
 const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData")
 const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData")
@@ -63,6 +63,9 @@ module.exports = {
                             when tmk.sop_file is not null and tmk.sop_file != '' then 
                                 '${process.env.APP_HOST}' || '/file?path=' || tmk.sop_file
                         end as sop_file,
+                        (
+                            select count(*) from ${table.tb_m_kanban_revision} where kanban_id = tmk.kanban_id
+                        ) as total_revision,
                         tmz.created_by,
                         tmz.created_dt
                     from
@@ -322,10 +325,24 @@ module.exports = {
     },
     uploadSopFile: async (req, res) => {
         try {
+            // handling check if sop file already exists
+            // 1. insert into tb_m_kanbans_revision (kanban_rev_id, kanban_id, sop_file, created_by, created_dt)
+            // 2. update tb_m_kanbans set sop_file = sop_file, sop_file_before = sop_file_before
             const sop_file = `./${req.file.path}`
             const attrsUserUpdate = await attrsUserUpdateData(req, {
-                sop_file: sop_file
+                sop_file: sop_file,
             })
+            const attrsUserInsert = await attrsUserInsertData(req, {
+                // kanban_rev_id: "SELECT nextval('tb_m_kanban_revision_kanban_rev_id_seq')",
+                kanban_id: `(select kanban_id from ${table.tb_m_kanbans} where uuid = '${req.body.kanban_id}')`,
+                sop_file: sop_file,
+                sop_file_before: `(select sop_file from ${table.tb_m_kanbans} where uuid = '${req.body.kanban_id}')`,
+                finding_4s_id: `(select finding_id from ${table.tb_r_4s_findings} where uuid = '${req.body.finding_4s_id}')`,
+            })
+            if (!req.body.finding_4s_id) delete attrsUserInsert.finding_4s_id
+            delete attrsUserInsert.changed_by
+            delete attrsUserInsert.changed_dt
+            await queryPOST(table.tb_m_kanban_revision, attrsUserInsert)
 
             await queryPUT(table.tb_m_kanbans, attrsUserUpdate, `WHERE uuid = '${req.body.kanban_id}'`);
             response.success(res, 'Success to upload sop file', {});

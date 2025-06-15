@@ -35,6 +35,7 @@ const table = {
     //#region 4s
     //#region master 4s
     tb_m_kanbans: 'tb_m_kanbans',
+    tb_m_kanban_revision: 'tb_m_kanban_revision',
     tb_m_freqs: 'tb_m_freqs',
     tb_m_zones: 'tb_m_zones',
     tb_m_schedules: 'tb_m_schedules',

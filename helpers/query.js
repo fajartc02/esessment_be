@@ -331,7 +331,7 @@ module.exports = {
       for (const key in data) {
         if (data[key] == "CURRENT_TIMESTAMP") {
           containerSetValues.push(`${key} = CURRENT_TIMESTAMP`);
-        } else if (data[key] && data[key] != "null") {
+        } else if ((data[key] && data[key] != "null") || data[key] == false) {
           let value = data[key];
           if (typeof value === "string" && value.includes("select")) {
             value = `${data[key]}`;
