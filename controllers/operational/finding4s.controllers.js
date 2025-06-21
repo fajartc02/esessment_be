@@ -102,10 +102,11 @@ module.exports = {
                         total_page: +countRows.count > 0 ? Math.ceil(countRows.count / +limit) : 0,
                         total_data: countRows.count,
                         limit: limit,
-                        list: findingQuery.rows.map((item) => {
-                            item.kaizen_file = item.kaizen_file ? process.env.APP_HOST + "/file?path=" + item.kaizen_file : null;
-                            return item;
-                        }),
+                        list: findingQuery.rows
+                        // .map((item) => {
+                        //     item.kaizen_file = item.kaizen_file ? process.env.APP_HOST + "/file?path=" + item.kaizen_file : null;
+                        //     return item;
+                        // }),
                     };
                 } else {
                     result = result[0];

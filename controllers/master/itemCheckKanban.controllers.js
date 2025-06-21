@@ -16,7 +16,7 @@ const multipleUUidToIds = require("../../helpers/multipleUuidToId")
 
 const fs = require('fs')
 const moment = require("moment")
-const {uuid} = require("uuidv4")
+const { uuid } = require("uuidv4")
 
 const historyItemCheckServices = require("../../services/historyItemCheckKanban4s.services");
 
@@ -37,44 +37,80 @@ module.exports = {
      */
     getItemCheckKanbans: async (req, res) => {
         try {
-            let {id, kanban_id, limit, current_page} = req.query
+            let { id, kanban_id, limit, current_page } = req.query
             const fromCondition = ` 
                         ${table.tb_m_4s_item_check_kanbans} tmic
                         join ${table.tb_m_kanbans} tmk on tmic.kanban_id = tmk.kanban_id 
                         ${historyItemCheckServices.leftJoinLateralLast('tmic')}
-                        ${historyItemCheckServices.leftJoinLateralLast('tmic', {isCount: true, optionalAlias: 'trh4sick_count'})}
+                        ${historyItemCheckServices.leftJoinLateralLast('tmic', { isCount: true, optionalAlias: 'trh4sick_count' })}
                 `
-
             current_page = parseInt(current_page ?? 1)
             limit = parseInt(limit ?? 10)
 
             let filterCondition = [
                 ' and tmic.deleted_dt is null '
             ]
+            console.log('HERE');
 
+
+            // let itemCheckQuery = `
+            //        select
+            //             row_number () over (
+            //                 order by
+            //                 tmic.created_dt
+            //             )::integer as no,
+            //             tmic.uuid as item_check_kanban_id,
+            //             tmk.uuid as kanban_id,
+            //             tmk.kanban_no,
+            //             tmic.item_check_nm,
+            //             tmic.standart_time,
+            //             tmic.method,
+            //             tmic.control_point,
+            //             tmic.ilustration_imgs,
+            //             tmic.created_by,
+            //             tmic.created_dt,
+            //             trh4sick.standart_time as before_standart_time,
+            //             trh4sick_count.total_history
+            //         from
+            //             ${fromCondition}
+            //         where
+            //             1 = 1
+            //     `
             let itemCheckQuery = `
-                   select
-                        row_number () over (
-                            order by
-                            tmic.created_dt
-                        )::integer as no,
-                        tmic.uuid as item_check_kanban_id,
-                        tmk.uuid as kanban_id,
-                        tmk.kanban_no,
-                        tmic.item_check_nm,
-                        tmic.standart_time,
-                        tmic.method,
-                        tmic.control_point,
-                        tmic.ilustration_imgs,
-                        tmic.created_by,
-                        tmic.created_dt,
-                        trh4sick.standart_time as before_standart_time,
-                        trh4sick_count.total_history
-                    from
-                        ${fromCondition}
-                    where
-                        1 = 1
-                `
+            WITH latest_history AS (
+                SELECT DISTINCT ON (item_check_kanban_id)
+                    item_check_kanban_id,
+                    standart_time
+                FROM tb_r_history_4s_item_check_kanbans
+                ORDER BY item_check_kanban_id, created_dt DESC
+            ),
+            history_counts AS (
+                SELECT
+                    item_check_kanban_id,
+                    COUNT(*)::real AS total_history
+                FROM tb_r_history_4s_item_check_kanbans
+                GROUP BY item_check_kanban_id
+            )
+            SELECT
+                row_number() OVER (ORDER BY tmic.created_dt)::integer AS no,
+                tmic.uuid AS item_check_kanban_id,
+                tmk.uuid AS kanban_id,
+                tmk.kanban_no,
+                tmic.item_check_nm,
+                tmic.standart_time,
+                tmic.method,
+                tmic.control_point,
+                tmic.ilustration_imgs,
+                tmic.created_by,
+                tmic.created_dt,
+                lh.standart_time AS before_standart_time,
+                hc.total_history
+            FROM tb_m_4s_item_check_kanbans tmic
+            JOIN tb_m_kanbans tmk ON tmic.kanban_id = tmk.kanban_id
+            LEFT JOIN latest_history lh ON lh.item_check_kanban_id = tmic.item_check_kanban_id
+            LEFT JOIN history_counts hc ON hc.item_check_kanban_id = tmic.item_check_kanban_id
+            WHERE 1 = 1
+            `
             //#region filter
             if (id) {
                 filterCondition.push(` tmic.uuid = '${id}' `)
@@ -110,7 +146,29 @@ module.exports = {
                 })
 
                 if (nullId) {
-                    const count = await queryCustom(`select count(tmic.item_check_kanban_id)::integer as count from ${fromCondition} where 1 = 1 ${filterCondition}`)
+                    // const count = await queryCustom(`select count(tmic.item_check_kanban_id)::integer as count from ${fromCondition} where 1 = 1 ${filterCondition}`)
+                    const count = await queryCustom(`
+                        WITH latest_history AS (
+                            SELECT DISTINCT ON (item_check_kanban_id)
+                                item_check_kanban_id,
+                                created_dt
+                            FROM tb_r_history_4s_item_check_kanbans
+                            ORDER BY item_check_kanban_id, created_dt DESC
+                        ),
+                        history_counts AS (
+                            SELECT
+                                item_check_kanban_id,
+                                COUNT(*)::real AS total_history
+                            FROM tb_r_history_4s_item_check_kanbans
+                            GROUP BY item_check_kanban_id
+                        )
+                        SELECT COUNT(tmic.item_check_kanban_id)::integer AS count
+                        FROM tb_m_4s_item_check_kanbans tmic
+                        JOIN tb_m_kanbans tmk ON tmic.kanban_id = tmk.kanban_id
+                        LEFT JOIN latest_history trh4sick ON trh4sick.item_check_kanban_id = tmic.item_check_kanban_id
+                        LEFT JOIN history_counts trh4sick_count ON trh4sick_count.item_check_kanban_id = tmic.item_check_kanban_id
+                        WHERE 1 = 1 ${filterCondition};
+                    `)
                     const countRows = count.rows[0]
                     result = {
                         current_page: current_page,
@@ -178,7 +236,7 @@ module.exports = {
                     //determine not deleting existing path when exists
                     if (existing.length == 0) {
                         if (fs.existsSync(uploadPath)) {
-                            fs.rmdirSync(uploadPath, {recursive: true})
+                            fs.rmdirSync(uploadPath, { recursive: true })
                         }
                     }
 
@@ -229,9 +287,9 @@ module.exports = {
              * @type {Array<String>}
              */
             let previousImgPath = req.body.previous_img_paths
-            && req.body.previous_img_paths != null
-            && req.body.previous_img_paths != 'null'
-            && req.body.previous_img_paths != ''
+                && req.body.previous_img_paths != null
+                && req.body.previous_img_paths != 'null'
+                && req.body.previous_img_paths != ''
                 ? JSON.parse(req.body.previous_img_paths) ?? []
                 : []
 
@@ -318,7 +376,7 @@ module.exports = {
                         })
                     } else {
                         if (fs.existsSync(uploadDest(`${newDest}/`))) {
-                            fs.rmdirSync(uploadDest(`${newDest}/`), {recursive: true})
+                            fs.rmdirSync(uploadDest(`${newDest}/`), { recursive: true })
                         }
                     }
                 }
