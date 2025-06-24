@@ -5,7 +5,8 @@ const {
     edit4sFinding,
     delete4sFinding,
     upload4sImageFinding,
-    uploadKaizenFile
+    uploadKaizenFile,
+    uploadCmImage
 } = require("../../../controllers/operational/finding4s.controllers")
 
 const auth = require("../../../helpers/auth")
@@ -20,6 +21,7 @@ router.put("/edit/:id", auth.verifyToken, edit4sFinding)
 router.delete("/delete/:id", auth.verifyToken, delete4sFinding)
 
 router.post('/upload-kaizen', auth.verifyToken, upload.single('kaizen_file'), uploadKaizenFile);
+router.post('/upload-cm-image', auth.verifyToken, upload.single('cm_image'), uploadCmImage);
 
 
 
