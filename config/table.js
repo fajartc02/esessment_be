@@ -10,6 +10,7 @@ const table = {
     tb_m_tsk: 'tb_m_tsk',
     tb_m_tskk: 'tb_m_tskk',
     tb_m_jobs: 'tb_m_jobs',
+    tb_m_job_revision: 'tb_m_job_revision',
     tb_m_job_types: 'tb_m_job_types',
     tb_m_factors: 'tb_m_factors',
     tb_m_categories: 'tb_m_categories',

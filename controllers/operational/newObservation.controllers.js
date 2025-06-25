@@ -242,6 +242,8 @@ module.exports = {
                     finding_obs_id,
                     finding_id: `(select (finding_id + 1) from ${table.tb_r_findings} order by finding_id desc limit 1)`,
                     uuid: req.uuid(),
+                    is_need_improvement: req.body.is_need_improvement,
+                    is_change_sop: req.body.is_change_sop,
                 };
                 const attrsUserInsert = await attrsUserInsertData(req, findingData);
 
