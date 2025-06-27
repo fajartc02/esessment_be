@@ -32,7 +32,7 @@ module.exports = {
       const query = req.query;
       // month, year, role_sign_sys, line_id
       const data = await queryGET(table.tb_r_stw_sign, `WHERE EXTRACT(MONTH FROM date_sign) = ${query.month} AND EXTRACT(YEAR FROM date_sign) = ${query.year} AND role_sign_sys = '${query.role_sign_sys}' AND line_id = ${await uuidToId(table.tb_m_lines, 'line_id', query.line_id)}`);
-      console.log(data)
+      // console.log(data)
       response.success(res, 'Success to get sign', data);
     } catch (error) {
       console.log(error);

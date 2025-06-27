@@ -233,12 +233,14 @@ module.exports = {
                 ORDER BY tml.line_nm,tmp.pos_nm ASC
             `);
       let mapObs = await observations.rows.map(async (obser) => {
-        console.log('obserDAta', obser);
-        let obserId = await uuidToId(
-          table.tb_r_observations,
-          "observation_id",
-          obser.observation_id
-        );
+        // console.log('obserDAta', obser);
+        // OPTIMIZE NEED
+        // let obserId = await uuidToId(
+        //   table.tb_r_observations,
+        //   "observation_id",
+        //   obser.observation_id
+        // );
+        let obserId = `(select observation_id from tb_r_observations where uuid = '${obser.observation_id}')`
         let checkersData = await queryGET(
           table.tb_r_obs_checker,
           `WHERE observation_id = ${obserId}`,
@@ -292,7 +294,7 @@ module.exports = {
       response.success(res, "Success to get schedule observation", resAwait);
     } catch (error) {
       console.log(error);
-      response.failed(res, "Error to get schedule observation");
+      response.failed(res, error);
     }
   },
   getTodaySchedule: async (req, res) => {
