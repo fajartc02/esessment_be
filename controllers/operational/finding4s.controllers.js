@@ -168,7 +168,7 @@ module.exports = {
             if (insertBody.deleted_by) {
                 delete insertBody.deleted_by
             }
-            console.log(insertBody, ' :insertBody');
+            // console.log(insertBody, ' :insertBody');
 
             if (req.body.actual_pic_id) {
                 insertBody.actual_pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.actual_pic_id}') `
@@ -177,6 +177,7 @@ module.exports = {
             const transaction = await queryTransaction(async (db) => {
                 const insertion = async () => {
                     const attrsInsert = await attrsUserInsertData(req, insertBody)
+                    // console.log(insertBody, ' :insertBody');
                     return await queryPostTransaction(db, table.tb_r_4s_findings, attrsInsert)
                 }
 

@@ -177,7 +177,7 @@ module.exports = {
     try {
       const { month, year, line, group_id } = req.query;
       let whereCond = ``;
-      console.log(req.query);
+      // console.log(req.query);
       if (month && year)
         whereCond = `AND (EXTRACT(month from  tro.plan_check_dt), EXTRACT('year' from tro.plan_check_dt))=(${+month},${+year})`;
       if (line != "0" && line && line != -1 && line != null)
@@ -246,6 +246,7 @@ module.exports = {
           `WHERE observation_id = ${obserId}`,
           ["uuid as obs_checker_id", "checker_nm"]
         );
+        // console.log(checkersData, 'CheckersData');
         let qCheckFinding = `
                     SELECT * FROM ${table.v_finding_list} WHERE observation_id = '${obser.observation_id}'
                 `;
@@ -281,7 +282,7 @@ module.exports = {
         for (let idxChecker = 0; idxChecker < item.checkers.length; idxChecker++) {
           const checkerChild = item.checkers[idxChecker];
           let isCheckerAvail = posAvail.checkers.find(checkerParent => checkerParent === checkerChild);
-          console.log(posAvail)
+          // console.log(posAvail)
           if (!isCheckerAvail) {
             posAvail.checkers.unshift(checkerChild);
             continue;
