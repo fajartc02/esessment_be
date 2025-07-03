@@ -177,7 +177,7 @@ module.exports = {
     try {
       const { month, year, line, group_id } = req.query;
       let whereCond = ``;
-      console.log(req.query);
+      // console.log(req.query);
       if (month && year)
         whereCond = `AND (EXTRACT(month from  tro.plan_check_dt), EXTRACT('year' from tro.plan_check_dt))=(${+month},${+year})`;
       if (line != "0" && line && line != -1 && line != null)
@@ -233,17 +233,20 @@ module.exports = {
                 ORDER BY tml.line_nm,tmp.pos_nm ASC
             `);
       let mapObs = await observations.rows.map(async (obser) => {
-        console.log('obserDAta', obser);
-        let obserId = await uuidToId(
-          table.tb_r_observations,
-          "observation_id",
-          obser.observation_id
-        );
+        // console.log('obserDAta', obser);
+        // OPTIMIZE NEED
+        // let obserId = await uuidToId(
+        //   table.tb_r_observations,
+        //   "observation_id",
+        //   obser.observation_id
+        // );
+        let obserId = `(select observation_id from tb_r_observations where uuid = '${obser.observation_id}')`
         let checkersData = await queryGET(
           table.tb_r_obs_checker,
           `WHERE observation_id = ${obserId}`,
           ["uuid as obs_checker_id", "checker_nm"]
         );
+        // console.log(checkersData, 'CheckersData');
         let qCheckFinding = `
                     SELECT * FROM ${table.v_finding_list} WHERE observation_id = '${obser.observation_id}'
                 `;
@@ -279,7 +282,7 @@ module.exports = {
         for (let idxChecker = 0; idxChecker < item.checkers.length; idxChecker++) {
           const checkerChild = item.checkers[idxChecker];
           let isCheckerAvail = posAvail.checkers.find(checkerParent => checkerParent === checkerChild);
-          console.log(posAvail)
+          // console.log(posAvail)
           if (!isCheckerAvail) {
             posAvail.checkers.unshift(checkerChild);
             continue;
@@ -292,7 +295,7 @@ module.exports = {
       response.success(res, "Success to get schedule observation", resAwait);
     } catch (error) {
       console.log(error);
-      response.failed(res, "Error to get schedule observation");
+      response.failed(res, error);
     }
   },
   getTodaySchedule: async (req, res) => {

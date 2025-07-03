@@ -6,6 +6,8 @@ const {
   signFinding,
   editFindingCm,
   deleteFinding,
+  uploadImageCmFinding,
+  uploadKzFinding,
 } = require("../../../controllers/operational/findingCm.controllers");
 
 const auth = require("../../../helpers/auth");
@@ -27,5 +29,26 @@ router.post(
 );
 router.put("/edit/:id", auth.verifyToken, editFindingCm);
 router.delete("/delete/:id", auth.verifyToken, deleteFinding);
+
+router.post(
+  "/upload-image",
+  auth.verifyToken,
+  upload.single("attachment"),
+  uploadImageFinding
+);
+
+router.post(
+  "/upload-cm-image",
+  auth.verifyToken,
+  upload.single("cm_image"),
+  uploadImageCmFinding
+);
+
+router.post(
+  "/upload-kaizen",
+  auth.verifyToken,
+  upload.single("kaizen_file"),
+  uploadKzFinding
+);
 
 module.exports = router;

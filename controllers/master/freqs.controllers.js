@@ -23,8 +23,7 @@ const existsFreq = async (req) => {
         ]
     )
 
-    if (exists.length > 0)
-    {
+    if (exists.length > 0) {
         throw `Freq Name ${req.body.freq_nm} or Precition Range ${req.body.precition_val} already exists, try different value`
     }
 
@@ -33,15 +32,14 @@ const existsFreq = async (req) => {
 
 module.exports = {
     getFreqs: async (req, res) => {
-        try
-        {
+        try {
             const freqs = await queryGET(
                 table.tb_m_freqs,
-                `where deleted_dt is null order by precition_val`,
+                `where deleted_dt is null order by no`,
                 [
                     `row_number () over (
                             order by
-                            created_dt
+                            freq_id
                         )::integer as no`,
                     'uuid as id',
                     'freq_nm',
@@ -52,17 +50,15 @@ module.exports = {
             )
 
             response.success(res, 'Success to get freq', freqs)
-        } catch (error)
-        {
+        } catch (error) {
             console.log(error);
             response.failed(res, 'Error to get freq')
         }
     },
     postFreq: async (req, res) => {
-        try
-        {
+        try {
             await existsFreq(req)
-            
+
             const insertBody = {
                 ...req.body,
                 uuid: uuid(),
@@ -71,17 +67,15 @@ module.exports = {
             const attrsInsert = await attrsUserInsertData(req, insertBody)
             const result = await queryPOST(table.tb_m_freqs, attrsInsert)
             response.success(res, "Success to add freq", result)
-        } catch (error)
-        {
+        } catch (error) {
             console.log(error)
             response.failed(res, error)
         }
     },
     editFreq: async (req, res) => {
-        try
-        {
+        try {
             await existsFreq(req)
-            
+
             const updateBody = {
                 ...req.body,
             }
@@ -94,15 +88,13 @@ module.exports = {
             )
 
             response.success(res, "Success to edit freq", result)
-        } catch (error)
-        {
+        } catch (error) {
             console.log(error)
             response.failed(res, error)
         }
     },
     deleteFreq: async (req, res) => {
-        try
-        {
+        try {
             let obj = {
                 deleted_dt: moment().format().split("+")[0].split("T").join(" "),
                 deleted_by: req.user.fullname,
@@ -115,8 +107,7 @@ module.exports = {
                 `WHERE uuid = '${req.params.id}'`
             )
             response.success(res, "Success to soft delete freq", result)
-        } catch (error)
-        {
+        } catch (error) {
             console.log(error)
             response.failed(res, error)
         }

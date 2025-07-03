@@ -28,6 +28,7 @@ module.exports = {
     try {
       const query = req.query;
       // month, year, role_sign_sys, line_id
+
       const data = await queryGET(
         table.tb_r_stw_sign,
         `WHERE EXTRACT(MONTH FROM date_sign) = ${
@@ -42,7 +43,6 @@ module.exports = {
           query.line_id
         )}`
       );
-      console.log(data);
       response.success(res, "Success to get sign", data);
     } catch (error) {
       console.log(error);

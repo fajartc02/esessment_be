@@ -6,6 +6,9 @@ const {
     queryGET,
     queryPUT,
     queryDELETE,
+    queryTransaction,
+    queryPutTransaction,
+    queryPostTransaction,
 } = require("../../helpers/query");
 const fs = require("fs");
 
@@ -212,4 +215,38 @@ module.exports = {
             response.failed(res, error);
         }
     },
+    uploadJobSop: async (req, res) => {
+        try {
+            // check file exist
+            if (req.file) {
+                req.body.attachment = `./${req.file.path}`;
+            } else {
+                response.failed(res, 'no file found');
+            }
+
+            // data converter
+            const payload = {
+                job_rev_id: `(select coalesce(max(job_rev_id), 0) + 1 from ${table.tb_m_job_revision} where job_id = '${req.body.job_id}')`,
+                job_id: req.body.job_id,
+                attachment: req.body.attachment,
+                stw_finding_id: `(select finding_id from ${table.tb_r_findings} where uuid = '${req.body.stw_finding_id}')`,
+                attachment_before: `(select attachment from ${table.tb_m_jobs} where job_id = ${req.body.job_id})`,
+            }
+            delete payload.dest;
+            const attrsUserInsert = await attrsUserInsertData(req, payload);
+            delete attrsUserInsert.changed_by
+            delete attrsUserInsert.changed_dt;
+
+            await queryTransaction(async (db) => {
+                await queryPostTransaction(db, table.tb_m_job_revision, attrsUserInsert);
+                await queryPutTransaction(db, table.tb_m_jobs, { attachment: payload.attachment }, `WHERE job_id = '${payload.job_id}'`);
+                return true
+            })
+
+            response.success(res, "Success to upload job revision");
+        } catch (error) {
+            console.log(error);
+            response.failed(res, error);
+        }
+    }
 };

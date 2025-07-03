@@ -178,7 +178,7 @@ module.exports = {
       for (const key in data) {
         if (data[key] == "CURRENT_TIMESTAMP") {
           containerSetValues.push(`${key} = CURRENT_TIMESTAMP`);
-        } else if (data[key] && data[key] != "null") {
+        } else if ((data[key] && data[key] != "null" || data[key] == false)) {
           let value = data[key];
           if (typeof value === "string" && value.includes("select")) {
             value = `${data[key]}`;
@@ -299,6 +299,7 @@ module.exports = {
         containerColumn.push(key);
 
         let value = data[key];
+        console.log(value, key);
         if (typeof value === "string" && `${value.toLowerCase()}`.includes("select")) {
           value = `${data[key]}`;
         } else {
@@ -306,7 +307,7 @@ module.exports = {
         }
 
         containerValues.push(
-          data[key] && data[key] != "null" ? `${value}` : "NULL"
+          (data[key] && data[key] != "null") || data[key] == false ? `${value}` : "NULL"
         );
       }
       let q = `INSERT INTO ${table}(${containerColumn.join(

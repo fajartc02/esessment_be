@@ -17,14 +17,14 @@ const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData");
 const condDataNotDeleted = `WHERE deleted_dt IS NULL AND `;
 
 module.exports = {
-    getFindingCm: async(req, res) => {
+    getFindingCm: async (req, res) => {
         try {
             let { start_date, end_date, line_id, limit, currentPage } = req.query;
             let qLimit = ``;
             let qOffset =
                 limit != -1 && limit && currentPage > 1 ?
-                `OFFSET ${limit * (currentPage - 1)}` :
-                ``;
+                    `OFFSET ${limit * (currentPage - 1)}` :
+                    ``;
             if (limit != -1 && limit) qLimit = `LIMIT ${limit}`;
             let conditions = queryCondExacOpAnd(req.query, "finding_date");
             let findingCmData = await queryGET(
@@ -55,17 +55,17 @@ module.exports = {
             response.failed(res, "Error to get findingCm list");
         }
     },
-    uploadPinksheet: async(req, res) => {
+    uploadPinksheet: async (req, res) => {
         try {
             if (req.file) {
                 req.body.file_pinksheet = `./${req.file.path}`;
             }
 
             let finding_id = `${await uuidToId(
-        table.tb_r_findings,
-        "finding_id",
-        req.body.finding_id
-      )}`;
+                table.tb_r_findings,
+                "finding_id",
+                req.body.finding_id
+            )}`;
             if (
                 req.body.before_path != null &&
                 req.body.before_path != "null" &&
@@ -94,7 +94,7 @@ module.exports = {
             response.failed(res, "Error to upload kaizen report");
         }
     },
-    uploadImageFinding: async(req, res) => {
+    uploadImageFinding: async (req, res) => {
         try {
             let resFile = `./${req.file.path}`;
             if (
@@ -111,7 +111,41 @@ module.exports = {
             response.failed(res, "Error to Upload finding Image");
         }
     },
-    signFinding: async(req, res) => {
+    uploadImageCmFinding: async (req, res) => {
+        try {
+            console.log(req.file);
+            console.log(req.body);
+            if (!req.file) {
+                return response.failed(res, "Image is empty");
+            }
+            const payload = {
+                cm_image: `./${req.file.path}`
+            }
+            const attrsUserUpdate = await attrsUserUpdateData(req, payload);
+            await queryPUT(table.tb_r_findings, attrsUserUpdate, `WHERE uuid = '${req.body.finding_id}'`);
+            response.success(res, "Success to upload finding image");
+        } catch (error) {
+            response.failed(res, "Error to Upload finding Image");
+        }
+    },
+    uploadKzFinding: async (req, res) => {
+        try {
+            console.log(req.file);
+            console.log(req.body);
+            if (!req.file) {
+                return response.failed(res, "Image is empty");
+            }
+            const payload = {
+                kaizen_file: `./${req.file.path}`
+            }
+            const attrsUserUpdate = await attrsUserUpdateData(req, payload);
+            await queryPUT(table.tb_r_findings, attrsUserUpdate, `WHERE uuid = '${req.body.finding_id}'`);
+            response.success(res, "Success to upload finding image");
+        } catch (error) {
+            response.failed(res, "Error to Upload finding Image");
+        }
+    },
+    signFinding: async (req, res) => {
         try {
             let finding_id = await uuidToId(
                 table.tb_r_findings,
@@ -132,7 +166,7 @@ module.exports = {
             response.failed(res, "Error to sign finding");
         }
     },
-    editFindingCm: async(req, res) => {
+    editFindingCm: async (req, res) => {
         try {
             let finding_id = await uuidToId(
                 table.tb_r_findings,
@@ -178,7 +212,7 @@ module.exports = {
             response.failed(res, "Error to edit finding");
         }
     },
-    deleteFinding: async(req, res) => {
+    deleteFinding: async (req, res) => {
         try {
             let finding_id = await uuidToId(
                 table.tb_r_findings,
