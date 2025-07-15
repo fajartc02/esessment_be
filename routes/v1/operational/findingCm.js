@@ -8,6 +8,7 @@ const {
   deleteFinding,
   uploadImageCmFinding,
   uploadKzFinding,
+  editscoreFinding,
 } = require("../../../controllers/operational/findingCm.controllers");
 
 const auth = require("../../../helpers/auth");
@@ -28,6 +29,7 @@ router.post(
   uploadPinksheet
 );
 router.put("/edit/:id", auth.verifyToken, editFindingCm);
+router.put("/score/:id", auth.verifyToken, editscoreFinding);
 router.delete("/delete/:id", auth.verifyToken, deleteFinding);
 
 router.post(
