@@ -39,7 +39,7 @@ const currentDate = moment()
 const currentMonth = currentDate.month() + 1 // need +1 to determine current month
 const currentYear = currentDate.year()
 const flagCreatedBy = `SCHEDULERS ${currentDate.format('YYYY-MM-DD')}`
-
+console.log(currentMonth)
 //#region scheduler main 
 const main = () => {
     try
@@ -440,7 +440,7 @@ const main = () => {
 
 }
 //#endregion
-
+// main()
 
 
 /* clear4sRows()
