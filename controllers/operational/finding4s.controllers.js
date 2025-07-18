@@ -91,7 +91,7 @@ module.exports = {
       findingSql = findingSql.concat(` ${filterCondition} `);
       findingSql = findingSql.concat(
         ` 
-                    order by vfl.plan_cm_date DESC,
+                    order by vfl.finding_date DESC,
                       case 
                           when cm_judg = true then 1
                           else 2
