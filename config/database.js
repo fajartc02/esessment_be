@@ -6,7 +6,7 @@ const config = {
     database: process.env.DB_NAME,
     port: process.env.DB_PORT,
     host: process.env.DB_HOST,
-    ssl: false
+    ssl: false,
 }
 
 pg.defaults.poolSize = 25;
@@ -18,7 +18,13 @@ const database = new pg.Client(config);
  * to provide a pool of re-usable open client instances (reduces latency whenever a client can be reused).
  * usecase : transaction
  */
-const databasePool = new pg.Pool(config)
+const databasePool = new pg.Pool({
+    ...config,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+    maxLifetimeSeconds: 60
+})
+
 
 const types = pg.types;
 types.setTypeParser(1114, (stringValue) => {
