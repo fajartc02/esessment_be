@@ -689,8 +689,8 @@ module.exports = {
                 console.log('count schedule', result.schedule.length);
                 /* result.sign_checker_gl = []
                 result.sign_checker_sh = [] */
-                result.sign_checker_gl = mainScheduleRealId != null ? await addHolidayTemp(signGl) : [];
-                result.sign_checker_sh = mainScheduleRealId != null ? await addHolidayTemp(signSh) : [];
+                result.sign_checker_gl = mainScheduleRealId != null ? signGl : [];
+                result.sign_checker_sh = mainScheduleRealId != null ? signSh : [];
                 result.limit = scheduleQuery?.limit ? parseInt(scheduleQuery.limit) : 0;
                 result.current_page = scheduleQuery?.current_page ? parseInt(scheduleQuery.current_page) : 0;
                 result.total_data = scheduleQuery?.total_data ? parseInt(scheduleQuery.total_data) : 0;
