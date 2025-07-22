@@ -307,7 +307,7 @@ module.exports = {
         `WHERE finding_id = '${finding4sId}'`
       );
 
-      response.success(res, "Success to EDIT Score of 4s Finding");
+      response.success(res, "Success to edit 4s finding");
     } catch (error) {
       console.log(error);
       response.failed(res, "Error to edit score of Finding");
