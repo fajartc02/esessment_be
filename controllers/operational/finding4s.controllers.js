@@ -15,6 +15,7 @@ const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData");
 
 const moment = require("moment");
 const { uuid } = require("uuidv4");
+const uuidToId = require("../../helpers/uuidToId");
 
 module.exports = {
   get4sFindingList: async (req, res) => {
@@ -294,6 +295,7 @@ module.exports = {
         "finding_id",
         req.params.id
       );
+
       const scoreUpdate = {
         score: req.body.score,
       };
@@ -305,7 +307,7 @@ module.exports = {
         `WHERE finding_id = '${finding4sId}'`
       );
 
-      response.success(res, "Success to EDIT Score of Finding");
+      response.success(res, "Success to edit 4s finding");
     } catch (error) {
       console.log(error);
       response.failed(res, "Error to edit score of Finding");
