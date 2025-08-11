@@ -21,6 +21,7 @@ const { genSingleMonthlySubScheduleSchema, genSingleSignCheckerSqlFromSchema } =
 const { bulkToSchema } = require('../../helpers/schema')
 const { databasePool } = require('../../config/database');
 const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData");
+const query = require("../../helpers/query")
 
 const fromSubScheduleSql = `
     ${table.tb_r_4s_sub_schedules} tbrcs
@@ -1327,12 +1328,19 @@ module.exports = {
     add4sSubPlanPic: async (req, res) => {
         try {
             let sub_schedule_id = req.params.id
+
+            const main_schedule_raw = await queryGET(table.tb_r_4s_sub_schedules, `WHERE uuid = '${sub_schedule_id}' `, ['main_schedule_id', 'kanban_id'])
+            console.log(main_schedule_raw);
+            if (main_schedule_raw.length === 0) return response.failed(res, "Error to add 4s sub schedule, can't find main schedule data")
+
+            const { main_schedule_id, kanban_id } = main_schedule_raw[0]
+            console.log(main_schedule_id, kanban_id);
             const result = await queryPUT(table.tb_r_4s_sub_schedules, {
                 pic_id: `(select user_id from ${table.tb_m_users} where uuid = '${req.body.pic_id}')`,
                 changed_by: req.user.fullname,
                 changed_dt: moment().format('YYYY-MM-DD HH:mm:ss')
-            }, `where uuid = '${sub_schedule_id}'`)
-            console.log(result.rows[0]);
+            }, `where main_schedule_id = '${main_schedule_id}' and kanban_id = '${kanban_id}' and actual_pic_id is null`)
+            // console.log(result.rows[0]);
 
             const { created_dt } = result.rows[0]
             await queryCustom(`
