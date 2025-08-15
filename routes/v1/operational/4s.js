@@ -9,7 +9,7 @@ const {
   edi4sSubSchedule,
   sign4sSchedule,
   delete4sSubSchedule,
-  delete4sMainSchedule
+  delete4sMainSchedule,
 } = require("../../../controllers/operational/schedule4s.controllers")
 
 const auth = require("../../../helpers/auth")
