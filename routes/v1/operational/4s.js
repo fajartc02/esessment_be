@@ -10,6 +10,7 @@ const {
   sign4sSchedule,
   delete4sSubSchedule,
   delete4sMainSchedule,
+  add4sSubPlanPic
 } = require("../../../controllers/operational/schedule4s.controllers")
 
 const auth = require("../../../helpers/auth")
@@ -30,6 +31,7 @@ router.get("/sub-schedule/:id", auth.verifyToken, getDetail4sSubSchedule)
 router.put('/sub-schedule/edit/:id', auth.verifyToken, edi4sSubSchedule)
 router.delete("/sub-schedule/delete/:id", auth.verifyToken, delete4sSubSchedule)
 router.put('/sub-schedule/sign/:sign_checker_id', auth.verifyToken, sign4sSchedule)
+router.put('/sub-schedule/add-plan-pic/:id', auth.verifyToken, add4sSubPlanPic)
 //#endregion
 
 //#region findings

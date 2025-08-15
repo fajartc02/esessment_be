@@ -366,12 +366,11 @@ const subScheduleRows = async (
     return query
 }
 
-
 module.exports = {
     get4sMainSchedule: async (req, res) => {
         try {
-            const {line_id, group_id, month_year_num} = req.query
-            let {limit, current_page} = req.query
+            const { line_id, group_id, month_year_num } = req.query
+            let { limit, current_page } = req.query
 
             current_page = parseInt(current_page ?? 1)
             limit = parseInt(limit ?? 10)
@@ -602,7 +601,7 @@ module.exports = {
     },
     get4sSubScheduleTodayPlan: async (req, res) => {
         try {
-            const {date, line_id, group_id} = req.query
+            const { date, line_id, group_id } = req.query
 
             let filterCondition = []
             let scheduleSql = `
@@ -817,8 +816,8 @@ module.exports = {
     },
     get4sCountTotalSummary: async (req, res) => {
         try {
-            const {line_id} = req.query
-            let {month, year} = req.query
+            const { line_id } = req.query
+            let { month, year } = req.query
 
             if (!month || month == null || month == -1) {
                 month = moment().format('MM')
@@ -1316,4 +1315,41 @@ module.exports = {
             response.failed(res, "Error to delete 4s sub schedule")
         }
     },
+    add4sSubPlanPic: async (req, res) => {
+        try {
+            let sub_schedule_id = req.params.id
+            const result = await queryPUT(table.tb_r_4s_sub_schedules, {
+                pic_id: `(select user_id from ${table.tb_m_users} where uuid = '${req.body.pic_id}')`,
+                changed_by: req.user.fullname,
+                changed_dt: moment().format('YYYY-MM-DD HH:mm:ss')
+            }, `where uuid = '${sub_schedule_id}'`)
+            console.log(result.rows[0]);
+
+            const { created_dt } = result.rows[0]
+            await queryCustom(`
+                UPDATE tb_r_4s_sub_schedules s
+                SET pic_id = src.pic_id
+                FROM (
+                    SELECT kanban_id, 
+                        DATE_PART('month', created_dt) AS month_start,
+                        DATE_PART('year', created_dt) AS year_start,
+                        MAX(pic_id) AS pic_id
+                    FROM tb_r_4s_sub_schedules
+                    WHERE 
+                        pic_id IS NOT NULL and 
+                        DATE_PART('month', created_dt) = ${moment(created_dt).format('M')} and 
+                        DATE_PART('year', created_dt) = ${moment(created_dt).format('YYYY')}
+                    GROUP BY kanban_id, DATE_PART('month', created_dt), DATE_PART('year', created_dt)
+                ) src
+                WHERE s.kanban_id = src.kanban_id
+                AND DATE_PART('month', s.plan_time) = src.month_start
+                AND DATE_PART('year', plan_time) = src.year_start
+                AND (s.pic_id IS NULL)
+            `)
+            response.success(res, 'Success to add plan pic 4s sub schedule', [])
+        } catch (error) {
+            console.log(error)
+            response.failed(res, "Error to add plan pic 4s sub schedule")
+        }
+    }
 }
