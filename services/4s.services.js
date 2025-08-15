@@ -217,7 +217,7 @@ const genLessThanMonth = async (
                 )
             }
         }
-        
+
         /**
          * exclude Morning Shift and Holiday
          * @type {number[]}
@@ -392,7 +392,7 @@ const genWeeklySchedulePlan = async (
                  && item.freq_id == kanbanRow.freq_id
                  && item.schedule_id == shiftRows[sIndex].schedule_id
              )
- 
+
              if (exists)
              {
                  continue
@@ -476,7 +476,7 @@ const genMonthlySchedulePlan = async (
                     .clone()
                     .add(kanbanRow.precition_val, 'd')
 
-                //MONTHLY should plan on holiday  
+                //MONTHLY should plan on holiday
                 if (
                     kanbanRow.precition_val == 30
                     && moment(planTime).day() != 6
@@ -768,7 +768,7 @@ const genMonthlySubScheduleSchema = async (
 const genMonthlySignCheckerSchema = async (db, yearNum, monthNum, lineGroup, shiftRows = []) => {
     const result = {
         tl1: [],
-        tl2: [],
+        //tl2: [],
         gl: [],
         sh: []
     }
@@ -818,14 +818,32 @@ const genMonthlySignCheckerSchema = async (db, yearNum, monthNum, lineGroup, shi
                     end_date: moment(shiftRows[sIndex].date, 'YYYY-MM-DD').format('YYYY-MM-DD')
                 })
 
-                result.tl2.push({
+                /*result.tl2.push({
                     main_schedule_id: null,
                     group_id: lineGroup.group_id,
                     line_id: lineGroup.line_id,
                     is_tl_2: true,
                     start_date: moment(shiftRows[sIndex].date, 'YYYY-MM-DD').format('YYYY-MM-DD'),
                     end_date: moment(shiftRows[sIndex].date, 'YYYY-MM-DD').format('YYYY-MM-DD')
-                })
+                })*/
+
+                result.gl.push({
+                    main_schedule_id: null,
+                    group_id: lineGroup.group_id,
+                    line_id: lineGroup.line_id,
+                    start_date: moment(shiftRows[sIndex].date, 'YYYY-MM-DD').format('YYYY-MM-DD'),
+                    end_date: moment(shiftRows[sIndex].date, 'YYYY-MM-DD').format('YYYY-MM-DD'),
+                    is_gl: true,
+                });
+
+                result.sh.push({
+                    main_schedule_id: null,
+                    group_id: lineGroup.group_id,
+                    line_id: lineGroup.line_id,
+                    start_date: moment(shiftRows[sIndex].date, 'YYYY-MM-DD').format('YYYY-MM-DD'),
+                    end_date: moment(shiftRows[sIndex].date, 'YYYY-MM-DD').format('YYYY-MM-DD'),
+                    is_sh: true,
+                });
             }
         }
 
@@ -835,7 +853,7 @@ const genMonthlySignCheckerSchema = async (db, yearNum, monthNum, lineGroup, shi
     //#endregion
 
     //#region scheduler generate gl sign checker
-    {
+    /*{
         try {
             const glSignSql = `
                     with
@@ -865,7 +883,7 @@ const genMonthlySignCheckerSchema = async (db, yearNum, monthNum, lineGroup, shi
                                 week.col_span,
                                 min("date") as start,
                                 max("date") as end
-                            from 
+                            from
                                 ${table.tb_m_schedules} tms
                                 join week on date_part('week', tms."date"::date) = week.week_num
                             group by
@@ -873,14 +891,14 @@ const genMonthlySignCheckerSchema = async (db, yearNum, monthNum, lineGroup, shi
                             order by week.week_num
                         ) res
                         left join lateral (
-                            select count(*) as total_holiday from ${table.tb_m_schedules} where is_holiday = true and "date" between res.start and res.end 
+                            select count(*) as total_holiday from ${table.tb_m_schedules} where is_holiday = true and "date" between res.start and res.end
                         ) hol on true
                         left join lateral (
-                            select 
+                            select
                                 date as start_non_holiday
-                            from 
+                            from
                                 ${table.tb_m_schedules}
-                            where 
+                            where
                                 date_part('week', "date"::date) = res.week_num
                                 and (is_holiday = false or is_holiday is null)
                             order by
@@ -892,7 +910,7 @@ const genMonthlySignCheckerSchema = async (db, yearNum, monthNum, lineGroup, shi
                                 date as end_non_holiday
                             from
                                 ${table.tb_m_schedules}
-                            where 
+                            where
                                 date_part('week', "date"::date) = res.week_num
                                 and (is_holiday = false or is_holiday is null)
                                 and date_part('month', "date") = '${monthNum}'
@@ -932,11 +950,11 @@ const genMonthlySignCheckerSchema = async (db, yearNum, monthNum, lineGroup, shi
             console.log('error glSignQuery', error)
             throw error
         }
-    }
+    }*/
     //#endregion
 
     //#region scheduler generate sh sign checker
-    {
+    /*{
         let tempSh = []
         result.gl.forEach((gl) => tempSh.push(Object.assign({}, gl)))
 
@@ -974,7 +992,7 @@ const genMonthlySignCheckerSchema = async (db, yearNum, monthNum, lineGroup, shi
         }
 
         //console.log('result.sh', result.sh)
-    }
+    }*/
     //#endregion
 
     return result

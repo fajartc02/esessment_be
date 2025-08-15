@@ -6,8 +6,7 @@ const {
     queryTransaction,
     queryPutTransaction,
     queryPostTransaction,
-    poolQuery,
-    queryPOST
+    poolQuery, queryPOST
 } = require("../../helpers/query")
 
 const response = require("../../helpers/response")
@@ -109,7 +108,8 @@ const childrenSubSchedule = async (
                  select
                     tbrcs.uuid as sub_schedule_id,
                     trcc1.tl1_sign_checker_id,
-                    trcc2.tl2_sign_checker_id,
+                    trcc2.gl_sign_checker_id,
+                    trcc3.sh_sign_checker_id,
                     tmsc.date,
                     EXTRACT('Day' FROM tmsc.date)::INTEGER as date_num,
                     tmsc.is_holiday or tbrcs.shift_type is null as is_holiday, -- null of shift_type was set as holiday from monthly scheduler 
@@ -134,7 +134,13 @@ const childrenSubSchedule = async (
                         true::boolean
                       else
                         false::boolean
-                    end as has_tl2_sign,
+                    end as has_gl_sign,
+                    case
+                        when trcc3.sign is not null and trcc3.sign != '' then
+                            true::boolean
+                        else
+                            false::boolean
+                        end as has_sh_sign,
                     comment.total_comment        
                   from
                       ${fromSubScheduleSql}
@@ -151,17 +157,29 @@ const childrenSubSchedule = async (
                                         limit 1
                       ) trcc1 on true
                       left join lateral (
-                                        select
-                                          uuid as tl2_sign_checker_id,
-                                          sign
-                                        from
-                                          ${table.tb_r_4s_schedule_sign_checkers}
-                                        where
-                                          main_schedule_id = tbrcs.main_schedule_id
-                                          and is_tl_2 = true 
-                                          and end_date = tmsc."date"
-                                        limit 1
+                                        select gl_sign_checker_id, sign
+                                          from (select row_number() over (order by sign_checker_id) as row_idx,
+                                          uuid as gl_sign_checker_id,
+                                          sign,
+                                          end_date
+                                          from tb_r_4s_schedule_sign_checkers
+                                          where main_schedule_id = tbrcs.main_schedule_id
+                                          and is_gl = true) trcc3
+                                          where end_date = tmsc."date"
+                                          limit 1
                       ) trcc2 on true
+                      left join lateral (
+                                          select sh_sign_checker_id, sign
+                                          from (select row_number() over (order by sign_checker_id) as row_idx,
+                                          uuid as sh_sign_checker_id,
+                                          sign,
+                                          end_date
+                                          from tb_r_4s_schedule_sign_checkers
+                                          where main_schedule_id = tbrcs.main_schedule_id
+                                          and is_sh = true) trcc3
+                                          where end_date = tmsc."date"
+                                          limit 1
+                      ) trcc3 on true
                       left join lateral (
                         select *
                         from
@@ -348,6 +366,7 @@ const subScheduleRows = async (
     return query
 }
 
+
 module.exports = {
     get4sMainSchedule: async (req, res) => {
         try {
@@ -480,6 +499,7 @@ module.exports = {
                 sign_checker_sh: []
             }
 
+
             //console.log('scheduleSql', scheduleSql)
             //logger(scheduleSql, 'schedule')
             let scheduleQuery = await subScheduleRows(req.query)
@@ -496,65 +516,9 @@ module.exports = {
                 const scheduleRows = scheduleFinalResult.map(async (item, index) => {
                     mainScheduleRealId = item.main_schedule_id
 
-                    const whereFreqId = ` ((select freq_id from ${table.tb_m_freqs} where uuid = '${item.freq_id}' limit 1)) `
-
-                    const countRowSpanSql =
-                        `
-              with
-                  pics as (
-                      select
-                          count(distinct kanban_id)::integer as pic_rows
-                      from
-                          ${table.tb_r_4s_sub_schedules}
-                      where
-                          pic_id = (select user_id from ${table.tb_m_users} where uuid = '${item.pic_id}' limit 1)
-                          and freq_id = ${whereFreqId}
-                      group by
-                          pic_id
-                  ),
-                  zones as (
-                      select
-                          count(distinct kanban_id)::integer as zone_rows
-                      from
-                          ${table.tb_r_4s_sub_schedules}
-                      where
-                          zone_id = (select zone_id from ${table.tb_m_zones} where uuid = '${item.zone_id}' limit 1)
-                          and freq_id = ${whereFreqId}
-                      group by
-                          zone_id
-                  ),
-                  freqs as (
-                      select
-                          count(distinct kanban_id)::integer as freq_rows
-                      from
-                          ${table.tb_r_4s_sub_schedules}
-                      where
-                          freq_id = ${whereFreqId}
-                      group by
-                          freq_id
-                  )
-                  select * from 
-                    pics 
-                    full outer join zones on true 
-                    full outer join freqs on true
-          `
-
-                    //console.log('countRowSpanSql', countRowSpanSql)
-                    //const countRowSpanQuery = await queryCustom(countRowSpanSql, false)
-                    const countRowSpanQuery = null
-
-                    //let countRows = countRowSpanQuery.rows
-                    let countRows = []
-                    if (countRows && countRows.length > 0) {
-                        countRows = countRows[0]
-                        item.row_span_pic = countRows.pic_rows ?? 1
-                        item.row_span_freq = countRows.freq_rows ?? 1
-                        item.row_span_zone = countRows.zone_rows ?? 1
-                    } else {
-                        item.row_span_pic = 1
-                        item.row_span_freq = 1
-                        item.row_span_zone = 1
-                    }
+                    item.row_span_pic = 1
+                    item.row_span_freq = 1
+                    item.row_span_zone = 1
 
                     item.children = await childrenSubSchedule(
                         mainScheduleRealId,
@@ -576,7 +540,6 @@ module.exports = {
 
                     return item
                 })
-
 
                 const signCheckerQuery = async (who = '') => {
                     let whoIs = ``
@@ -621,76 +584,7 @@ module.exports = {
                 const signGl = mainScheduleRealId != null ? (await signCheckerQuery('gl')).rows : []
                 const signSh = mainScheduleRealId != null ? (await signCheckerQuery('sh')).rows : []
 
-                const addHolidayTemp = async (signArr) => {
-                    const holidayTemp = []
-
-                    const findHolidaySignChecker = async (dateBetwenStr, i, first = false) => {
-                        const holidaySchedule = await poolQuery(
-                            `
-                                select 
-                                     tms.*
-                                from 
-                                    ${table.tb_m_schedules} tms
-                                    left join ${table.tb_m_shifts} shift_holiday on
-                                        tms.date between shift_holiday.start_date and shift_holiday.end_date
-                                            and shift_holiday.is_holiday = true
-                                where 
-                                    (tms.is_holiday = true or shift_holiday.is_holiday = true)
-                                    and ${dateBetwenStr}
-                            `
-                        )
-
-                        for (let j = 0; j < holidaySchedule.rows.length; j++) {
-                            holidayTemp.push({
-                                index: first ? i : i + 1,
-                                main_schedule_id: mainScheduleRealId,
-                                sign_checker_id: null,
-                                sign: null,
-                                start_date: holidaySchedule.rows[j].date,
-                                end_date: holidaySchedule.rows[j].date,
-                                col_span: 1,
-                                is_holiday: true,
-                            })
-                        }
-                    }
-
-                    for (let i = 0; i < signArr.length; i++) {
-                        if (i == 0) {
-                            await findHolidaySignChecker(`date between 
-                                        (date_part('year', '${signArr[i].end_date}'::date) || '-' || trim(to_char(date_part('month', '${signArr[i].end_date}'::date), '00')) ||  '-01')::date
-                                        and '${signArr[i].end_date}'`, i, true)
-                        }
-
-                        if (signArr[i + 1]) {
-                            await findHolidaySignChecker(`date between '${signArr[i].end_date}' and '${signArr[i + 1].start_date}'`, i)
-                        }
-
-                        if (i == signArr.length - 1 && !signArr[i].is_sh) {
-                            await findHolidaySignChecker(`date between 
-                                        '${signArr[i].end_date}'
-                                        and (
-                                            date_part('year', '${signArr[i].end_date}'::date) 
-                                                || '-' 
-                                                || trim(to_char(date_part('month', '${signArr[i].end_date}'::date), '00')) 
-                                                ||  '-' 
-                                                || 
-                                                date_part('day', (date_trunc('month', '${signArr[i].end_date}'::date) + interval '1 month - 1 day')::date)
-                                            )::date`, i)
-                        }
-                    }
-
-                    for (let i = 0; i < holidayTemp.length; i++) {
-                        delete holidayTemp[i].index
-                        signArr.splice(holidayTemp[i].index, 0, holidayTemp[i])
-                    }
-
-                    return arrayOrderBy(signArr, (s) => s.start_date)
-                }
-
                 result.schedule = await Promise.all(scheduleRows)
-                console.log('count schedule', result.schedule.length);
-                /* result.sign_checker_gl = []
-                result.sign_checker_sh = [] */
                 result.sign_checker_gl = mainScheduleRealId != null ? signGl : [];
                 result.sign_checker_sh = mainScheduleRealId != null ? signSh : [];
                 result.limit = scheduleQuery?.limit ? parseInt(scheduleQuery.limit) : 0;
@@ -792,6 +686,7 @@ module.exports = {
                     if (!result.is_sh) {
                         delete result.is_sh
                     }
+
                 }
             }
 
@@ -1289,13 +1184,6 @@ module.exports = {
                 response.success(res, 'success to sign 4s schedule', [])
                 return;
             }
-
-            delete req.body.main_schedule_id;
-            delete req.body.date;
-            delete req.body.is_tl_1;
-            delete req.body.is_tl_2;
-            delete req.body.is_gl;
-            delete req.body.is_sh;
 
             let signCheckerQuery = await queryCustom(
                 `

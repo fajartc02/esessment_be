@@ -24,25 +24,25 @@ const {
     clearOmTransactionRows
 } = require("../services/om.services")
 
-const config = {
-    //env: process.env.NODE_ENV,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT,
-    host: process.env.DB_HOST,
-    ssl: false
-};
-
-console.log('env', config);
-console.log(`OM Schedule Date Scheduler Running .....`)
-
 const currentDate = moment()
 const currentMonth = currentDate.month() + 1 // need +1 to determine current month
 const currentYear = currentDate.year()
 const flagCreatedBy = `SCHEDULERS ${currentDate.format('YYYY-MM-DD')}`
 
 const main = () => {
+    const config = {
+        //env: process.env.NODE_ENV,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+        port: process.env.DB_PORT,
+        host: process.env.DB_HOST,
+        ssl: false
+    };
+
+    console.log('env', config);
+    console.log(`OM Schedule Date Scheduler Running .....`)
+
     try
     {
         const pool = new pg.Pool(config);
