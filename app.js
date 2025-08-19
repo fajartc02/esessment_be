@@ -11,8 +11,8 @@ const cors = require('cors')
 
 //#region cron
 const cron = require('node-cron');
-// const _4sSchedule = require('./schedulers/4s.scheduler')
-// // _4sSchedule()
+const cron4sGenerator = require('./schedulers/4s.scheduler')
+cron4sGenerator()
 // const omSchedule = require('./schedulers/om.scheduler')
 // const yearlyDates = require('./schedulers/yearDates.scheduler');
 
@@ -20,10 +20,11 @@ global.appRoot = path.resolve(__dirname);
 
 // monthly
 // 0 1 1 * *
-// cron.schedule('0 1 1 * *', async () => {
-//     // _4sSchedule()
-//     // omSchedule()
-// });
+cron.schedule('0 1 1 * *', async () => {
+    console.log('4S CRON MONTHLY')
+    // cron4sGenerator()
+    // omSchedule()
+});
 
 // yearly
 // cron.schedule('0 1 1 1 *', async () => {
