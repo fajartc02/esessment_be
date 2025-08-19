@@ -11,15 +11,16 @@ const {
 
 const response = require("../../helpers/response")
 const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData")
-const {arrayOrderBy, objToString} = require("../../helpers/formatting")
+const { arrayOrderBy, objToString } = require("../../helpers/formatting")
 const moment = require('moment')
 const logger = require('../../helpers/logger')
-const {cacheGet, cacheAdd, cacheDelete} = require('../../helpers/cacheHelper')
-const {uuid} = require("uuidv4")
-const {shiftByGroupId} = require('../../services/shift.services')
-const {genSingleMonthlySubScheduleSchema, genSingleSignCheckerSqlFromSchema} = require('../../services/4s.services')
-const {bulkToSchema} = require('../../helpers/schema')
-const {databasePool} = require('../../config/database');
+const { cacheGet, cacheAdd, cacheDelete } = require('../../helpers/cacheHelper')
+const { uuid } = require("uuidv4")
+const { shiftByGroupId } = require('../../services/shift.services')
+const { genSingleMonthlySubScheduleSchema, genSingleSignCheckerSqlFromSchema } = require('../../services/4s.services')
+const { bulkToSchema } = require('../../helpers/schema')
+const { databasePool } = require('../../config/database');
+const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData");
 
 const fromSubScheduleSql = `
     ${table.tb_r_4s_sub_schedules} tbrcs
@@ -97,7 +98,8 @@ const childrenSubSchedule = async (
     planPicRealId
 ) => {
     let byPic = ``
-    if (planPicRealId) {
+    if (planPicRealId)
+    {
         byPic = ` and tbrcs.pic_id = '${planPicRealId}' `
     }
 
@@ -227,28 +229,36 @@ const subScheduleCacheKey = (
         main_schedule_id: main_schedule_id
     }
 
-    if (freq_id) {
+    if (freq_id)
+    {
         obj.freq_id = freq_id
     }
-    if (zone_id) {
+    if (zone_id)
+    {
         obj.zone_id = zone_id
     }
-    if (kanban_id) {
+    if (kanban_id)
+    {
         obj.kanban_id = kanban_id
     }
-    if (line_id) {
+    if (line_id)
+    {
         obj.line_id = line_id
     }
-    if (group_id) {
+    if (group_id)
+    {
         obj.group_id = group_id
     }
-    if (month_year_num) {
+    if (month_year_num)
+    {
         obj.month_year_num = month_year_num
     }
-    if (limit) {
+    if (limit)
+    {
         obj.limit = limit
     }
-    if (current_page) {
+    if (current_page)
+    {
         obj.current_page = current_page
     }
 
@@ -258,37 +268,47 @@ const subScheduleCacheKey = (
 const subScheduleRows = async (
     params
 ) => {
-    const {main_schedule_id, freq_id, zone_id, kanban_id, line_id, group_id, month_year_num} = params
-    let {limit, current_page} = params;
+    const { main_schedule_id, freq_id, zone_id, kanban_id, line_id, group_id, month_year_num } = params
+    let { limit, current_page } = params;
 
     let filterCondition = []
 
-    if (freq_id && freq_id != null && freq_id != "") {
+    if (freq_id && freq_id != null && freq_id != "")
+    {
         filterCondition.push(` freq_id = '${freq_id}' `)
     }
-    if (zone_id && zone_id != null && zone_id != "") {
+    if (zone_id && zone_id != null && zone_id != "")
+    {
         filterCondition.push(` zone_id = '${zone_id}' `)
     }
-    if (kanban_id && kanban_id != null && kanban_id != "") {
+    if (kanban_id && kanban_id != null && kanban_id != "")
+    {
         filterCondition.push(` kanban_id = '${kanban_id}' `)
     }
-    if (line_id && line_id != null && line_id != "") {
+    if (line_id && line_id != null && line_id != "")
+    {
         filterCondition.push(` line_id = '${line_id}' `)
     }
-    if (month_year_num && month_year_num != null && month_year_num != "") {
+    if (month_year_num && month_year_num != null && month_year_num != "")
+    {
         let MYFilterSplit = month_year_num.split('-')
 
-        if (MYFilterSplit.length == 1) {
-            if (MYFilterSplit[0].length == 4) {
+        if (MYFilterSplit.length == 1)
+        {
+            if (MYFilterSplit[0].length == 4)
+            {
                 filterCondition.push(` year_num = '${MYFilterSplit[0]}}' `)
-            } else {
+            } else
+            {
                 filterCondition.push(` month_num = '${parseInt(MYFilterSplit[0])}}' `)
             }
-        } else {
+        } else
+        {
             filterCondition.push(` year_num || '-' || month_num = '${MYFilterSplit[0]}-${parseInt(MYFilterSplit[1])}' `)
         }
     }
-    if (group_id && group_id != null && group_id != "") {
+    if (group_id && group_id != null && group_id != "")
+    {
         filterCondition.push(` group_id = '${group_id}' `)
     }
 
@@ -310,7 +330,8 @@ const subScheduleRows = async (
             ${filterCondition.length > 0 ? `and ${filterCondition.join('and')}` : ''}`
     let scheduleSql = `${originScheduleSql}`
 
-    if (limit && current_page) {
+    if (limit && current_page)
+    {
         current_page = parseInt(current_page ?? 1)
         limit = parseInt(limit ?? 10)
 
@@ -330,7 +351,8 @@ const subScheduleRows = async (
     //logger(scheduleSql, 'scheduleSql')
 
     const query = (await poolQuery(scheduleSql)).rows
-    if (paginated) {
+    if (paginated)
+    {
         const count = await poolQuery(`select count(*)::integer as count from ( ${originScheduleSql} ) a `)
 
         const countRows = count.rows[0]
@@ -348,9 +370,10 @@ const subScheduleRows = async (
 
 module.exports = {
     get4sMainSchedule: async (req, res) => {
-        try {
-            const {line_id, group_id, month_year_num} = req.query
-            let {limit, current_page} = req.query
+        try
+        {
+            const { line_id, group_id, month_year_num } = req.query
+            let { limit, current_page } = req.query
 
             current_page = parseInt(current_page ?? 1)
             limit = parseInt(limit ?? 10)
@@ -387,22 +410,29 @@ module.exports = {
                 ' and trcp.deleted_dt is null '
             ]
 
-            if (line_id && line_id != null && line_id != "") {
+            if (line_id && line_id != null && line_id != "")
+            {
                 filterCondition.push(` trcp.line_id = (select line_id from ${table.tb_m_lines} where uuid = '${line_id}') `)
             }
-            if (month_year_num && month_year_num != null && month_year_num != "") {
+            if (month_year_num && month_year_num != null && month_year_num != "")
+            {
                 let MYFilterSplit = month_year_num.split('-')
-                if (MYFilterSplit.length == 1) {
-                    if (MYFilterSplit[0].length == 4) {
+                if (MYFilterSplit.length == 1)
+                {
+                    if (MYFilterSplit[0].length == 4)
+                    {
                         filterCondition.push(` trcp.year_num = '${MYFilterSplit[0]}}' `)
-                    } else {
+                    } else
+                    {
                         filterCondition.push(` trcp.month_num = '${parseInt(MYFilterSplit[0])}}' `)
                     }
-                } else {
+                } else
+                {
                     filterCondition.push(` trcp.year_num || '-' || trcp.month_num = '${MYFilterSplit[0]}-${parseInt(MYFilterSplit[1])}' `)
                 }
             }
-            if (group_id && group_id != null && group_id != "") {
+            if (group_id && group_id != null && group_id != "")
+            {
                 filterCondition.push(` trcp.group_id = (select group_id from ${table.tb_m_groups} where uuid = '${group_id}') `)
             }
 
@@ -416,7 +446,8 @@ module.exports = {
             const mainScheduleQuery = await queryCustom(mainScheduleSql)
             let result = mainScheduleQuery.rows
 
-            if (result.length > 0) {
+            if (result.length > 0)
+            {
                 const count = await queryCustom(`select count(trcp.main_schedule_id)::integer as count from ${fromSql} where 1 = 1 ${filterCondition}`)
                 const countRows = count.rows[0]
                 result = {
@@ -431,13 +462,15 @@ module.exports = {
             //const result = await Promise.all(mainScheduleQuery.rows)
 
             response.success(res, "Success to get 4s main schedule", result)
-        } catch (error) {
+        } catch (error)
+        {
             console.log(error)
             response.failed(res, "Error to get 4s main schedule")
         }
     },
     get4sSubSchedule: async (req, res) => {
-        try {
+        try
+        {
             const {
                 main_schedule_id,
                 freq_id,
@@ -467,7 +500,8 @@ module.exports = {
                 main_schedule_id == "" ||
                 main_schedule_id == null ||
                 main_schedule_id == "0"
-            ) {
+            )
+            {
                 response.failed(res, "Error to get 4s main schedule id not provide")
                 return
             }
@@ -482,12 +516,15 @@ module.exports = {
             //logger(scheduleSql, 'schedule')
             let scheduleQuery = await subScheduleRows(req.query)
 
-            if (scheduleQuery) {
+            if (scheduleQuery)
+            {
                 let mainScheduleRealId = null
                 let scheduleFinalResult = null;
-                if (typeof scheduleQuery === 'object') {
+                if (typeof scheduleQuery === 'object')
+                {
                     scheduleFinalResult = scheduleQuery.list;
-                } else {
+                } else
+                {
                     scheduleFinalResult = scheduleQuery;
                 }
 
@@ -578,9 +615,11 @@ module.exports = {
 
                 const signCheckerQuery = async (who = '') => {
                     let whoIs = ``
-                    if (who == 'gl') {
+                    if (who == 'gl')
+                    {
                         whoIs = 'and is_gl = true'
-                    } else if (who == 'sh') {
+                    } else if (who == 'sh')
+                    {
                         whoIs = 'and is_sh = true'
                     }
 
@@ -699,14 +738,16 @@ module.exports = {
             }
 
             response.success(res, "Success to get 4s sub schedule", result)
-        } catch (error) {
+        } catch (error)
+        {
             console.log(error)
             response.failed(res, "Error to get 4s sub schedule")
         }
     },
     get4sSubScheduleTodayPlan: async (req, res) => {
-        try {
-            const {date, line_id, group_id} = req.query
+        try
+        {
+            const { date, line_id, group_id } = req.query
 
             let filterCondition = []
             let scheduleSql = `
@@ -722,17 +763,21 @@ module.exports = {
           ) a
         `
 
-            if (line_id && line_id != null && line_id != "") {
+            if (line_id && line_id != null && line_id != "")
+            {
                 filterCondition.push(` line_id = '${line_id}' `)
             }
-            if (group_id && group_id != null && group_id != "") {
+            if (group_id && group_id != null && group_id != "")
+            {
                 filterCondition.push(` line_id = '${group_id}' `)
             }
-            if (date && date != null && date != "") {
+            if (date && date != null && date != "")
+            {
                 filterCondition.push(` plan_check_dt = '${date}' `)
             }
 
-            if (filterCondition.length > 0) {
+            if (filterCondition.length > 0)
+            {
                 filterCondition = filterCondition.join(' and ')
                 scheduleSql = scheduleSql.concat(` where ${filterCondition} `)
             }
@@ -752,13 +797,15 @@ module.exports = {
             })
 
             response.success(res, "Success to get today activities 4s sub schedule", result)
-        } catch (e) {
+        } catch (e)
+        {
             console.log(e)
             response.failed(res, "Error to get today activities 4s sub schedule")
         }
     },
     get4sSignCheckerBySignCheckerId: async (req, res) => {
-        try {
+        try
+        {
             const signCheckerUuid = req.params.sign_checker_id
 
             const signCheckerRows = await queryGET(
@@ -775,32 +822,40 @@ module.exports = {
             )
 
             let result = {}
-            if (signCheckerRows) {
+            if (signCheckerRows)
+            {
                 result = signCheckerRows[0] ?? {}
-                if (result) {
-                    if (!result.is_tl_1) {
+                if (result)
+                {
+                    if (!result.is_tl_1)
+                    {
                         delete result.is_tl_1
                     }
-                    if (!result.is_tl_2) {
+                    if (!result.is_tl_2)
+                    {
                         delete result.is_tl_2
                     }
-                    if (!result.is_gl) {
+                    if (!result.is_gl)
+                    {
                         delete result.is_gl
                     }
-                    if (!result.is_sh) {
+                    if (!result.is_sh)
+                    {
                         delete result.is_sh
                     }
                 }
             }
 
             response.success(res, "Success to get 4s sign checker", result)
-        } catch (error) {
+        } catch (error)
+        {
             console.log(error)
             response.failed(res, "Error to get 4s sign checker")
         }
     },
     getDetail4sSubSchedule: async (req, res) => {
-        try {
+        try
+        {
             const sub_schedule_uuid = req.params.id
 
             const subScheduleSql = `select 
@@ -814,7 +869,8 @@ module.exports = {
                                           limit 1`
 
             let subScheduleQuery = await queryCustom(subScheduleSql, false)
-            if (subScheduleQuery.rows.length == 0) {
+            if (subScheduleQuery.rows.length == 0)
+            {
                 throw "Can't find 4s sub schedule with id provided"
             }
 
@@ -879,7 +935,8 @@ module.exports = {
             const itemCheckKanbans = await queryCustom(sqlItemCheckKanbans);
 
             itemCheckKanbans.rows = await Promise.all(itemCheckKanbans.rows.map(async (item) => {
-                if (item.schedule_item_check_kanban_id) {
+                if (item.schedule_item_check_kanban_id)
+                {
                     const findings = await queryGET(
                         table.v_4s_finding_list,
                         `where 
@@ -887,15 +944,18 @@ module.exports = {
               and schedule_item_check_kanban_id = '${item.schedule_item_check_kanban_id}'
               and sub_schedule_id = '${subScheduleQuery.sub_schedule_id}'`
                     );
-                    if (findings.length > 0) {
+                    if (findings.length > 0)
+                    {
                         item.findings = findings.map((item) => {
                             item.kaizen_file = item.kaizen_file ? `${process.env.APP_HOST}/file?path=${item.kaizen_file}` : null;
                             return item;
                         }).reverse();
-                    } else {
+                    } else
+                    {
                         item.findings = []
                     }
-                } else {
+                } else
+                {
                     item.findings = []
                 }
 
@@ -912,22 +972,26 @@ module.exports = {
             delete subScheduleQuery.main_schedule_uuid
 
             response.success(res, "Success to get detail 4s sub schedule", subScheduleQuery)
-        } catch (error) {
+        } catch (error)
+        {
             console.log(error)
             response.failed(res, error)
         }
 
     },
     get4sCountTotalSummary: async (req, res) => {
-        try {
-            const {line_id} = req.query
-            let {month, year} = req.query
+        try
+        {
+            const { line_id } = req.query
+            let { month, year } = req.query
 
-            if (!month || month == null || month == -1) {
+            if (!month || month == null || month == -1)
+            {
                 month = moment().format('MM')
             }
 
-            if (!year || year == null || year == -1) {
+            if (!year || year == null || year == -1)
+            {
                 year = moment().format('YYYY')
             }
 
@@ -972,7 +1036,8 @@ module.exports = {
       `
 
             let result = (await queryCustom($sql, false)).rows
-            if (result.length > 0) {
+            if (result.length > 0)
+            {
                 result = result[0]
                 /* const copy = []
                 for (var key of Object.keys(result))
@@ -981,18 +1046,21 @@ module.exports = {
                 }
 
                 result = copy */
-            } else {
+            } else
+            {
                 result = {}
             }
 
             response.success(res, 'Success to count total summary 4s', result)
-        } catch (error) {
+        } catch (error)
+        {
             console.log(error)
             response.failed(res, error)
         }
     },
     edi4sSubSchedule: async (req, res) => {
-        try {
+        try
+        {
             let schedulRow = await queryCustom(
                 `
           select 
@@ -1009,7 +1077,8 @@ module.exports = {
         `
             )
 
-            if (schedulRow.rows.length == 0) {
+            if (schedulRow.rows.length == 0)
+            {
                 response.failed(
                     res,
                     "Error to edit 4s planning schedule, can't find schedule data"
@@ -1020,15 +1089,18 @@ module.exports = {
             schedulRow = schedulRow.rows[0]
 
             const body = {}
-            if (req.body.pic_id) {
+            if (req.body.pic_id)
+            {
                 body.pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.pic_id}') `
             }
 
-            if (req.body.actual_pic_id) {
+            if (req.body.actual_pic_id)
+            {
                 body.actual_pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.actual_pic_id}') `
             }
 
-            if (req.body.actual_date) {
+            if (req.body.actual_date)
+            {
                 body.actual_time = req.body.actual_date
             }
 
@@ -1048,19 +1120,22 @@ module.exports = {
                     `WHERE sub_schedule_id = (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.params.id}' limit 1)`
                 );
 
-                if (req.body.plan_date && req.body.before_plan_date) {
+                if (req.body.plan_date && req.body.before_plan_date)
+                {
                     //#region update plan_date validation
                     const planDateUpdate = moment(req.body.plan_date, 'YYYY-MM-DD')
                     const previousDate = moment(req.body.before_plan_date, 'YYYY-MM-DD')
 
-                    if (planDateUpdate.month() < previousDate.month() || planDateUpdate.year() < previousDate.year()) {
+                    if (planDateUpdate.month() < previousDate.month() || planDateUpdate.year() < previousDate.year())
+                    {
                         throw "Can't edit schedule plan on previous date"
                     }
                     //#endregion
 
                     let newMainScheduleSet = ''
                     let newMainScheduleRealId = null
-                    if (planDateUpdate.month() > previousDate.month()) {
+                    if (planDateUpdate.month() > previousDate.month())
+                    {
                         const checkHeaderNextMonth = await db.query(`
               select 
                 * 
@@ -1073,7 +1148,8 @@ module.exports = {
                 and group_id = '${schedulRow.group_id}'
               `)
 
-                        if (checkHeaderNextMonth.rowCount == 0) {
+                        if (checkHeaderNextMonth.rowCount == 0)
+                        {
                             const newMainSchedule = await db.query(`
                 insert into ${table.tb_r_4s_main_schedules}
                 (uuid, line_id, group_id, year_num, month_num, created_by, created_dt, changed_by, changed_dt)
@@ -1094,7 +1170,8 @@ module.exports = {
 
                             newMainScheduleSet = `, main_schedule_id = '${newMainSchedule.rows[0].main_schedule_id}'`
                             newMainScheduleRealId = newMainSchedule.rows[0].main_schedule_id
-                        } else {
+                        } else
+                        {
                             newMainScheduleSet = `, main_schedule_id = '${checkHeaderNextMonth.rows[0].main_schedule_id}'`
                             newMainScheduleRealId = checkHeaderNextMonth.rows[0].main_schedule_id
                         }
@@ -1136,7 +1213,8 @@ module.exports = {
                     // updating previous plan date
                     await db.query(sqlUpdateOldPlanDate())
 
-                    if (newMainScheduleSet == '') {
+                    if (newMainScheduleSet == '')
+                    {
                         //#region  update plan_date and previous plan_date
                         const findNightShift = await db.query(`
             select 
@@ -1148,7 +1226,8 @@ module.exports = {
               and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')
               and shift_type = 'night_shift'`)
 
-                        if (findNightShift.rowCount > 0) {
+                        if (findNightShift.rowCount > 0)
+                        {
                             throw "Can't edit schedule plan on night shift"
                         }
 
@@ -1156,7 +1235,8 @@ module.exports = {
                         await db.query(sqlUpdateNewPlanDate())
 
                         //#endregion
-                    } else {
+                    } else
+                    {
                         //find previous 1 month schedule, used previous updatecondition value before reinit
                         const findAvailPlanTimeSql = `select 
                                             * 
@@ -1168,7 +1248,8 @@ module.exports = {
                         console.log('findAvailPlanTimeSql', findAvailPlanTimeSql);
                         const findAvailPlanTimeQuery = await db.query(findAvailPlanTimeSql)
                         console.log('findAvailPlanTime lenght', findAvailPlanTimeQuery.rowCount);
-                        if (findAvailPlanTimeQuery.rowCount == 0) {
+                        if (findAvailPlanTimeQuery.rowCount == 0)
+                        {
                             //delete if plan time null
                             await db.query(`delete from ${table.tb_r_4s_sub_schedules} where ${updateCondition}`)
                         }
@@ -1199,7 +1280,8 @@ module.exports = {
                         const monthlyPlanQuery = await db.query(monthlyPlanSql)
                         //#endregion
 
-                        if (monthlyPlanQuery.rowCount == 0) {
+                        if (monthlyPlanQuery.rowCount == 0)
+                        {
                             const currentMonthDays = await shiftByGroupId(db, planDateUpdate.year(), planDateUpdate.month() + 1, schedulRow.line_id, schedulRow.group_id)
                             const singleKanbanSchedule = await genSingleMonthlySubScheduleSchema(
                                 {
@@ -1228,18 +1310,21 @@ module.exports = {
                                 newMainScheduleRealId
                             )
 
-                            if (singleKanbanSchedule.columns.length > 0) {
+                            if (singleKanbanSchedule.columns.length > 0)
+                            {
                                 const sqlInSubSchedule = `insert into ${table.tb_r_4s_sub_schedules} (${singleKanbanSchedule.columns}) values ${singleKanbanSchedule.values}`
                                 console.log('sqlInSubSchedule', sqlInSubSchedule);
                                 await db.query(sqlInSubSchedule)
                             }
 
-                            if (signCheckerScheduleSchema.columns.length > 0) {
+                            if (signCheckerScheduleSchema.columns.length > 0)
+                            {
                                 const sqlInSignChecker = `insert into ${table.tb_r_4s_schedule_sign_checkers} (${signCheckerScheduleSchema.columns}) values ${signCheckerScheduleSchema.values}`
                                 console.log('sqlInSignChecker', sqlInSignChecker);
                                 await db.query(sqlInSignChecker)
                             }
-                        } else {
+                        } else
+                        {
                             // updating previous plan date
                             await db.query(sqlUpdateOldPlanDate())
 
@@ -1253,14 +1338,51 @@ module.exports = {
             cacheDelete(subScheduleCacheKey(schedulRow.main_schedule_uuid))
 
             response.success(res, "Success to edit 4s schedule plan", [])
-        } catch (e) {
+        } catch (e)
+        {
             console.log(e)
             response.failed(res, e)
         }
     },
     sign4sSchedule: async (req, res) => {
-        try {
+        try
+        {
+
             const sign_checker_id = req.params.sign_checker_id
+            if (sign_checker_id.toLowerCase() === "createnew")
+            {
+                const date = req.body.date;
+                const attrsInsert = await attrsUserInsertData(req, req.body);
+                if (new Map(Object.entries(attrsInsert)).has('date'))
+                {
+                    delete attrsInsert.date;
+                }
+
+                await queryPOST(
+                    table.tb_r_4s_schedule_sign_checkers,
+                    {
+                        ...attrsInsert,
+                        uuid: uuid(),
+                        main_schedule_id: `(select main_schedule_id from ${table.tb_r_4s_main_schedules} where uuid = '${req.body.main_schedule_id}')`,
+                        start_date: date,
+                        end_date: date,
+                        sign: req.body.sign,
+                        is_tl_1: req.body.is_tl_1,
+                        is_gl: req.body.is_gl,
+                        is_sh: req.body.is_sh,
+                    }
+                );
+
+                response.success(res, 'success to sign 4s schedule', [])
+                return;
+            }
+
+            delete req.body.main_schedule_id;
+            delete req.body.date;
+            delete req.body.is_tl_1;
+            delete req.body.is_tl_2;
+            delete req.body.is_gl;
+            delete req.body.is_sh;
 
             let signCheckerQuery = await queryCustom(
                 `
@@ -1280,7 +1402,8 @@ module.exports = {
                 false
             )
 
-            if (!signCheckerQuery || signCheckerQuery.length == 0) {
+            if (!signCheckerQuery || signCheckerQuery.length == 0)
+            {
                 throw "invalid params, unknown data"
             }
 
@@ -1290,13 +1413,15 @@ module.exports = {
             cacheDelete(signCheckerQuery.rows[0].main_schedule_uuid)
 
             response.success(res, 'success to sign 4s schedule', [])
-        } catch (e) {
+        } catch (e)
+        {
             console.log(e)
             response.failed(res, "Error to sign 4s schedule")
         }
     },
     delete4sMainSchedule: async (req, res) => {
-        try {
+        try
+        {
             let obj = {
                 deleted_dt: "CURRENT_TIMESTAMP",
                 deleted_by: req.user.fullname
@@ -1304,13 +1429,15 @@ module.exports = {
 
             await queryPUT(table.tb_r_4s_main_schedules, obj, `WHERE uuid = '${req.params.id}'`)
             response.success(res, 'success to delete 4s main schedule', [])
-        } catch (e) {
+        } catch (e)
+        {
             console.log(e)
             response.failed(res, "Error to delete 4s main schedule")
         }
     },
     delete4sSubSchedule: async (req, res) => {
-        try {
+        try
+        {
             let subScheduleRow = await queryCustom(
                 `
           select 
@@ -1327,7 +1454,8 @@ module.exports = {
         `
             )
 
-            if (!subScheduleRow) {
+            if (!subScheduleRow)
+            {
                 response.failed(
                     res,
                     "Error to delete 4s sub schedule, can't find schedule data"
@@ -1355,7 +1483,8 @@ module.exports = {
                               ${updateCondition}
                             returning *`;
                 let result = await db.query(updateSql);
-                if (result.rowCount) {
+                if (result.rowCount)
+                {
                     result = result.rows[0];
                 }
 
@@ -1388,9 +1517,49 @@ module.exports = {
             cacheDelete(subScheduleCacheKey(subScheduleRow.main_schedule_uuid))
 
             response.success(res, 'success to delete 4s sub schedule', transaction)
-        } catch (e) {
+        } catch (e)
+        {
             console.log(e)
             response.failed(res, "Error to delete 4s sub schedule")
         }
     },
+    add4sSubPlanPic: async (req, res) => {
+        try
+        {
+            let sub_schedule_id = req.params.id
+            const result = await queryPUT(table.tb_r_4s_sub_schedules, {
+                pic_id: `(select user_id from ${table.tb_m_users} where uuid = '${req.body.pic_id}')`,
+                changed_by: req.user.fullname,
+                changed_dt: moment().format('YYYY-MM-DD HH:mm:ss')
+            }, `where uuid = '${sub_schedule_id}'`)
+            console.log(result.rows[0]);
+
+            const { created_dt } = result.rows[0]
+            await queryCustom(`
+                UPDATE tb_r_4s_sub_schedules s
+                SET pic_id = src.pic_id
+                FROM (
+                    SELECT kanban_id, 
+                        DATE_PART('month', created_dt) AS month_start,
+                        DATE_PART('year', created_dt) AS year_start,
+                        MAX(pic_id) AS pic_id
+                    FROM tb_r_4s_sub_schedules
+                    WHERE 
+                        pic_id IS NOT NULL and 
+                        DATE_PART('month', created_dt) = ${moment(created_dt).format('M')} and 
+                        DATE_PART('year', created_dt) = ${moment(created_dt).format('YYYY')}
+                    GROUP BY kanban_id, DATE_PART('month', created_dt), DATE_PART('year', created_dt)
+                ) src
+                WHERE s.kanban_id = src.kanban_id
+                AND DATE_PART('month', s.plan_time) = src.month_start
+                AND DATE_PART('year', plan_time) = src.year_start
+                AND (s.pic_id IS NULL)
+            `)
+            response.success(res, 'Success to add plan pic 4s sub schedule', [])
+        } catch (error)
+        {
+            console.log(error)
+            response.failed(res, "Error to add plan pic 4s sub schedule")
+        }
+    }
 }
