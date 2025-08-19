@@ -1,7 +1,7 @@
 const envFilePath = process.env.NODE_ENV?.trim() == 'production'
     ? './.env'
     : (process.env.NODE_ENV?.trim() == 'dev' ? './dev.env' : './local.env')
-require('dotenv').config({ path: envFilePath })
+require('dotenv').config({ path: envFilePath, override: true })
 
 var express = require('express');
 var path = require('path');

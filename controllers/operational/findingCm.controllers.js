@@ -183,29 +183,16 @@ module.exports = {
         req.params.id
       );
 
+
+
       let findingsData = {
         ...req.body,
-        line_id: await uuidToId(table.tb_m_lines, "line_id", req.body.line_id),
-        category_id: await uuidToId(
-          table.tb_m_categories,
-          "category_id",
-          req.body.category_id
-        ),
-        factor_id: await uuidToId(
-          table.tb_m_factors,
-          "factor_id",
-          req.body.factor_id
-        ),
-        cm_pic_id: await uuidToId(
-          table.tb_m_users,
-          "user_id",
-          req.body.cm_pic_id
-        ),
-        cm_result_factor_id: await uuidToId(
-          table.tb_m_factors,
-          "factor_id",
-          req.body.cm_result_factor_id
-        ),
+        line_id: req.body.line_id ? `(select line_id from ${table.tb_m_lines} where uuid = '${req.body.line_id}')` : null,
+        category_id: req.body.category_id ? `(select category_id from ${table.tb_m_categories} where uuid = '${req.body.category_id}')` : null,
+        factor_id: req.body.factor_id ? `(select factor_id from ${table.tb_m_factors} where uuid = '${req.body.factor_id}')` : null,
+        cm_pic_id: req.body.cm_pic_id ? `(select user_id from ${table.tb_m_users} where uuid = '${req.body.cm_pic_id}')` : null,
+        cm_result_factor_id: req.body.cm_result_factor_id ? `(select factor_id from ${table.tb_m_factors} where uuid = '${req.body.cm_result_factor_id}')` : null,
+        pic_supervisor_id: req.body.pic_supervisor_id ? `(select user_id from ${table.tb_m_users} where uuid = '${req.body.pic_supervisor_id}')` : null
       };
 
       let attrsUpdateUserFinding = await attrsUserUpdateData(req, findingsData);
