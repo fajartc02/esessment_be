@@ -11,22 +11,24 @@ const cors = require('cors')
 
 //#region cron
 const cron = require('node-cron');
-const _4sSchedule = require('./schedulers/4s.scheduler')
-const omSchedule = require('./schedulers/om.scheduler')
-const yearlyDates = require('./schedulers/yearDates.scheduler');
+// const _4sSchedule = require('./schedulers/4s.scheduler')
+// // _4sSchedule()
+// const omSchedule = require('./schedulers/om.scheduler')
+// const yearlyDates = require('./schedulers/yearDates.scheduler');
 
 global.appRoot = path.resolve(__dirname);
 
 // monthly
-cron.schedule('0 1 1 * *', async () => {
-    _4sSchedule()
-    omSchedule()
-});
+// 0 1 1 * *
+// cron.schedule('0 1 1 * *', async () => {
+//     // _4sSchedule()
+//     // omSchedule()
+// });
 
 // yearly
-cron.schedule('0 1 1 1 *', async () => {
-    yearlyDates()
-});
+// cron.schedule('0 1 1 1 *', async () => {
+//     // yearlyDates()
+// });
 //#endregion
 
 
@@ -57,7 +59,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/api/v1', routerV1);
+app.use('/api/v1', routerV1); 
 app.use('/api/v2', routerV2);
 
 
