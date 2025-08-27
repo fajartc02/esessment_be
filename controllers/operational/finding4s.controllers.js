@@ -147,7 +147,7 @@ module.exports = {
       const rawSubScheduleId = ` (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}') `;
       const rawScheduleItemCheckKanbanId = ` (select schedule_item_check_kanban_id from ${table.tb_r_4s_schedule_item_check_kanbans} where uuid = '${req.body.schedule_item_check_kanban_id}') `;
       const rawFindingPicId = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.finding_pic_id}') `;
-
+      const rawFindingPicSupervisorId = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.pic_supervisor_id}') `;
       const insertBody = {
         ...req.body,
         uuid: uuid(),
@@ -156,6 +156,7 @@ module.exports = {
           ? rawScheduleItemCheckKanbanId
           : null,
         finding_pic_id: rawFindingPicId,
+        pic_supervisor_id: rawFindingPicSupervisorId,
       };
 
       if (req.body.line_id) {
@@ -260,6 +261,7 @@ module.exports = {
         sub_schedule_id: ` (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}') `,
         schedule_item_check_kanban_id: ` (select schedule_item_check_kanban_id from ${table.tb_r_4s_schedule_item_check_kanbans} where uuid = '${req.body.schedule_item_check_kanban_id}') `,
         finding_pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.finding_pic_id}') `,
+        pic_supervisor_id: ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.pic_supervisor_id}') `,
       };
 
       if (
