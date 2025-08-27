@@ -24,9 +24,9 @@ const shifts = require('./shifts')
 const system = require('./systems')
 const oemItemCheckKanbans = require('./omItemCheckKanbans')
 
+
 router.use('/companies', companies)
 router.use('/plants', plants)
-
 router.use('/shops', shops)
 router.use('/lines', lines)
 router.use('/machines', machines)
