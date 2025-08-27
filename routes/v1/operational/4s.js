@@ -19,6 +19,158 @@ const scheduleItemCheckKanban4s = require('./scheduleItemCheckKanban4s')
 const graph4s = require('./graph4s')
 
 //#region schedule
+/**
+ * @swagger
+ * /api/v1/operational/4s/main-schedule:
+ *   get:
+ *     tags:
+ *       - 4s
+ *     summary: 4s Main Schedule
+ *     description: 4s Main Schedule
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+/**
+ * @swagger
+ * /api/v1/operational/4s/main-schedule/delete/{id}:
+ *   delete:
+ *     tags:
+ *       - 4s
+ *     summary: 4s Sub Schedule
+ *     description: 4s Sub Schedule
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+/**
+ * @swagger
+ * /api/v1/operational/4s/sub-schedule:
+ *   get:
+ *     tags:
+ *       - 4s
+ *     summary: 4s Sub Schedule
+ *     description: 4s Sub Schedule
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+/**
+ * @swagger
+ * /api/v1/operational/4s/sub-schedule/today:
+ *   get:
+ *     tags:
+ *       - 4s
+ *     summary: 4s Sub Schedule
+ *     description: 4s Sub Schedule
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+/**
+ * @swagger
+ * /api/v1/operational/4s/sub-schedule/count:
+ *   get:
+ *     tags:
+ *       - 4s
+ *     summary: 4s Sub Schedule
+ *     description: 4s Sub Schedule
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+/**
+ * @swagger
+ * /api/v1/operational/4s/sub-schedule/{id}:
+ *   get:
+ *     tags:
+ *       - 4s
+ *     summary: 4s Sub Schedule
+ *     description: 4s Sub Schedule
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+/**
+ * @swagger
+ * /api/v1/operational/4s/sub-schedule/edit/{id}:
+ *   put:
+ *     tags:
+ *       - 4s
+ *     summary: 4s Sub Schedule
+ *     description: 4s Sub Schedule
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+
+/**
+ * @swagger
+ * /api/v1/operational/4s/sub-schedule/delete/{id}:
+ *   delete:
+ *     tags:
+ *       - 4s
+ *     summary: 4s Sub Schedule
+ *     description: 4s Sub Schedule
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+/**
+ * @swagger
+ * /api/v1/operational/4s/sub-schedule/sign/{sign_checker_id}:
+ *   put:
+ *     tags:
+ *       - 4s
+ *     summary: 4s Sub Schedule
+ *     description: 4s Sub Schedule
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+/**
+ * @swagger
+ * /api/v1/operational/4s/sub-schedule/add-plan-pic/{id}:
+ *   put:
+ *     tags:
+ *       - 4s
+ *     summary: 4s Sub Schedule
+ *     description: 4s Sub Schedule
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+
 router.get("/main-schedule", auth.verifyToken, get4sMainSchedule)
 router.delete("/main-schedule/delete/:id", auth.verifyToken, delete4sMainSchedule)
 

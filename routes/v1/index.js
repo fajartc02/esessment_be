@@ -8,7 +8,20 @@ const { register, login } = require('./auth/index')
 const operational = require('./operational/index')
 const master = require('./master/index');
 const auth = require('../../helpers/auth');
-
+/**
+ * @swagger
+ * /api/v1/verify:
+ *   get:
+ *     tags:
+ *       - Verify
+ *     summary: Verify Token
+ *     description: Verify Token
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
 router.use('/verify', auth.verifyToken, (req, res) => {
     try {
         response.success(res, req.user)
@@ -24,10 +37,21 @@ router.use('/operational', operational)
 router.use('/master', master)
 
 
+/**
+ * @swagger
+ * /api/v1/file:
+ *   get:
+ *     tags:
+ *       - File
+ *     summary: Get File
+ *     description: Get File
+ *     produces:
+ *       - application/pdf
+ */
 router.get('/file', (req, res) => {
     const path = req.query.path
     if (fs.existsSync(path)) {
-        if(path.includes('pdf')) {
+        if (path.includes('pdf')) {
             res.contentType("application/pdf");
         }
         fs.createReadStream(path).pipe(res)
