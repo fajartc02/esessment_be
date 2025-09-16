@@ -1,3 +1,4 @@
+
 const router = require("express")();
 const {
   editObservation,
@@ -26,6 +27,264 @@ const {
 } = require("../../../controllers/v2/operational/stwSign.controllers");
 const auth = require("../../../helpers/auth");
 const upload = require("../../../helpers/upload");
+
+/**
+ * @swagger
+ * /api/v1/operational/observations/schedule:
+ *   get:
+ *     tags:
+ *       - Observations
+ *     summary: Get Observations
+ *     description: Get Observations
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+/**
+ * @swagger
+ * /api/v1/operational/observations/schedule:
+ *   post:
+ *     tags:
+ *       - Observations
+ *     summary: Post Observations
+ *     description: Post Observations
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+/**
+ * @swagger
+ * /api/v1/operational/observations/schedule/edit/{id}:
+ *   put:
+ *     tags:
+ *       - Observations
+ *     summary: Edit Observations
+ *     description: Edit Observations
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+/**
+ * @swagger
+ * /api/v1/operational/observations/schedule/{id}:
+ *   get:
+ *     tags:
+ *       - Observations
+ *     summary: Get Observations
+ *     description: Get Observations
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+/**
+ * @swagger
+ * /api/v1/operational/observations/schedule/list:
+ *   get:
+ *     tags:
+ *       - Observations
+ *     summary: Get Observations
+ *     description: Get Observations
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+/**
+ * @swagger
+ * /api/v1/operational/observations/schedule/list/delete/{id}:
+ *   delete:
+ *     tags:
+ *       - Observations
+ *     summary: Delete Observations
+ *     description: Delete Observations
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+/**
+ * @swagger
+ * /api/v1/operational/observations/summary:
+ *   get:
+ *     tags:
+ *       - Observations
+ *     summary: Get Observations
+ *     description: Get Observations
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+/**
+ * @swagger
+ * /api/v1/operational/observations/sign:
+ *   get:
+ *     tags:
+ *       - Observations
+ *     summary: Get Observations
+ *     description: Get Observations
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+/**
+ * @swagger
+ * /api/v1/operational/observations/sign:
+ *   post:
+ *     tags:
+ *       - Observations
+ *     summary: Post Observations
+ *     description: Post Observations
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+/**
+ * @swagger
+ * /api/v1/operational/observations/sign/{id}:
+ *   put:
+ *     tags:
+ *       - Observations
+ *     summary: Edit Observations
+ *     description: Edit Observations
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+/**
+ * @swagger
+ * /api/v1/operational/observations/single-check-obs:
+ *   post:
+ *     tags:
+ *       - Observations
+ *     summary: Post Observations
+ *     description: Post Observations
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+/**
+ * @swagger
+ * /api/v1/operational/observations/single-check-category:
+ *   post:
+ *     tags:
+ *       - Observations
+ *     summary: Post Observations
+ *     description: Post Observations
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+/**
+ * @swagger
+ * /api/v1/operational/observations/single-check-category-v2:
+ *   post:
+ *     tags:
+ *       - Observations
+ *     summary: Post Observations
+ *     description: Post Observations
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+/**
+ * @swagger
+ * /api/v1/operational/observations/single-check-category/{id}:
+ *   put:
+ *     tags:
+ *       - Observations
+ *     summary: Edit Observations
+ *     description: Edit Observations
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+//single-check-finding
+/**
+ * @swagger
+ * /api/v1/operational/observations/single-check-finding:
+ *   post:
+ *     tags:
+ *       - Observations
+ *     summary: Post Observations
+ *     description: Post Observations
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+// upload-video
+/**
+ * @swagger
+ * /api/v1/operational/observations/upload-video/{id}:
+ *   post:
+ *     tags:
+ *       - Observations
+ *     summary: Post Observations
+ *     description: Post Observations
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
+
+//check
+/**
+ * @swagger
+ * /api/v1/operational/observations/check:
+ *   post:
+ *     tags:
+ *       - Observations
+ *     summary: Post Observations
+ *     description: Post Observations
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
 
 router.get("/summary", auth.verifyToken, getSummaryObservations);
 router.get("/schedule", auth.verifyToken, getScheduleObservations);
