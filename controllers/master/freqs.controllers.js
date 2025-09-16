@@ -43,6 +43,7 @@ module.exports = {
                         )::integer as no`,
                     'uuid as id',
                     'freq_nm',
+                    'color',
                     'precition_val',
                     'created_by',
                     'created_dt'
@@ -62,6 +63,7 @@ module.exports = {
             const insertBody = {
                 ...req.body,
                 uuid: uuid(),
+                color: req.body.color || '#000000'
             }
 
             const attrsInsert = await attrsUserInsertData(req, insertBody)
@@ -78,6 +80,7 @@ module.exports = {
 
             const updateBody = {
                 ...req.body,
+                color: req.body.color || '#000000'
             }
 
             const attrsUserUpdate = await attrsUserUpdateData(req, updateBody)

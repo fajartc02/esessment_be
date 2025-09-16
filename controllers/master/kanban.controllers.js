@@ -59,6 +59,7 @@ module.exports = {
                         tmk.area_nm,
                         tmk.kanban_imgs,
                         tmg.group_nm,
+                       tmf.color,
                         case 
                             when tmk.sop_file is not null and tmk.sop_file != '' then 
                                 '${process.env.APP_HOST}' || '/file?path=' || tmk.sop_file
