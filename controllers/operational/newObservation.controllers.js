@@ -187,7 +187,7 @@ module.exports = {
                     const getGroupIdUser = await uuidToAbnormalityID(table.tb_m_users, 'group_id', req.body.cm_pic_id.pic_id, db)
                     const getGroupAbnormalityID = await uuidToAbnormalityID(table.tb_m_groups, 'abnormality_id', getGroupIdUser, db, 'group_id')
                     console.log(getGroupIdUser, 'getGroupIdUser', getGroupAbnormalityID)
-                    const responseAdd = await axios.post(`https://mt-system.id/abnormality/be/problems/add`, {
+                    const responseAdd = await axios.post(`http://mt-system.id:4444/abnormality/problems/add`, {
                         problem_date: moment(req.body.finding_date).format('YYYY-MM-DD'),
                         countermeasure_date: moment(req.body.cm_end_plan_date).format('YYYY-MM-DD'),
                         problem_desc: req.body.finding_desc,
@@ -202,7 +202,6 @@ module.exports = {
                     console.log(responseAdd.response, 'responseAdd')
                     delete req.body.department_id
                 }
-                console.log(req.body, 'BEFORE');
                 delete req.body.department_id
                 req.body.category_id = req.body.category_id ?
                     `(select category_id from ${table.tb_m_categories} where uuid = '${req.body.category_id}')` :
@@ -218,9 +217,6 @@ module.exports = {
                     null;
                 req.body.cm_result_factor_id = req.body.cm_result_factor_id ?
                     `(select factor_id from ${table.tb_m_factors} where uuid = '${req.body.cm_result_factor_id}')` :
-                    null;
-                req.body.pic_supervisor_id = req.body.pic_supervisor_id ?
-                    `(select user_id from ${table.tb_m_users} where uuid = '${req.body.pic_supervisor_id.pic_id}')` :
                     null;
                 console.log(req.body);
 

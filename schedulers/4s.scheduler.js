@@ -22,27 +22,26 @@ const {
 
 } = require('../services/4s.services')
 
+const config = {
+    //env: process.env.NODE_ENV,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT,
+    host: process.env.DB_HOST,
+    ssl: false
+};
+
+console.log('env', config);
+console.log(`4S Schedule Date Scheduler Running .....`)
+
 const currentDate = moment()
 const currentMonth = currentDate.month() + 1 // need +1 to determine current month
 const currentYear = currentDate.year()
 const flagCreatedBy = `SCHEDULERS ${currentDate.format('YYYY-MM-DD')}`
 
-//#region scheduler main
+//#region scheduler main 
 const main = () => {
-
-    const config = {
-        //env: process.env.NODE_ENV,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-        port: process.env.DB_PORT,
-        host: process.env.DB_HOST,
-        ssl: false
-    };
-
-    console.log('env', config);
-    console.log(`4S Schedule Date Scheduler Running .....`)
-
     try
     {
         const pool = new pg.Pool(config);
@@ -51,7 +50,7 @@ const main = () => {
             try
             {
 
-                //#region schedulers parent
+                //#region schedulers parent 
                 const lineGroups = await lineGroupRows(db, currentYear, currentMonth, false)
 
                 let mainScheduleBulkSchema = []
@@ -98,7 +97,7 @@ const main = () => {
                     const subScheduleBulk = await genMonthlySubScheduleSchema(db, currentYear, currentMonth, lineGroups[lgIndex], shiftRows)
                     const signCheckers = await genMonthlySignCheckerSchema(db, currentYear, currentMonth, lineGroups[lgIndex], shiftRows)
                     const signCheckerTl1 = signCheckers.tl1
-                    //const signCheckerTl2 = signCheckers.tl2
+                    const signCheckerTl2 = signCheckers.tl2
                     const signChckerGl = signCheckers.gl
                     const signChckerSh = signCheckers.sh
 
@@ -110,10 +109,10 @@ const main = () => {
                     {
                         signCheckerTl1BulkSchema.push(...signCheckerTl1)
                     }
-                    /*if (signCheckerTl2.length > 0)
+                    if (signCheckerTl2.length > 0)
                     {
                         signCheckerTl2BulkSchema.push(...signCheckerTl2)
-                    }*/
+                    }
                     if (signChckerGl.length > 0)
                     {
                         signChckerGlBulkSchema.push(...signChckerGl)
@@ -137,7 +136,7 @@ const main = () => {
                 const mainScheduleInserted = await findScheduleTransaction4S(db, currentYear, currentMonth);
                 console.log('subScheduleBulkSchema length', subScheduleBulkSchema.length);
                 console.log('signCheckerTl1BulkSchema length', signCheckerTl1BulkSchema.length);
-                //console.log('signCheckerTl2BulkSchema length', signCheckerTl2BulkSchema.length);
+                console.log('signCheckerTl2BulkSchema length', signCheckerTl2BulkSchema.length);
                 console.log('signChckerGlBulkSchema length', signChckerGlBulkSchema.length);
                 console.log('signChckerShBulkSchema length', signChckerShBulkSchema.length);
 
@@ -253,7 +252,7 @@ const main = () => {
                         }
                     }
 
-                    /*if (signCheckerTl2BulkSchema.length > 0)
+                    if (signCheckerTl2BulkSchema.length > 0)
                     {
                         for (let tl2Index = 0; tl2Index < signCheckerTl2BulkSchema.length; tl2Index++)
                         {
@@ -303,7 +302,7 @@ const main = () => {
                                 }
                             }
                         }
-                    }*/
+                    }
 
                     if (signChckerGlBulkSchema.length > 0)
                     {
@@ -441,7 +440,7 @@ const main = () => {
 
 }
 //#endregion
-// main()
+
 
 
 /* clear4sRows()

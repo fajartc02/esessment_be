@@ -15,6 +15,18 @@ const { generateMonthlyDates } = require('../helpers/date')
 const { holidayRequest } = require('../helpers/externalRequest')
 const { bulkToSchema } = require('../helpers/schema')
 
+console.log('env', {
+    env: process.env.NODE_ENV,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT,
+    host: process.env.DB_HOST,
+    ssl: false
+})
+
+console.log(`Yearly Schedule Date Scheduler Running .....`)
+
 const currentDate = moment()
 const currentYear = currentDate.year()
 
@@ -106,18 +118,6 @@ const clear4sRows = async () => {
 //#endregion
 
 const main = async () => {
-    console.log('env', {
-        env: process.env.NODE_ENV,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-        port: process.env.DB_PORT,
-        host: process.env.DB_HOST,
-        ssl: false
-    })
-
-    console.log(`Yearly Schedule Date Scheduler Running .....`)
-    
     await queryTransaction(async (db) => {
         await generateSchedules(db)
     })
@@ -146,4 +146,4 @@ const main = async () => {
         process.exit()
     }) */
 
-// module.exports = main;
+module.exports = main;

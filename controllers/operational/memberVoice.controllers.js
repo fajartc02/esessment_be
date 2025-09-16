@@ -64,10 +64,10 @@ module.exports = {
       req.body.findings.category_id =
         req.body.findings.category_id != "" && req.body.findings.category_id
           ? (await uuidToId(
-            table.tb_m_categories,
-            "category_id",
-            req.body.findings.category_id
-          )) ?? null
+              table.tb_m_categories,
+              "category_id",
+              req.body.findings.category_id
+            )) ?? null
           : null;
       req.body.findings.cm_pic_id =
         (await uuidToId(
@@ -92,13 +92,6 @@ module.exports = {
           table.tb_m_factors,
           "factor_id",
           req.body.findings.cm_result_factor_id
-        )) ?? null;
-
-      req.body.findings.pic_supervisor_id =
-        (await uuidToId(
-          table.tb_m_users,
-          "user_id",
-          req.body.findings.pic_supervisor_id
         )) ?? null;
 
       let dataFinding = {
@@ -207,10 +200,10 @@ module.exports = {
         category_id:
           req.body.findings.category_id != "" && req.body.findings.category_id
             ? await uuidToId(
-              table.tb_m_categories,
-              "category_id",
-              req.body.findings.category_id
-            )
+                table.tb_m_categories,
+                "category_id",
+                req.body.findings.category_id
+              )
             : null,
         factor_id: await uuidToId(
           table.tb_m_factors,
@@ -227,7 +220,6 @@ module.exports = {
           "factor_id",
           req.body.findings.cm_result_factor_id
         ),
-        pic_supervisor_id: req.body.findings?.pic_supervisor_id ? `(select user_id from ${table.tb_m_users} where uuid = '${req.body.findings.pic_supervisor_id}')` : null
       };
 
       delete req.body.findings;
