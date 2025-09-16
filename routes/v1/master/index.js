@@ -23,6 +23,7 @@ const freqs = require('./freqs')
 const shifts = require('./shifts')
 const system = require('./systems')
 const oemItemCheckKanbans = require('./omItemCheckKanbans')
+const wras = require("./wras");
 
 
 router.use('/companies', companies)
@@ -48,6 +49,8 @@ router.use('/shifts', shifts)
 router.use('/systems', system)
 
 router.use('/om-item-check-kanbans', oemItemCheckKanbans)
+
+router.use("/wras", wras);
 
 
 module.exports = router
