@@ -5,31 +5,31 @@ const users = require("./users");
 const companies = require("./companies");
 const plants = require("./plants");
 
-const shops = require("./shops");
-const lines = require("./lines");
-const machines = require("./machines");
-const pos = require("./pos");
-const job = require("./job");
-const jobType = require("./jobType");
-const wras = require("./wras");
-const groups = require("./groups");
-const categories = require("./categories");
-const factors = require("./factors");
-const judgments = require("./judgments");
-const zones = require("./zones");
-const kanbans = require("./kanbans");
-const itemCheckKanbans4S = require("./4sitemCheckKanban");
-const freqs = require("./freqs");
-const shifts = require("./shifts");
-const system = require("./systems");
-const oemItemCheckKanbans = require("./omItemCheckKanbans");
+const shops = require('./shops')
+const lines = require('./lines')
+const machines = require('./machines')
+const pos = require('./pos')
+const job = require('./job')
+const jobType = require('./jobType')
 
-router.use("/companies", companies);
-router.use("/plants", plants);
+const groups = require('./groups')
+const categories = require('./categories')
+const factors = require('./factors')
+const judgments = require('./judgments')
+const zones = require('./zones')
+const kanbans = require('./kanbans')
+const itemCheckKanbans4S = require('./4sitemCheckKanban')
+const freqs = require('./freqs')
+const shifts = require('./shifts')
+const system = require('./systems')
+const oemItemCheckKanbans = require('./omItemCheckKanbans')
 
-router.use("/shops", shops);
-router.use("/lines", lines);
-router.use("/machines", machines);
+
+router.use('/companies', companies)
+router.use('/plants', plants)
+router.use('/shops', shops)
+router.use('/lines', lines)
+router.use('/machines', machines)
 
 router.use("/job", job);
 router.use("/pos", pos);

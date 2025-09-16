@@ -32,14 +32,15 @@ module.exports = {
       findingData.category_id =
         findingData.category_id != "" && findingData.category_id
           ? (await uuidToId(
-              table.tb_m_categories,
-              "category_id",
-              findingData.category_id
-            )) ?? null
+            table.tb_m_categories,
+            "category_id",
+            findingData.category_id
+          )) ?? null
           : null;
       findingData.cm_pic_id =
         (await uuidToId(table.tb_m_users, "user_id", findingData.cm_pic_id)) ??
         null;
+      findingData.pic_supervisor_id = findingData.pic_supervisor_id ? `(select user_id from ${table.tb_m_users} where uuid = '${findingData.pic_supervisor_id}')` : null;
       findingData.factor_id =
         (await uuidToId(
           table.tb_m_factors,
@@ -164,10 +165,10 @@ module.exports = {
         category_id:
           req.body.findings.category_id != "" && req.body.findings.category_id
             ? await uuidToId(
-                table.tb_m_categories,
-                "category_id",
-                req.body.findings.category_id
-              )
+              table.tb_m_categories,
+              "category_id",
+              req.body.findings.category_id
+            )
             : null,
         factor_id: await uuidToId(
           table.tb_m_factors,
@@ -179,6 +180,7 @@ module.exports = {
           "user_id",
           req.body.findings.cm_pic_id
         ),
+        pic_supervisor_id: req.body.findings.pic_supervisor_id ? `(select user_id from ${table.tb_m_users} where uuid = '${req.body.findings.pic_supervisor_id}')` : null,
         cm_result_factor_id: await uuidToId(
           table.tb_m_factors,
           "factor_id",
