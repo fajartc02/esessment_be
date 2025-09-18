@@ -215,6 +215,9 @@ module.exports = {
                 req.body.cm_pic_id = req.body.cm_pic_id ?
                     `(select user_id from ${table.tb_m_users} where uuid = '${req.body.cm_pic_id.pic_id}')` :
                     null;
+                req.body.pic_supervisor_id = req.body.pic_supervisor_id ?
+                    `(select user_id from ${table.tb_m_users} where uuid = '${req.body.pic_supervisor_id.pic_id}')` :
+                    null;
                 req.body.cm_result_factor_id = req.body.cm_result_factor_id ?
                     `(select factor_id from ${table.tb_m_factors} where uuid = '${req.body.cm_result_factor_id}')` :
                     null;
