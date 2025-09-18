@@ -1207,6 +1207,13 @@ module.exports = {
                 throw "invalid params, unknown data"
             }
 
+            delete req.body.main_schedule_id
+            delete req.body.date
+            delete req.body.is_tl_1
+            delete req.body.is_tl_2
+            delete req.body.is_gl
+            delete req.body.is_sh
+
             let attrsUpdate = await attrsUserUpdateData(req, req.body)
             await queryPUT(table.tb_r_4s_schedule_sign_checkers, attrsUpdate, `WHERE uuid = '${sign_checker_id}'`)
 
