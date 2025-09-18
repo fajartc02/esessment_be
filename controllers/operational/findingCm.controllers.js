@@ -196,16 +196,15 @@ module.exports = {
           "factor_id",
           req.body.factor_id
         ),
-        cm_pic_id: await uuidToId(
-          table.tb_m_users,
-          "user_id",
-          req.body.cm_pic_id
-        ),
+        cm_pic_id: req.body.cm_pic_id ? `(select user_id from ${table.tb_m_users} where uuid = '${req.body.cm_pic_id}')` : null,
         cm_result_factor_id: await uuidToId(
           table.tb_m_factors,
           "factor_id",
           req.body.cm_result_factor_id
         ),
+        pic_supervisor_id: req.body.pic_supervisor_id
+          ? `(select user_id from ${table.tb_m_users} where uuid = '${req.body.pic_supervisor_id}')`
+          : null,
       };
 
       let attrsUpdateUserFinding = await attrsUserUpdateData(req, findingsData);
