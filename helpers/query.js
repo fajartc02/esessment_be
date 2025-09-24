@@ -2,7 +2,7 @@ const pg = require("pg");
 const { database, databasePool } = require("../config/database");
 const logger = require("./logger");
 
-const _defaultCallbackTrans = async (db = databasePool) => {};
+const _defaultCallbackTrans = async (db = databasePool) => { };
 
 const poolQuery = async (raw) => {
   let client;
@@ -40,35 +40,28 @@ const mapWhereCond = (obj) => {
         } else if (obj[key].toLowerCase().includes("is not null")) {
           result.push(`${key} is not null`);
         } else if (
-          obj[key].toLowerCase().includes("select") ||
-          obj[key].toLowerCase().includes("now") ||
-          obj[key].toLowerCase().includes("extract")
+          obj[key].toLowerCase().includes("select")
+          || obj[key].toLowerCase().includes("now")
+          || obj[key].toLowerCase().includes("extract")
         ) {
           if (key === "") {
             result.push(`${obj[key]}`);
           } else {
             result.push(`${key} = ${obj[key]}`);
           }
+
         } else if (key.toLowerCase().includes("lower")) {
           result.push(`${key} = '${obj[key]}'`);
         } else if (key.toLowerCase().includes("like_")) {
-          result.push(
-            `lower(${key.replace("like_", "")}) like '%${obj[key]}%'`
-          );
+          result.push(`lower(${key.replace("like_", "")}) like '%${obj[key]}%'`);
         } else {
           result.push(`${key} = '${obj[key]}'`);
         }
       } else if (typeof obj[key] == "object") {
         if (obj[key].isDate && obj[key].value) {
           result.push(`${key}::date = ${obj[key].value}`);
-        } else if (
-          obj[key].isDateBetween &&
-          obj[key].startDate &&
-          obj[key].endDate
-        ) {
-          result.push(
-            `${key}::date between '${obj[key].startDate}' and '${obj[key].endDate}'`
-          );
+        } else if (obj[key].isDateBetween && obj[key].startDate && obj[key].endDate) {
+          result.push(`${key}::date between '${obj[key].startDate}' and '${obj[key].endDate}'`);
         }
       } else {
         result.push(`${key} = '${obj[key]}'`);
@@ -185,7 +178,7 @@ module.exports = {
       for (const key in data) {
         if (data[key] == "CURRENT_TIMESTAMP") {
           containerSetValues.push(`${key} = CURRENT_TIMESTAMP`);
-        } else if ((data[key] && data[key] != "null") || data[key] == false) {
+        } else if ((data[key] && data[key] != "null" || data[key] == false) || `${data[key]}`.includes("select")) {
           let value = data[key];
           if (typeof value === "string" && value.includes("select")) {
             value = `${data[key]}`;
@@ -307,19 +300,14 @@ module.exports = {
 
         let value = data[key];
         console.log(value, key);
-        if (
-          typeof value === "string" &&
-          `${value.toLowerCase()}`.includes("select")
-        ) {
+        if (typeof value === "string" && `${value.toLowerCase()}`.includes("select")) {
           value = `${data[key]}`;
         } else {
           value = `'${data[key]}'`;
         }
 
         containerValues.push(
-          (data[key] && data[key] != "null") || data[key] == false
-            ? `${value}`
-            : "NULL"
+          (data[key] && data[key] != "null") || data[key] == false ? `${value}` : "NULL"
         );
       }
       let q = `INSERT INTO ${table}(${containerColumn.join(
@@ -385,15 +373,24 @@ module.exports = {
         });
     });
   },
- queryExcelPost : async (tableName, data) => {
+queryExcelPost : async (tableName, data) => {
   try {
     if (!data || Object.keys(data).length === 0) {
       throw new Error("No data provided for insert");
     }
 
     const columns = Object.keys(data).map((col) => `"${col}"`);
-    const values = Object.values(data);
-    const placeholders = columns.map((_, i) => `$${i + 1}`);
+    const values = [];
+    let paramIndex = 1;
+
+    const placeholders = Object.values(data).map((val) => {
+      if (typeof val === "string" && val.startsWith("(select")) {
+        return val; // raw SQL, jangan diparameterize
+      } else {
+        values.push(val);
+        return `$${paramIndex++}`;
+      }
+    });
 
     const q = `
       INSERT INTO ${tableName} (${columns.join(",")})
@@ -405,52 +402,56 @@ module.exports = {
     console.log("[queryExcelPost] VALUES:", values);
 
     const result = await database.query(q, values);
-    return result.rows[0]; // atau return result.rows kalau mau banyak
+    return result.rows[0];
   } catch (err) {
     console.error("[queryExcelPost] ERROR:", err);
     throw err;
   }
 },
+queryExcelPut: async (tableName, wrasId, fileData) => {
+  try {
+    if (!wrasId) {
+      throw new Error("wras_id is required for update");
+    }
+    if (!fileData) {
+      throw new Error("File data is required for update");
+    }
+
+    let setClause;
+    const values = [];
+
+    if (typeof fileData === "string" && fileData.startsWith("(select")) {
+      // kalau fileData adalah raw SQL → jangan pakai parameter
+      setClause = `"file" = ${fileData}`;
+    } else {
+      // normal case → simpan JSON / string
+      values.push(fileData);
+      setClause = `"file" = $1`;
+    }
+
+    // tambahkan wras_id sebagai param terakhir
+    values.push(wrasId);
+
+    const q = `
+      UPDATE ${tableName}
+      SET ${setClause}
+      WHERE "wras_id" = $${values.length}
+      RETURNING *;
+    `;
+
+    console.log("[queryExcelPut] QUERY:", q);
+    console.log("[queryExcelPut] VALUES:", values);
+
+    const result = await database.query(q, values);
+    return result.rows[0];
+  } catch (err) {
+    console.error("[queryExcelPut] ERROR:", err);
+    throw err;
+  }
+},
 
 
-  queryExcelPut: async (table, data, where) => {
-    return new Promise(async (resolve, reject) => {
-      try {
-        if (!where || Object.keys(where).length === 0) {
-          throw new Error("WHERE condition wajib ada untuk UPDATE");
-        }
-
-        // bikin set clause: "col1"=$1, "col2"=$2 ...
-        const columns = Object.keys(data);
-        const values = Object.values(data);
-
-        const setClause = columns.map((col, i) => `"${col}"=$${i + 1}`);
-
-        // bikin where clause: "id"=$n ...
-        const whereKeys = Object.keys(where);
-        const whereValues = Object.values(where);
-
-        const whereClause = whereKeys
-          .map((col, i) => `"${col}"=$${columns.length + i + 1}`)
-          .join(" AND ");
-
-        const q = `UPDATE ${table} 
-                 SET ${setClause.join(", ")} 
-                 WHERE ${whereClause} 
-                 RETURNING *`;
-
-        const result = await database.query(q, [...values, ...whereValues]);
-
-        console.log("QUERY:", q, "VALUES:", [...values, ...whereValues]);
-
-        resolve(result);
-      } catch (err) {
-        console.error(err);
-        reject(err);
-      }
-    });
-  },
 
   poolQuery,
-  mapWhereCond,
+  mapWhereCond
 };

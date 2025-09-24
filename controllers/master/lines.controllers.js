@@ -15,12 +15,16 @@ const moment = require('moment')
 module.exports = {
     getLinesOpts: async(req, res) => {
         try {
-            let { id, isForm } = req.query
+            let { id, isForm, shop_id } = req.query
             let containerQuery = ''
             let cols = ['uuid as id', 'line_nm', 'line_snm', 'line_desc', 'shop_id', 'created_by', 'created_dt']
             if (id && id != -1 && id != 'null') {
                 let line_id = await uuidToId(table.tb_m_lines, 'line_id', id)
                 containerQuery += ` AND line_id = ${line_id}`
+            }
+            if (shop_id && shop_id != -1 && shop_id != 'null') {
+                let shop_id_conv = await uuidToId(table.tb_m_shop, 'shop_id', shop_id)
+                containerQuery += ` AND shop_id = ${shop_id_conv}`
             }
             if (isForm && isForm != -1 && isForm != 'null') {
                 cols = ['uuid as id', 'line_nm', 'line_snm', 'line_desc', 'shop_id']

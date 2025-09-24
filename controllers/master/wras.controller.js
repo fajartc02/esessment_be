@@ -1,75 +1,68 @@
 const table = require("../../config/table");
 const {
   queryExcelPost,
-  queryPOST,
-  queryGet,
+  queryPUT,
   queryExcelPut,
   queryCustom,
+  queryDELETE,
 } = require("../../helpers/query");
 const getLastIdData = require("../../helpers/getLastIdData");
 const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData");
-const uuidToId = require("../../helpers/uuidToId");
+const uuidToIdNew = require("../../helpers/uuidToIdNew");
 const response = require("../../helpers/response");
 const { v4: uuidv4 } = require("uuid");
 
 module.exports = {
 postWras: async (req, res) => {
   try {
-    let idLast = (await getLastIdData(table.tb_m_wras, "wras_id")) + 1;
-    req.body.wras_id = idLast;
-    req.body.uuid = req.uuid();
+    // === Generate ID baru ===
+   let lastId = await getLastIdData(table.tb_m_wras, "wras_id");
+let idLast = lastId + 1;
 
-    // === Parse file dari FE ===
+    // === Parse file dari FE (kalau ada) ===
     let filePayload = req.body.file;
     if (typeof filePayload === "string") {
       filePayload = JSON.parse(filePayload);
     }
-    const config = filePayload?.[0]?.config?.columnlen || {};
 
-    // Mapping UUID → nama pakai helper
-    const plantNm = await uuidToName(table.tb_m_plants, "plant_nm", config.plant);
-    const shopNm  = await uuidToName(table.tb_m_shop, "shop_nm", config.shop);
-    const lineNm  = await uuidToName(table.tb_m_lines, "line_nm", config.line);
-    const posNm   = await uuidToName(table.tb_m_pos, "pos_nm", config.pos);
-    const sopNm   = await uuidToName(table.tb_m_jobs, "job_nm", config.sop);
-
-    // === Build insert body ===
+    // === Build body untuk insert ===
     const insertBody = {
-      wras_id: req.body.wras_id,
-      uuid: req.body.uuid,
-      plant: plantNm,
-      shop: shopNm,
-      line: lineNm,
-      pos: posNm,
-      sop: sopNm,
-      file: JSON.stringify(filePayload),
+      wras_id: idLast,
+      plant: await uuidToIdNew(table.tb_m_plants, "plant_nm", req.body.plant, ), 
+      shop: await uuidToIdNew(table.tb_m_shop, "shop_nm", req.body.shop, ),
+      line: await uuidToIdNew(table.tb_m_lines, "line_nm", req.body.line, ),
+      pos: await uuidToIdNew(table.tb_m_pos, "pos_nm", req.body.pos, ),
+      sop: await uuidToIdNew(table.tb_m_jobs, "job_nm", req.body.sop, ),
+      file: filePayload ? JSON.stringify(filePayload) : null,
     };
 
-    // Insert ke DB
+    console.log("[InsertBody WRAS]", insertBody);
+
+    // === Insert ke DB ===
     const result = await queryExcelPost(table.tb_m_wras, insertBody);
 
     response.success(res, "Success to add WRAS", result);
   } catch (error) {
-    console.error(error);
+    console.error("[postWras] ERROR:", error);
     response.failed(res, error.message || error);
   }
 },
 
   getWras: async (req, res) => {
-    try {
-      const sql = `
-        SELECT wras_id, file
-        FROM ${table.tb_m_wras}
-      `;
+  try {
+    const sql = `
+      SELECT *
+      FROM ${table.tb_m_wras}
+    `;
 
-      const result = await queryCustom(sql);
+    const result = await queryCustom(sql);
 
-      return response.success(res, "Success get WRAS", result.rows);
-    } catch (error) {
-      console.error(error);
-      return response.failed(res, error.message || error);
-    }
-  },
+    return response.success(res, "Success get WRAS", result.rows);
+  } catch (error) {
+    console.error(error);
+    return response.failed(res, error.message || error);
+  }
+},
 
   putWras: async (req, res) => {
     try {
@@ -92,14 +85,28 @@ postWras: async (req, res) => {
         wras_id: id,
       });
 
-      if (result.rowCount === 0) {
-        return response.failed(res, "Data tidak ditemukan");
-      }
+     
 
-      return response.success(res, "Success update WRAS", result.rows[0]);
+      return response.success(res, "Success update WRAS");
     } catch (error) {
       console.error(error);
       return response.failed(res, error.message || error);
     }
   },
+  deleteWras: async (req, res) => {
+  try {
+    
+    // update record berdasarkan uuid
+    const result = await queryDELETE(
+      table.tb_m_wras,
+      `WHERE wras_id = '${req.params.id}'`
+    );
+
+    response.success(res, "Success to  delete WRAS", result);
+  } catch (error) {
+    console.error(error);
+    response.failed(res, error.message || error);
+  }
+},
+
 };

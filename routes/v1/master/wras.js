@@ -17,6 +17,6 @@ router.get("/", auth.verifyToken, getWras);
 router.post("/", auth.verifyToken, postWras);
 router.put("/:id", auth.verifyToken, putWras);
 // DELETE WRAS
-// router.delete("/:id", auth.verifyToken, deleteWras);
+router.delete("/:id", auth.verifyToken, deleteWras);
 
 module.exports = router;

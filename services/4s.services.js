@@ -56,6 +56,8 @@ const baseMstScheduleQuery4S = async (
                         tmz.line_id = ${lineId}
                         and tmk.group_id = ${groupId}
                         and tmk.deleted_dt is null
+                        -- VALIDATION for OTHERS
+                        AND tmz.zone_nm <> 'OTHERS'
                     order by
                         tmk.group_id`
 
@@ -96,6 +98,7 @@ const findScheduleTransaction4S = async (
     if (scheduleId) {
         filterSub.push(`tr4sss.schedule_id = ${scheduleId}`)
     }
+    
 
     let selectSub = [
         'tr4sss.freq_id',
@@ -125,7 +128,8 @@ const findScheduleTransaction4S = async (
                     and tr4sms.year_num = ${year}
                     and tr4sms.deleted_dt is null
                     ${filterMain.length > 0 ? 'and ' + filterMain.join(' and ') : ''}
-                    ${filterSub.length > 0 ? 'and ' + filterSub.join(' and ') : ''}`
+                    ${filterSub.length > 0 ? 'and ' + filterSub.join(' and ') : ''}
+                `
 
     const query = await db.query(sql)
     if (query && query.rowCount > 0) {
@@ -157,7 +161,8 @@ const findSignCheckerTransaction4S = async (
                     tr4sms.month_num = ${month}
                     and tr4sms.year_num = ${year}
                     and tr4sms.line_id = ${lineId}
-                    and tr4sms.group_id = ${groupId}`
+                    and tr4sms.group_id = ${groupId}
+                    `
 
     if (startDate) {
         sql += ` and tr4sss.start_date = '${startDate}'`

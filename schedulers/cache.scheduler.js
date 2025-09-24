@@ -4,4 +4,4 @@ const main = () => {
     cache.clear()
 }
 
-main()
+// main()
