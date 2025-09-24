@@ -388,10 +388,10 @@ const subScheduleRows = async (
     return query
 }
 
+
 module.exports = {
     get4sMainSchedule: async (req, res) => {
-        try
-        {
+        try {
             const { line_id, group_id, month_year_num } = req.query
             let { limit, current_page } = req.query
 
@@ -640,8 +640,7 @@ module.exports = {
         }
     },
     get4sSubScheduleTodayPlan: async (req, res) => {
-        try
-        {
+        try {
             const { date, line_id, group_id } = req.query
 
             let filterCondition = []
@@ -876,8 +875,7 @@ module.exports = {
 
     },
     get4sCountTotalSummary: async (req, res) => {
-        try
-        {
+        try {
             const { line_id } = req.query
             let { month, year } = req.query
 
@@ -1241,16 +1239,13 @@ module.exports = {
         }
     },
     sign4sSchedule: async (req, res) => {
-        try
-        {
+        try {
 
             const sign_checker_id = req.params.sign_checker_id
-            if (sign_checker_id.toLowerCase() === "createnew")
-            {
+            if (sign_checker_id.toLowerCase() === "createnew") {
                 const date = req.body.date;
                 const attrsInsert = await attrsUserInsertData(req, req.body);
-                if (new Map(Object.entries(attrsInsert)).has('date'))
-                {
+                if (new Map(Object.entries(attrsInsert)).has('date')) {
                     delete attrsInsert.date;
                 }
 
@@ -1272,13 +1267,6 @@ module.exports = {
                 response.success(res, 'success to sign 4s schedule', [])
                 return;
             }
-
-            delete req.body.main_schedule_id;
-            delete req.body.date;
-            delete req.body.is_tl_1;
-            delete req.body.is_tl_2;
-            delete req.body.is_gl;
-            delete req.body.is_sh;
 
             let signCheckerQuery = await queryCustom(
                 `
@@ -1302,6 +1290,13 @@ module.exports = {
             {
                 throw "invalid params, unknown data"
             }
+
+            delete req.body.main_schedule_id
+            delete req.body.date
+            delete req.body.is_tl_1
+            delete req.body.is_tl_2
+            delete req.body.is_gl
+            delete req.body.is_sh
 
             let attrsUpdate = await attrsUserUpdateData(req, req.body)
             await queryPUT(table.tb_r_4s_schedule_sign_checkers, attrsUpdate, `WHERE uuid = '${sign_checker_id}'`)
@@ -1420,8 +1415,7 @@ module.exports = {
         }
     },
     add4sSubPlanPic: async (req, res) => {
-        try
-        {
+        try {
             let sub_schedule_id = req.params.id
             const result = await queryPUT(table.tb_r_4s_sub_schedules, {
                 pic_id: `(select user_id from ${table.tb_m_users} where uuid = '${req.body.pic_id}')`,
@@ -1452,8 +1446,7 @@ module.exports = {
                 AND (s.pic_id IS NULL)
             `)
             response.success(res, 'Success to add plan pic 4s sub schedule', [])
-        } catch (error)
-        {
+        } catch (error) {
             console.log(error)
             response.failed(res, "Error to add plan pic 4s sub schedule")
         }
