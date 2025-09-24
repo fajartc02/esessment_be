@@ -19,7 +19,7 @@ const condDataNotDeleted = `WHERE deleted_dt IS NULL AND `;
 module.exports = {
   getFindingCm: async (req, res) => {
     try {
-      let { start_date, end_date, line_id, limit, currentPage } = req.query;
+      let { start_date, end_date, line_id, limit, currentPage, status_finding } = req.query;
       let qLimit = ``;
       let qOffset =
         limit != -1 && limit && currentPage > 1
