@@ -27,7 +27,7 @@ module.exports = {
         group_id,
         zone_id,
         kanban_id,
-        cm_judg,
+        status_finding,
         limit,
         current_page,
       } = req.query;
@@ -72,8 +72,8 @@ module.exports = {
       if (kanban_id) {
         filterCondition.push(` vfl.kanban_id = '${kanban_id}' `);
       }
-      if (cm_judg) {
-        filterCondition.push(` vfl.cm_judg = '${cm_judg}' `);
+      if (status_finding) {
+        filterCondition.push(` vfl.status_finding = '${status_finding}' `);
       }
       if (freq_id) {
         filterCondition.push(` vfl.freq_id = '${freq_id}' `);
