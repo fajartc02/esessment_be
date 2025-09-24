@@ -176,4 +176,21 @@ module.exports = {
       response.failed(res, error.message);
     }
   },
+   editPass: async (req, res) => {
+    try {
+      const id = await uuidToId(table.tb_m_users, "user_id", req.params.id);
+         let unreadPassword = await security.encryptPassword(req.body.password);
+      req.body.password = unreadPassword;
+      const attrsUserUpdate = await attrsUserUpdateData(req, req.body);
+      const result = await queryPUT(
+        table.tb_m_users,
+        attrsUserUpdate,
+        `WHERE user_id = '${id}'`
+      );
+      response.success(res, "Password updated", result);
+    } catch (error) {
+      console.error(error);
+      response.failed(res, error.message);
+    }
+  },
 };
