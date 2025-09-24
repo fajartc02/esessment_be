@@ -5,6 +5,7 @@ const {
   editUser,
   deleteUser,
   editRole,
+  editPass
 } = require("../../../controllers/master/users.controllers");
 const auth = require("../../../helpers/auth");
 
@@ -97,11 +98,25 @@ const auth = require("../../../helpers/auth");
  *       200:
  *         description: A successful response
  */
+/**
+ * @swagger
+ * /api/v1/master/users/pass/{id}:
+ *   put:
+ *     tags:
+ *       - Users
+ *     summary: Edit Pass
+ *     description: Edit Pass
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: A successful response
+ */
 
 router.put("/edit/:id", auth.verifyToken, editUser);
 router.delete("/delete/:id", auth.verifyToken, deleteUser);
 router.post("/", auth.verifyToken, postUser);
 router.get("/opts", auth.verifyToken, getUsersOpts);
 router.put("/role/:id", auth.verifyToken, editRole);
-
+router.put("/pass/:id", auth.verifyToken, editPass);
 module.exports = router;
