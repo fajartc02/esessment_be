@@ -20,13 +20,14 @@ const yearlyDates = require('./schedulers/yearDates.scheduler');
 global.appRoot = path.resolve(__dirname);
 
 // monthly
-cron.schedule('0 1 1 * *', async () => {
+cron.schedule('0 0 20 * *', async () => {
     _4sSchedule()
     omSchedule()
 });
 
+
 // yearly
-cron.schedule('0 1 1 1 *', async () => {
+cron.schedule('0 0 20 12 *', async () => {
     yearlyDates()
 });
 //#endregion
