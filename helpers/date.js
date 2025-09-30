@@ -4,8 +4,9 @@ function daysInYear(year) {
     return (new Date(year + 1, 0, 1) - new Date(year, 0, 1)) / 1000 / 60 / 60 / 24
 }
 
-function padTwoDigits(number)  {
-    if (number) {
+function padTwoDigits(number) {
+    if (number)
+    {
         return (parseInt(number) < 10) ? '0' + parseInt(number).toString() : parseInt(number).toString();
     }
 
@@ -46,7 +47,7 @@ module.exports = {
         {
             // handle these situations as appropriate for your program; here I'm just returning the moment instance :: 
             return momentDate;
-        } 
+        }
         else
         {
             // for each full set of five business days, we know we want to add 7 calendar days :: 
@@ -80,6 +81,31 @@ module.exports = {
                 return momentDate.add(remainingDays, "days");
             }
         }
-    }
+    },
+    /**
+     * default year: current year
+     * default month: next 2 month
+     * 
+    **/
+    getLastWeekendOfMonth: (year, month) => {
+        // month is 0-indexed in moment (0 = January, 11 = December)
+        if (!year)
+        {
+            year = new Date().getFullYear();
+        }
 
+        if (!month)
+        {
+            month = new Date().getMonth() + 2;
+        }
+
+        let lastDay = moment([year, month]).endOf('month');
+        while (lastDay.day() !== 6)
+        {
+            lastDay = lastDay.subtract(1, 'day');
+        }
+
+        return lastDay.format('YYYY-MM-DD');
+    }
 }
+

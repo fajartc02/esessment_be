@@ -10,19 +10,27 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const cors = require('cors')
+const moment = require('moment');
 
 //#region cron
 const cron = require('node-cron');
-const _4sSchedule = require('./schedulers/4s.scheduler')
-const omSchedule = require('./schedulers/om.scheduler')
+const _4sSchedule = require('./schedulers/4s.scheduler');
+const omSchedule = require('./schedulers/om.scheduler');
 const yearlyDates = require('./schedulers/yearDates.scheduler');
+const { getLastWeekendOfMonth } = require('./helpers/date');
 
 global.appRoot = path.resolve(__dirname);
 
 // monthly
-cron.schedule('0 0 25 * *', async () => {
-    _4sSchedule()
-    omSchedule()
+cron.schedule('0 20 * * 6', async () => {
+    const lastWeekend = getLastWeekendOfMonth();
+    const currentDate = moment().format('YYYY-MM-DD');
+    
+    if (lastWeekend === currentDate)
+    {
+        _4sSchedule();
+        omSchedule();
+    }
 });
 
 
