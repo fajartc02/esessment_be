@@ -24,12 +24,12 @@ const {
     clearOmTransactionRows
 } = require("../services/om.services")
 
-const currentDate = moment()
-const currentMonth = currentDate.month() + 1 // need +1 to determine current month
-const currentYear = currentDate.year()
-const flagCreatedBy = `SCHEDULERS ${currentDate.format('YYYY-MM-DD')}`
-
 const main = () => {
+    const currentDate = moment()
+    const currentMonth = currentDate.month() + 2; // need +1 to determine current month
+    const currentYear = currentDate.year()
+    const flagCreatedBy = `SCHEDULERS ${currentDate.format('YYYY-MM-DD')}`
+
     const config = {
         //env: process.env.NODE_ENV,
         user: process.env.DB_USER,
