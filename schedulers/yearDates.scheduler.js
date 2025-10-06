@@ -146,4 +146,4 @@ const main = async () => {
         process.exit()
     }) */
 
-// module.exports = main;
+module.exports = main;
