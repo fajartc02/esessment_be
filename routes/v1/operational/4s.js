@@ -10,10 +10,7 @@ const {
   sign4sSchedule,
   delete4sSubSchedule,
   delete4sMainSchedule,
-<<<<<<< HEAD
-=======
   add4sSubPlanPic
->>>>>>> 142407f (bug fix: add plan pic 4s)
 } = require("../../../controllers/operational/schedule4s.controllers")
 
 const auth = require("../../../helpers/auth")
