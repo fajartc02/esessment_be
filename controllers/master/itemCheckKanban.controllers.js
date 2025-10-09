@@ -45,7 +45,7 @@ module.exports = {
                         ${historyItemCheckServices.leftJoinLateralLast('tmic', { isCount: true, optionalAlias: 'trh4sick_count' })}
                 `
             current_page = parseInt(current_page ?? 1)
-            limit = parseInt(limit ?? 10)
+            limit = parseInt(limit ?? 20)
 
             let filterCondition = [
                 ' and tmic.deleted_dt is null '
