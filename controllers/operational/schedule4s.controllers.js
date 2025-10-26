@@ -15,7 +15,7 @@ const { arrayOrderBy, objToString } = require("../../helpers/formatting")
 const moment = require('moment')
 const logger = require('../../helpers/logger')
 const { cacheGet, cacheAdd, cacheDelete } = require('../../helpers/cacheHelper')
-const { uuid } = require("uuidv4")
+
 const { shiftByGroupId } = require('../../services/shift.services')
 const { genSingleMonthlySubScheduleSchema, genSingleSignCheckerSqlFromSchema } = require('../../services/4s.services')
 const { bulkToSchema } = require('../../helpers/schema')
@@ -1368,5 +1368,154 @@ module.exports = {
             console.log(error)
             response.failed(res, "Error to add plan pic 4s sub schedule")
         }
-    }
+    },
+    addSubSchedule: async (req, res) => {
+        try {
+            /*
+                uuid,
+                main_schedule_id,
+                kanban_id, V
+                freq_id, V
+                zone_id, V
+                schedule_id, V
+                plan_time, V
+                shift_type, V
+                is_holiday, V
+                created_by,
+                created_dt,
+                changed_by,
+                changed_dt
+            */
+            await queryTransaction(async (db) => {
+                // 1. get main schedules
+                const { selectedDate, selectedLine, selectedGroup, selectedKanban } = req.body
+                const month = moment(selectedDate).format('M')
+                const year = moment(selectedDate).format('YYYY')
+                console.log(req.body);
+                const kanbanID = selectedKanban?.id
+                if (!kanbanID) return response.failed(res, "Error to add sub schedule, can't find kanban data")
+
+                const payload = {
+                    group_id: `(select group_id from ${table.tb_m_groups} where uuid = '${selectedGroup}')`,
+                    line_id: `(select line_id from ${table.tb_m_lines} where uuid = '${selectedLine}')`,
+                    month_num: month,
+                    year_num: year
+                }
+                // db.query(`SET session_replication_role = 'replica'`)
+                const mainScheduleQuery = await db.query(`select * from ${table.tb_r_4s_main_schedules} where group_id = ${payload.group_id} and line_id = ${payload.line_id} and month_num = ${payload.month_num} and year_num = ${payload.year_num} limit 1`)
+                const mainSchedule = mainScheduleQuery.rows[0].main_schedule_id
+                console.log(mainSchedule, 'Main sche');
+                if (!mainSchedule) return response.failed(res, "Error to add sub schedule, can't find main schedule data")
+
+                // 2. get m schedule (is_holiday, schedule_id)
+                const getScheduleId = await db.query(`select schedule_id, is_holiday from ${table.tb_m_schedules} where date between '${req.body.selectedDate}' and '${req.body.selectedDate}' limit 1`)
+                // console.log(getScheduleId);
+                console.log(getScheduleId, 'getScheduleId');
+                if (!getScheduleId) return response.failed(res, "Error to add sub schedule, can't find schedule data")
+                const { schedule_id, is_holiday } = getScheduleId.rows[0]
+
+                // 3. get m shifts (shift_type) : selectedDate
+                const getShiftType = await db.query(`select shift_type from ${table.tb_m_shifts} where start_date <= '${req.body.selectedDate}' and end_date >= '${req.body.selectedDate}' and group_id = (select group_id from ${table.tb_m_groups} where uuid = '${selectedGroup}') limit 1`)
+                console.log(getShiftType, 'getShiftType');
+
+                const shiftType = getShiftType.rows[0]?.shift_type
+
+
+                // 4. get Kanban (kanban_id, zone_id, freq_id)
+                const getKanban = await db.query(`select kanban_id, zone_id, freq_id from ${table.tb_m_kanbans} where uuid = '${kanbanID}' limit 1`)
+                console.log(getKanban, 'getKanban');
+                if (!getKanban) return response.failed(res, "Error to add sub schedule, can't find kanban data")
+                const { kanban_id, zone_id, freq_id } = getKanban.rows[0]
+
+                const insertPayload = {
+                    sub_schedule_id: `(select COALESCE(MAX(sub_schedule_id), 0) + 1 FROM ${table.tb_r_4s_sub_schedules})`,
+                    uuid: req.uuid(),
+                    main_schedule_id: mainSchedule,
+                    kanban_id: kanban_id,
+                    freq_id: freq_id,
+                    zone_id: zone_id,
+                    schedule_id: schedule_id,
+                    plan_time: req.body.selectedDate,
+                    shift_type: shiftType || null,
+                    is_holiday: is_holiday,
+                    created_by: req.user.fullname,
+                    created_dt: moment().format('YYYY-MM-DD HH:mm:ss'),
+                    changed_by: req.user.fullname,
+                    changed_dt: moment().format('YYYY-MM-DD HH:mm:ss')
+                }
+
+                console.log(insertPayload, 'Insert Payload');
+                console.log(`insert into ${table.tb_r_4s_sub_schedules} (
+                    sub_schedule_id,
+                    uuid,
+                    main_schedule_id,
+                    kanban_id,
+                    freq_id,
+                    zone_id,
+                    schedule_id,
+                    plan_time,
+                    shift_type,
+                    is_holiday,
+                    created_by,
+                    created_dt,
+                    changed_by,
+                    changed_dt
+                ) values (
+                    ${insertPayload.sub_schedule_id},
+                    '${insertPayload.uuid}',
+                    ${insertPayload.main_schedule_id},
+                    ${insertPayload.kanban_id},
+                    ${insertPayload.freq_id},
+                    ${insertPayload.zone_id},
+                    ${insertPayload.schedule_id},
+                    '${insertPayload.plan_time}',
+                    '${insertPayload.shift_type}',
+                    ${insertPayload.is_holiday},
+                    '${insertPayload.created_by}',
+                    '${insertPayload.created_dt}',
+                    '${insertPayload.changed_by}',
+                    '${insertPayload.changed_dt}'
+                )`);
+                const result = await db.query(`insert into ${table.tb_r_4s_sub_schedules} (
+                    sub_schedule_id,
+                    uuid,
+                    main_schedule_id,
+                    kanban_id,
+                    freq_id,
+                    zone_id,
+                    schedule_id,
+                    plan_time,
+                    shift_type,
+                    is_holiday,
+                    created_by,
+                    created_dt,
+                    changed_by,
+                    changed_dt
+                ) values (
+                    ${insertPayload.sub_schedule_id},
+                    '${insertPayload.uuid}',
+                    ${insertPayload.main_schedule_id},
+                    ${insertPayload.kanban_id},
+                    ${insertPayload.freq_id},
+                    ${insertPayload.zone_id},
+                    ${insertPayload.schedule_id},
+                    '${insertPayload.plan_time}',
+                    '${insertPayload.shift_type}',
+                    ${insertPayload.is_holiday},
+                    '${insertPayload.created_by}',
+                    '${insertPayload.created_dt}',
+                    '${insertPayload.changed_by}',
+                    '${insertPayload.changed_dt}'
+                )`)
+                console.log(result, 'Result');
+                return true
+            })
+
+            response.success(res, 'Success to add sub schedule')
+
+        } catch (error) {
+            console.log(error)
+            response.failed(res, "Error to add sub schedule")
+        }
+    },
 }

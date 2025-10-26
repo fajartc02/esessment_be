@@ -10,7 +10,8 @@ const {
   sign4sSchedule,
   delete4sSubSchedule,
   delete4sMainSchedule,
-  add4sSubPlanPic
+  add4sSubPlanPic,
+  addSubSchedule,
 } = require("../../../controllers/operational/schedule4s.controllers")
 
 const auth = require("../../../helpers/auth")
@@ -196,6 +197,10 @@ router.use("/schedule-item-check-kanban", scheduleItemCheckKanban4s)
 
 //#region graph
 router.use("/", graph4s)
+//#endregion
+
+//#region add schedule
+router.post("/sub-schedule/add", auth.verifyToken, addSubSchedule)
 //#endregion
 
 module.exports = router
