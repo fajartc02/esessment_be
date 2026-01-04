@@ -21,7 +21,7 @@ const currentYear = currentDate.year()
 //#region scheduler generateSchedules
 /**
  * 
- * @param {databasePool} db 
+ * @param {pg.PoolClient} db 
  * @returns 
  */
 const generateSchedules = async (db) => {
@@ -106,7 +106,7 @@ const clear4sRows = async () => {
 //#endregion
 
 const main = async () => {
-    console.log('env', {
+    const config = {
         env: process.env.NODE_ENV,
         user: process.env.DB_USER,
         password: process.env.DB_PASSWORD,
@@ -114,13 +114,31 @@ const main = async () => {
         port: process.env.DB_PORT,
         host: process.env.DB_HOST,
         ssl: false
-    })
+    };
+
+    console.log('env', config)
 
     console.log(`Yearly Schedule Date Scheduler Running .....`)
     
-    await queryTransaction(async (db) => {
-        await generateSchedules(db)
-    })
+
+    const pool = new pg.Pool(config);
+    pool.connect(async (err, db, release) => {
+        console.log('dbbbbb', db)
+        try 
+        {
+            await generateSchedules(db);
+        }
+        catch(error) 
+        {
+            console.log('error yearly generate dates, scheduler running', error)
+        } 
+        finally
+        {
+            release();
+            //process.exit();
+        }
+    });
+
 }
 
 /*clear4sRows()
@@ -138,12 +156,6 @@ const main = async () => {
     })*/
 
 
-/* main()
-    .then((result) => {
-        process.exit()
-    })
-    .catch((error) => {
-        process.exit()
-    }) */
+main()
 
-module.exports = main;
+//module.exports = main;
