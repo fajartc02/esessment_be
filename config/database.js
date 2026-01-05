@@ -22,7 +22,8 @@ const databasePool = new pg.Pool({
     ...config,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
-    maxLifetimeSeconds: 60
+    maxLifetimeSeconds: 60,
+    application_name: 'easessment-ops-app'
 })
 
 

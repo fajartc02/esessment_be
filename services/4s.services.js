@@ -1416,6 +1416,31 @@ const clearRowSeeder = async (db, flagCreatedBy) => {
     console.log('clear rows transaction completed', flagCreatedBy);
 };
 
+const deleteUnmappedFromSchedule = async (db, limit = 1000) => {
+    try {
+        const rawSqlCount = `select count(*) as total
+                                from tb_r_4s_sub_schedules
+                                where schedule_id not in
+                                    (select schedule_id from tb_m_schedules)`;
+        const countQuery = await db.query(rawSqlCount);
+
+        const rawSqlDelete = `delete
+                                from tb_r_4s_sub_schedules
+                                where sub_schedule_id in (select sub_schedule_id
+                                                        from tb_r_4s_sub_schedules
+                                                        where schedule_id not in
+                                                                (select schedule_id from tb_m_schedules)
+                                                        limit ${limit})`;
+        for (let i = 0; i < Math.ceil(parseInt(countQuery.rows[0].total) / limit); i++) {
+            console.log(`deleting unmapped schedule i ${i + 1}`);
+            await db.query(rawSqlDelete);
+        }
+        console.log('deleting unmapped schedule completed');
+    } catch (error) {
+        console.error('error deleteUnmappedFromSchedule()', error);
+    }
+}
+
 module.exports = {
     findScheduleTransaction4S,
     findSignCheckerTransaction4S: findSignCheckerTransaction4S,
@@ -1429,5 +1454,6 @@ module.exports = {
     genLessThanMonth,
     genMonthlySchedulePlan,
     genWeeklySchedulePlan,
-    clearRowSeeder
+    clearRowSeeder,
+    deleteUnmappedFromSchedule
 }

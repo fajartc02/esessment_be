@@ -21,56 +21,33 @@ const currentYear = currentDate.year()
 //#region scheduler generateSchedules
 /**
  * 
- * @param {databasePool} db 
+ * @param {pg.PoolClient} db 
  * @returns 
  */
 const generateSchedules = async (db) => {
     const result = []
 
-    for (let monthIndex = 1; monthIndex <= 12; monthIndex++)
-    {
-        /* const exists = await db.query(
-            `
-                select 
-                    count(*) 
-                from 
-                    ${table.tb_m_schedules} 
-                where 
-                    date_part('month', date) = ${monthIndex} 
-                    and date_part('year', date) = ${currentYear}
-            `
-        )
-
-        if (exists.rowCount > 0)
-        {
-            continue
-        } */
-
+    for (let monthIndex = 1; monthIndex <= 12; monthIndex++) {
         const currentMonthHoldayResp = await holidayRequest(currentYear, monthIndex)
         const currentMonthDays = generateMonthlyDates(currentYear, monthIndex)
 
         const currentMonthHolidayData = currentMonthHoldayResp.data
-        for (let i = 0; i < currentMonthDays.length; i++)
-        {
+        for (let i = 0; i < currentMonthDays.length; i++) {
             const currentMonthDay = currentMonthDays[i];
 
-            for (let j = 0; j < currentMonthHolidayData.length; j++)
-            {
+            for (let j = 0; j < currentMonthHolidayData.length; j++) {
                 const holiday = currentMonthHolidayData[j];
-                if (currentMonthDay.date == holiday.holiday_date && holiday.is_national_holiday)
-                {
+                if (currentMonthDay.date == holiday.holiday_date && holiday.is_national_holiday) {
                     currentMonthDay.is_holiday = true
                     currentMonthDay.holiday_nm = holiday.holiday_name
                     break
                 }
             }
 
-            if (!currentMonthDay.is_holiday)
-            {
+            if (!currentMonthDay.is_holiday) {
                 currentMonthDay.is_holiday = false
             }
-            if (!currentMonthDay.holiday_nm)
-            {
+            if (!currentMonthDay.holiday_nm) {
                 currentMonthDay.holiday_nm = null
             }
 
@@ -81,7 +58,11 @@ const generateSchedules = async (db) => {
 
     const scheduleSchema = await bulkToSchema(result)
     //console.log('result', result)
-    const scheduleQuery = await db.query(`insert into ${table.tb_m_schedules} (${scheduleSchema.columns}) VALUES ${scheduleSchema.values} returning *`)
+    const scheduleQuery = await db.query(`insert into ${table.tb_m_schedules} 
+        (${scheduleSchema.columns}) 
+        VALUES ${scheduleSchema.values} 
+        -- on conflict (date) DO NOTHING
+        returning *`)
     const scheduleRows = scheduleQuery.rows
     console.log('schedules', 'inserted')
 
@@ -91,8 +72,7 @@ const generateSchedules = async (db) => {
 
 //#region scheduler delete all for testing purpose
 const clear4sRows = async () => {
-    if (process.env.NODE_ENV.trim() == 'dev' || process.env.NODE_ENV.trim() == 'local')
-    {
+    if (process.env.NODE_ENV.trim() == 'dev' || process.env.NODE_ENV.trim() == 'local') {
         console.log('clearing start')
         await databasePool.query(`SET session_replication_role = 'replica'`)
 
@@ -106,21 +86,31 @@ const clear4sRows = async () => {
 //#endregion
 
 const main = async () => {
-    console.log('env', {
-        env: process.env.NODE_ENV,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-        port: process.env.DB_PORT,
-        host: process.env.DB_HOST,
-        ssl: false
-    })
-
     console.log(`Yearly Schedule Date Scheduler Running .....`)
-    
-    await queryTransaction(async (db) => {
-        await generateSchedules(db)
-    })
+
+    let client;
+    try {
+        const config = {
+            env: process.env.NODE_ENV,
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
+            database: process.env.DB_NAME,
+            port: process.env.DB_PORT,
+            host: process.env.DB_HOST,
+            ssl: false
+        };
+        console.log('env', config)
+
+        const pool = new pg.Pool(config);
+        client = await pool.connect();
+        await generateSchedules(client);
+    } catch (error) {
+        console.log('error yearly schedule date scheduler running', error);
+    } finally {
+        if (client) {
+            client.release();
+        }
+    }
 }
 
 /*clear4sRows()

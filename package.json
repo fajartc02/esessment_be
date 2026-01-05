@@ -8,10 +8,11 @@
         "dev": "SET NODE_ENV=dev && nodemon ./bin/www",
         "dev-mac": "export NODE_ENV=dev && nodemon ./bin/www",
         "dev-vps": "SET NODE_ENV=dev && pm2 start ./bin/www --name=eas-dev",
-        "yearly-scheduler": "SET NODE_ENV=local && node ./schedulers/yearDates.scheduler.js",
-        "4s-scheduler": "SET NODE_ENV=dev && node ./schedulers/4s.scheduler.js",
+        "yearly-scheduler": "export NODE_ENV=dev && node ./schedulers/yearDates.scheduler.js",
+        "4s-scheduler": "export NODE_ENV=dev && node ./schedulers/4s.scheduler.js",
         "om-scheduler": "SET NODE_ENV=dev && node ./schedulers/om.scheduler.js",
-        "4s-camshaft-trans": "SET NODE_ENV=dev && node ./design/transaction/4sCamShaft.transaction.js"
+        "4s-camshaft-trans": "SET NODE_ENV=dev && node ./design/transaction/4sCamShaft.transaction.js",
+        "delete-unmapped-schedule": "export NODE_ENV=dev && node ./cmd/deleteUnmappedSchedule.js"
     },
     "dependencies": {
         "axios": "^1.4.0",
