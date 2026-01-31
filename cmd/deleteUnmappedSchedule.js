@@ -16,7 +16,8 @@ const main = async () => {
         database: process.env.DB_NAME,
         port: process.env.DB_PORT,
         host: process.env.DB_HOST,
-        ssl: false
+        ssl: false,
+        application_name: 'delete-unmapped-schedule-script'
     };
 
     console.log('env', config);
@@ -25,7 +26,7 @@ const main = async () => {
     try {
         const pool = new pg.Pool(config);
         client = await pool.connect();
-        await deleteUnmappedFromSchedule(client, 100);
+        await deleteUnmappedFromSchedule(client, 1000);
     } catch (error) {
         console.log('error final 4s generate schedule, scheduler running', error);
     } finally {
