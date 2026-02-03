@@ -11,7 +11,7 @@ module.exports = {
     try {
       await queryGET(
         table.tb_m_users,
-        `WHERE noreg = '${req.body.noreg}' AND is_activated = true`
+        `WHERE noreg = '${req.body.noreg}' AND is_activated = true AND deleted_dt IS NULL`
       ).then(async (result) => {
         if (result.length > 0) {
           let hashPassword = result[0].password;
