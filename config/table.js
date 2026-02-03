@@ -61,6 +61,7 @@ const table = {
   v_om_finding_list: "v_om_finding_list",
   v_om_sub_schedules: "v_om_sub_schedules",
   //#endregion
+  v_area:"v_area",
 };
 
 module.exports = table;
