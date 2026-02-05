@@ -186,7 +186,7 @@ module.exports = {
                     // Countermeasure Date {cm_end_plan_date}
                     const getGroupIdUser = await uuidToAbnormalityID(table.tb_m_users, 'group_id', req.body.cm_pic_id.pic_id, db)
                     const getGroupAbnormalityID = await uuidToAbnormalityID(table.tb_m_groups, 'abnormality_id', getGroupIdUser, db, 'group_id')
-                    console.log(getGroupIdUser, 'getGroupIdUser', getGroupAbnormalityID)
+
                     const responseAdd = await axios.post(`https://mt-system.id/abnormality/be/problems/add`, {
                         problem_date: moment(req.body.finding_date).format('YYYY-MM-DD'),
                         countermeasure_date: moment(req.body.cm_end_plan_date).format('YYYY-MM-DD'),
@@ -199,10 +199,10 @@ module.exports = {
                         status_id: req.body.cm_judg ? 4 : 1,
                         problem_loc: req.body.finding_location
                     })
-                    console.log(responseAdd.response, 'responseAdd')
+
                     delete req.body.department_id
                 }
-                console.log(req.body, 'BEFORE');
+
                 delete req.body.department_id
                 req.body.category_id = req.body.category_id ?
                     `(select category_id from ${table.tb_m_categories} where uuid = '${req.body.category_id}')` :
@@ -225,7 +225,7 @@ module.exports = {
                 req.body.pic_supervisor_id = req.body.pic_supervisor_id ?
                     `(select user_id from ${table.tb_m_users} where uuid = '${req.body.pic_supervisor_id.pic_id}')` :
                     null;
-                console.log(req.body);
+
 
                 let resultFindingData = {
                     result_finding_id: `(select (result_finding_id + 1) from ${table.tb_r_result_findings} order by result_finding_id desc limit 1)`,
@@ -239,7 +239,7 @@ module.exports = {
                     resultFindingData
                 );
                 const finding_obs_id = resultFindingResponse.rows[0].result_finding_id;
-                console.log(finding_obs_id);
+
                 delete req.body.obs_result_id;
                 // INSERT TO tb_r_findings
                 console.log(req.body.cm_judg);
