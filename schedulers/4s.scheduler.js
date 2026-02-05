@@ -434,7 +434,7 @@ const main = async () => {
         return 0
     }) */
 
-main()
+/* main()
     .then(() => {
         console.log("scheduler finish!");
 
@@ -443,6 +443,6 @@ main()
     .catch((error) => {
         console.log('error', error);
         process.exit()
-    })
+    }) */
 
-//module.exports = main
+module.exports = main
