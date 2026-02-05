@@ -22,6 +22,7 @@ const currentYear = currentDate.year()
 /**
  * 
  * @param {pg.PoolClient} db 
+ * @param {pg.PoolClient} db 
  * @returns 
  */
 const generateSchedules = async (db) => {
@@ -129,12 +130,6 @@ const main = async () => {
     })*/
 
 
-/* main()
-    .then((result) => {
-        process.exit()
-    })
-    .catch((error) => {
-        process.exit()
-    }) */
+//main()
 
 module.exports = main;
