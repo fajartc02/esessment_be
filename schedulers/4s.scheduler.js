@@ -37,11 +37,12 @@ const main = async () => {
         database: process.env.DB_NAME,
         port: process.env.DB_PORT,
         host: process.env.DB_HOST,
-        ssl: false
+        ssl: false,
+        application_name: 'easessment-4s-scheduler',
     };
 
     console.log('env', config);
-    console.log(`4S Schedule Date Scheduler Running .....`)
+    console.log(`4S Schedule Date Scheduler Running ..... for month=${currentMonth}-${currentYear}`)
 
     let db;
     try {
@@ -433,7 +434,7 @@ const main = async () => {
         return 0
     }) */
 
-/* main()
+main()
     .then(() => {
         console.log("scheduler finish!");
 
@@ -442,6 +443,6 @@ const main = async () => {
     .catch((error) => {
         console.log('error', error);
         process.exit()
-    }) */
+    })
 
-module.exports = main
+//module.exports = main
