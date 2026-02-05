@@ -24,13 +24,13 @@
 const pg = require('pg')
 const table = require('../config/table')
 const moment = require('moment')
-const {getRandomInt, padTwoDigits} = require('../helpers/formatting')
-const {bulkToSchema} = require('../helpers/schema')
-const {uuid} = require('uuidv4')
-const {addBusinessDaysToDate} = require('../helpers/date')
-const {shiftByGroupId, nonShift} = require('./shift.services')
+const { getRandomInt, padTwoDigits } = require('../helpers/formatting')
+const { bulkToSchema } = require('../helpers/schema')
+const { uuid } = require('uuidv4')
+const { addBusinessDaysToDate } = require('../helpers/date')
+const { shiftByGroupId, nonShift } = require('./shift.services')
 const scheduleHelper = require("../helpers/schedule.helper");
-const {database} = require("../config/database");
+const { database } = require("../config/database");
 
 const dateFormatted = (date = '') => (moment(date, 'YYYY-MM-DD').format('YYYY-MM-DD'))
 
@@ -98,7 +98,7 @@ const findScheduleTransaction4S = async (
     if (scheduleId) {
         filterSub.push(`tr4sss.schedule_id = ${scheduleId}`)
     }
-    
+
 
     let selectSub = [
         'tr4sss.freq_id',
@@ -240,7 +240,7 @@ const genLessThanMonth = async (
             `${yearNum}-${padTwoDigits(monthNum)}`,
             kanbanRow.precition_val,
             1,
-            {exceptionDateIdxs: excludeDateIdxs}
+            { exceptionDateIdxs: excludeDateIdxs }
         );
 
         for (let sIndex = 0; sIndex < shiftRows.length; sIndex++) {
@@ -881,7 +881,7 @@ const genMonthlySignCheckerSchema = async (db, yearNum, monthNum, lineGroup, shi
                             res.week_num,
                             res.col_span,
                             started.start_non_holiday,
-							ended.end_non_holiday
+                            ended.end_non_holiday
                         from (
                             select
                                 week.week_num,
@@ -1416,6 +1416,67 @@ const clearRowSeeder = async (db, flagCreatedBy) => {
     console.log('clear rows transaction completed', flagCreatedBy);
 };
 
+/**
+ * 
+ * @param {pg.Client} db 
+ * @param {*} limit 
+ */
+const deleteUnmappedFromSchedule = async (db, limit = 1000) => {
+    const sqlDelete = `
+    DELETE FROM tb_r_4s_sub_schedules
+    WHERE ctid IN (
+        SELECT s.ctid
+        FROM tb_r_4s_sub_schedules s
+        JOIN tb_r_4s_main_schedules m ON s.main_schedule_id = m.main_schedule_id
+        WHERE m.year_num = 2026 AND m.month_num = 1 
+            AND NOT EXISTS (
+                SELECT 1
+                FROM tb_m_schedules tmsch
+                WHERE tmsch.schedule_id = s.schedule_id
+            )
+            AND NOT EXISTS (
+                SELECT 1
+                FROM tb_r_4s_schedule_item_check_kanbans k
+                WHERE k.sub_schedule_id = s.sub_schedule_id
+            )
+            AND NOT EXISTS (
+                SELECT 1
+                FROM tb_r_history_4s_item_check_kanbans k
+                WHERE k.sub_schedule_id = s.sub_schedule_id
+            )
+            AND NOT EXISTS (
+                SELECT 1
+                FROM tb_r_4s_findings k
+                WHERE k.sub_schedule_id = s.sub_schedule_id
+            )
+        LIMIT $1
+    );
+  `;
+
+  let totalDeleted = 0;
+  let batch = 1;
+
+  try {
+    while (true) {
+      console.time(`ExecutionTime of batch ${batch}`);
+      const res = await db.query(sqlDelete, [limit]);
+      console.timeEnd(`ExecutionTime of batch ${batch}`);
+
+      if (res.rowCount === 0) {
+        break;
+      }
+
+      totalDeleted += res.rowCount;
+      console.log(`Deleted ${res.rowCount} rows (total ${totalDeleted})`);
+      batch++;
+    }
+
+    console.log('deleting unmapped schedule completed');
+  } catch (error) {
+    console.error('error deleteUnmappedFromSchedule()', error);
+  }
+}
+
 module.exports = {
     findScheduleTransaction4S,
     findSignCheckerTransaction4S: findSignCheckerTransaction4S,
@@ -1429,5 +1490,6 @@ module.exports = {
     genLessThanMonth,
     genMonthlySchedulePlan,
     genWeeklySchedulePlan,
-    clearRowSeeder
+    clearRowSeeder,
+    deleteUnmappedFromSchedule
 }
