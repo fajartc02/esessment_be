@@ -113,8 +113,9 @@ const childrenSubSchedule = async (
                     trcc2.gl_sign_checker_id,
                     trcc3.sh_sign_checker_id,
                     tmsc.date,
+                    EXTRACT(WEEK FROM tmsc.date) as week_num,
                     EXTRACT('Day' FROM tmsc.date)::INTEGER as date_num,
-                    tmsc.is_holiday or tbrcs.shift_type is null as is_holiday, -- null of shift_type was set as holiday from monthly scheduler 
+                    tmsc.is_holiday or tbrcs.is_holiday as is_holiday, -- null of shift_type was set as holiday from monthly scheduler 
                     case
                       when item_check.total_checked > 0 and finding.finding_id is not null then
                         'PROBLEM'
@@ -583,12 +584,12 @@ module.exports = {
                     )
                 }
 
-                const signGl = mainScheduleRealId != null ? (await signCheckerQuery('gl')).rows : []
-                const signSh = mainScheduleRealId != null ? (await signCheckerQuery('sh')).rows : []
+                //const signGl = mainScheduleRealId != null ? (await signCheckerQuery('gl')).rows : []
+                //const signSh = mainScheduleRealId != null ? (await signCheckerQuery('sh')).rows : []
 
                 result.schedule = await Promise.all(scheduleRows)
-                result.sign_checker_gl = mainScheduleRealId != null ? signGl : [];
-                result.sign_checker_sh = mainScheduleRealId != null ? signSh : [];
+                //result.sign_checker_gl = mainScheduleRealId != null ? signGl : [];
+                //result.sign_checker_sh = mainScheduleRealId != null ? signSh : [];
                 result.limit = scheduleQuery?.limit ? parseInt(scheduleQuery.limit) : 0;
                 result.current_page = scheduleQuery?.current_page ? parseInt(scheduleQuery.current_page) : 0;
                 result.total_data = scheduleQuery?.total_data ? parseInt(scheduleQuery.total_data) : 0;
