@@ -1452,6 +1452,7 @@ const deleteUnmappedFromSchedule = async (db, limit = 1000) => {
         LIMIT $1
     );
   `;
+  
 
   let totalDeleted = 0;
   let batch = 1;
