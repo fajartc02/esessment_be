@@ -9,7 +9,7 @@ const config = {
     ssl: false,
 }
 
-pg.defaults.poolSize = 25;
+pg.defaults.poolSize = 250;
 const database = new pg.Client(config);
 
 /**
@@ -20,9 +20,10 @@ const database = new pg.Client(config);
  */
 const databasePool = new pg.Pool({
     ...config,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
-    maxLifetimeSeconds: 60
+    idleTimeoutMillis: 30000,      // 30 detik
+    connectionTimeoutMillis: 5000,  // 5 detik
+    max: 200,
+    application_name: 'easessment-ops-app'
 })
 
 

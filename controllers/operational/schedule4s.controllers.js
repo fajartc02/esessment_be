@@ -6,7 +6,7 @@ const {
     queryTransaction,
     queryPutTransaction,
     queryPostTransaction,
-    poolQuery, queryPOST
+    queryPOST
 } = require("../../helpers/query")
 
 const response = require("../../helpers/response")
@@ -22,6 +22,7 @@ const { bulkToSchema } = require('../../helpers/schema')
 const { databasePool } = require('../../config/database');
 const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData");
 const query = require("../../helpers/query")
+const subScheduleService = require("../../services/schedule4s.services")
 
 const fromSubScheduleSql = `
     ${table.tb_r_4s_sub_schedules} tbrcs
@@ -93,6 +94,7 @@ const selectSubScheduleSql = selectSubScheduleCol.join(', ')
  * @returns {Promise<Array<ChildrenSubSchedule>>}
  */
 const childrenSubSchedule = async (
+    client,
     mainScheduleRealId,
     freqRealId,
     zoneRealId,
@@ -113,8 +115,9 @@ const childrenSubSchedule = async (
                     trcc2.gl_sign_checker_id,
                     trcc3.sh_sign_checker_id,
                     tmsc.date,
+                    EXTRACT(WEEK FROM tmsc.date) as week_num,
                     EXTRACT('Day' FROM tmsc.date)::INTEGER as date_num,
-                    tmsc.is_holiday or tbrcs.shift_type is null as is_holiday, -- null of shift_type was set as holiday from monthly scheduler 
+                    tmsc.is_holiday or tbrcs.is_holiday as is_holiday, -- null of shift_type was set as holiday from monthly scheduler 
                     case
                       when item_check.total_checked > 0 and finding.finding_id is not null then
                         'PROBLEM'
@@ -227,7 +230,7 @@ const childrenSubSchedule = async (
     //const children = await queryCustom(childrenSql, false)
 
     const startTime = Date.now();
-    const children = await poolQuery(childrenSql);
+    const children = await client.query(childrenSql);
     const timeTaken = Date.now() - startTime;
     console.log(`4S childrenSubSchedule query time = ${Math.floor(timeTaken / 1000)} seconds`);
 
@@ -278,6 +281,7 @@ const subScheduleCacheKey = (
 }
 
 const subScheduleRows = async (
+    client,
     params
 ) => {
     const { main_schedule_id, freq_id, zone_id, kanban_id, line_id, group_id, month_year_num } = params
@@ -351,9 +355,9 @@ const subScheduleRows = async (
     console.log('scheduleSql', scheduleSql)
     //logger(scheduleSql, 'scheduleSql')
 
-    const query = (await poolQuery(scheduleSql)).rows
+    const query = (await client.query(scheduleSql)).rows
     if (paginated) {
-        const count = await poolQuery(`select count(*)::integer as count from ( ${originScheduleSql} ) a `)
+        const count = await client.query(`select count(*)::integer as count from ( ${originScheduleSql} ) a `)
 
         const countRows = count.rows[0]
         return {
@@ -459,7 +463,17 @@ module.exports = {
             response.failed(res, "Error to get 4s main schedule")
         }
     },
+    getNew4sSubSchedule: async (req, res) => {
+        try {
+            const result = await subScheduleService.subScheduleRows(req.query);
+            response.success(res, "Success to get 4s sub schedule", result)
+        } catch (error) {
+            console.log(error)
+            response.failed(res, "Error to get 4s sub schedule")
+        }
+    },
     get4sSubSchedule: async (req, res) => {
+        let client = null;
         try {
             const {
                 main_schedule_id,
@@ -504,7 +518,8 @@ module.exports = {
 
             //console.log('scheduleSql', scheduleSql)
             //logger(scheduleSql, 'schedule')
-            let scheduleQuery = await subScheduleRows(req.query)
+            client = await databasePool.connect();
+            let scheduleQuery = await subScheduleRows(client, req.query)
 
             if (scheduleQuery) {
                 let mainScheduleRealId = null
@@ -523,6 +538,7 @@ module.exports = {
                     item.row_span_zone = 1
 
                     item.children = await childrenSubSchedule(
+                        client,
                         mainScheduleRealId,
                         item.freq_real_id,
                         item.zone_real_id,
@@ -543,52 +559,12 @@ module.exports = {
                     return item
                 })
 
-                const signCheckerQuery = async (who = '') => {
-                    let whoIs = ``
-                    if (who == 'gl') {
-                        whoIs = 'and is_gl = true'
-                    } else if (who == 'sh') {
-                        whoIs = 'and is_sh = true'
-                    }
-
-                    return await poolQuery(`
-              select 
-                uuid as sign_checker_id,
-                sign,
-                case 
-                    when date_part('month', start_date) < date_part('month', end_date) then
-                        (date_part('year', end_date) || '-' || trim(to_char(date_part('month', end_date), '00')) ||  '-01')::date
-                    else
-                        start_date
-                end as start_date,
-                end_date,
-                case 
-                    when date_part('month', start_date) = date_part('month', end_date) then
-                        (end_date - start_date)::integer + 1
-                     when date_part('month', start_date) < date_part('month', end_date) then
-                        (end_date - (date_part('year', end_date) || '-' || trim(to_char(date_part('month', end_date), '00')) ||  '-01')::date)::integer 
-                    else 
-                        (end_date - (date_part('year', end_date) || '-' || trim(to_char(date_part('month', end_date), '00')) ||  '-01')::date)::integer + 1
-                    
-                end as col_span,
-                is_gl,
-                is_sh
-              from 
-                ${table.tb_r_4s_schedule_sign_checkers} 
-              where 
-                main_schedule_id = '${mainScheduleRealId}' 
-                ${whoIs}
-              order by
-                start_date `
-                    )
-                }
-
-                const signGl = mainScheduleRealId != null ? (await signCheckerQuery('gl')).rows : []
-                const signSh = mainScheduleRealId != null ? (await signCheckerQuery('sh')).rows : []
+                //const signGl = mainScheduleRealId != null ? (await signCheckerQuery('gl')).rows : []
+                //const signSh = mainScheduleRealId != null ? (await signCheckerQuery('sh')).rows : []
 
                 result.schedule = await Promise.all(scheduleRows)
-                result.sign_checker_gl = mainScheduleRealId != null ? signGl : [];
-                result.sign_checker_sh = mainScheduleRealId != null ? signSh : [];
+                //result.sign_checker_gl = mainScheduleRealId != null ? signGl : [];
+                //result.sign_checker_sh = mainScheduleRealId != null ? signSh : [];
                 result.limit = scheduleQuery?.limit ? parseInt(scheduleQuery.limit) : 0;
                 result.current_page = scheduleQuery?.current_page ? parseInt(scheduleQuery.current_page) : 0;
                 result.total_data = scheduleQuery?.total_data ? parseInt(scheduleQuery.total_data) : 0;
@@ -600,6 +576,10 @@ module.exports = {
         } catch (error) {
             console.log(error)
             response.failed(res, "Error to get 4s sub schedule")
+        } finally {
+            if (client) {
+                client.release();
+            }
         }
     },
     get4sSubScheduleTodayPlan: async (req, res) => {
@@ -1172,7 +1152,7 @@ module.exports = {
                     table.tb_r_4s_schedule_sign_checkers,
                     {
                         ...attrsInsert,
-                        uuid: uuid(),
+                        uuid: req.uuid(),
                         main_schedule_id: `(select main_schedule_id from ${table.tb_r_4s_main_schedules} where uuid = '${req.body.main_schedule_id}')`,
                         start_date: date,
                         end_date: date,
