@@ -176,7 +176,7 @@ const graph4s = require('./graph4s')
 router.get("/main-schedule", auth.verifyToken, get4sMainSchedule)
 router.delete("/main-schedule/delete/:id", auth.verifyToken, delete4sMainSchedule)
 
-router.get("/sub-schedule", auth.verifyToken, getNew4sSubSchedule)
+router.get("/sub-schedule", auth.verifyToken, get4sSubSchedule)
 router.get("/new-sub-schedule", auth.verifyToken, getNew4sSubSchedule)
 router.get("/sub-schedule/today", auth.verifyToken, get4sSubScheduleTodayPlan)
 router.get("/sub-schedule/count", auth.verifyToken, get4sCountTotalSummary);
