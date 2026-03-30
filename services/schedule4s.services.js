@@ -1,29 +1,7 @@
 const table = require("../config/table");
 const {
-    queryCustom,
-    queryGET,
-    queryPUT,
-    queryTransaction,
-    queryPutTransaction,
-    queryPostTransaction,
-    queryPOST,
     poolQuery
 } = require("../helpers/query")
-
-const response = require("../helpers/response")
-const attrsUserUpdateData = require("../helpers/addAttrsUserUpdateData")
-const { arrayOrderBy, objToString } = require("../helpers/formatting")
-const moment = require('moment')
-const logger = require('../helpers/logger')
-const { cacheGet, cacheAdd, cacheDelete } = require('../helpers/cacheHelper')
-
-const { shiftByGroupId } = require('../services/shift.services')
-const { genSingleMonthlySubScheduleSchema, genSingleSignCheckerSqlFromSchema } = require('../services/4s.services')
-const { bulkToSchema } = require('../helpers/schema')
-const { databasePool } = require('../config/database');
-const attrsUserInsertData = require("../helpers/addAttrsUserInsertData");
-const query = require("../helpers/query")
-const subScheduleService = require("../services/schedule4s.services")
 
 const fromSubScheduleSql = `
     ${table.tb_r_4s_sub_schedules} tbrcs
@@ -85,25 +63,26 @@ const selectSubScheduleCol = [
 const selectSubScheduleSql = selectSubScheduleCol.join(', ')
 
 /**
- * OPTIMIZED: Fetch all children in ONE query with proper grouping
+ * CORRECTED: Fetch all children for given parent combinations
+ * pic_real_id is NOT used to filter children - only to identify parent rows
  */
-const getAllChildrenSubSchedulesOptimized = async (
+const getAllChildrenSubSchedulesOptimized2 = async (
     mainScheduleRealId,
-    scheduleFilters // array of {freq_real_id, zone_real_id, kanban_real_id, pic_real_id}
+    scheduleFilters // array of {freq_real_id, zone_real_id, kanban_real_id}
 ) => {
     if (!scheduleFilters || scheduleFilters.length === 0) {
         return [];
     }
 
-    // Create a VALUES clause for efficient IN-like filtering
-    const filterValues = scheduleFilters.map((filter, idx) =>
-        `('${filter.freq_real_id}', '${filter.zone_real_id}', '${filter.kanban_real_id}', ${filter.pic_real_id ? `'${filter.pic_real_id}'` : 'NULL'})`
+    // Build filter for freq_id, zone_id, kanban_id ONLY (not pic_id)
+    const filterValues = scheduleFilters.map((filter) => 
+        `(${filter.freq_real_id}, ${filter.zone_real_id}, ${filter.kanban_real_id})`
     ).join(',');
 
     const childrenSql = `
         WITH filter_set AS (
-            SELECT * FROM (VALUES ${filterValues}) 
-            AS t(freq_id, zone_id, kanban_id, pic_id)
+            SELECT DISTINCT * FROM (VALUES ${filterValues}) 
+            AS t(freq_id, zone_id, kanban_id)
         ),
         -- Pre-aggregate sign checkers to avoid multiple lateral joins
         sign_checkers_agg AS (
@@ -127,8 +106,6 @@ const getAllChildrenSubSchedulesOptimized = async (
                 rsick.sub_schedule_id,
                 COUNT(*) as total_checked
             FROM ${table.tb_r_4s_schedule_item_check_kanbans} rsick
-            INNER JOIN ${table.tb_m_4s_item_check_kanbans} mick 
-                ON rsick.item_check_kanban_id = mick.item_check_kanban_id
             WHERE EXISTS (
                 SELECT 1 FROM ${table.tb_r_4s_sub_schedules} tbrcs2
                 WHERE tbrcs2.sub_schedule_id = rsick.sub_schedule_id
@@ -142,6 +119,11 @@ const getAllChildrenSubSchedulesOptimized = async (
                 sub_schedule_id,
                 COUNT(*)::integer as total_comment
             FROM ${table.tb_r_4s_comments}
+            WHERE EXISTS (
+                SELECT 1 FROM ${table.tb_r_4s_sub_schedules} tbrcs2
+                WHERE tbrcs2.sub_schedule_id = ${table.tb_r_4s_comments}.sub_schedule_id
+                    AND tbrcs2.main_schedule_id = ${mainScheduleRealId}
+            )
             GROUP BY sub_schedule_id
         ),
         -- Latest findings per sub_schedule
@@ -151,14 +133,18 @@ const getAllChildrenSubSchedulesOptimized = async (
                 finding_id
             FROM ${table.v_4s_finding_list}
             WHERE deleted_dt IS NULL
+                AND EXISTS (
+                    SELECT 1 FROM ${table.tb_r_4s_sub_schedules} tbrcs2
+                    WHERE tbrcs2.uuid = ${table.v_4s_finding_list}.sub_schedule_id
+                        AND tbrcs2.main_schedule_id = ${mainScheduleRealId}
+                )
             ORDER BY sub_schedule_id, finding_date DESC
         )
         SELECT 
             tbrcs.uuid as sub_schedule_id,
-            tbrcs.freq_id::text as freq_real_id,
-            tbrcs.zone_id::text as zone_real_id,
-            tbrcs.kanban_id::text as kanban_real_id,
-            tbrcs.pic_id::text as pic_real_id,
+            tbrcs.freq_id as freq_real_id,
+            tbrcs.zone_id as zone_real_id,
+            tbrcs.kanban_id as kanban_real_id,
             sca.tl1_sign_checker_id,
             sca.gl_sign_checker_id,
             sca.sh_sign_checker_id,
@@ -181,10 +167,9 @@ const getAllChildrenSubSchedulesOptimized = async (
         INNER JOIN ${table.tb_m_schedules} tmsc 
             ON tbrcs.schedule_id = tmsc.schedule_id
         INNER JOIN filter_set fs 
-            ON tbrcs.freq_id::text = fs.freq_id 
-            AND tbrcs.zone_id::text = fs.zone_id 
-            AND tbrcs.kanban_id::text = fs.kanban_id
-            AND (tbrcs.pic_id::text = fs.pic_id OR (tbrcs.pic_id IS NULL AND fs.pic_id IS NULL))
+            ON tbrcs.freq_id = fs.freq_id 
+            AND tbrcs.zone_id = fs.zone_id 
+            AND tbrcs.kanban_id = fs.kanban_id
         LEFT JOIN sign_checkers_agg sca 
             ON sca.main_schedule_id = tbrcs.main_schedule_id 
             AND sca.end_date = tmsc.date
@@ -196,12 +181,9 @@ const getAllChildrenSubSchedulesOptimized = async (
             ON lf.sub_schedule_id = tbrcs.uuid
         WHERE tbrcs.deleted_dt IS NULL
             AND tbrcs.main_schedule_id = ${mainScheduleRealId}
-        ORDER BY tbrcs.freq_id, tbrcs.zone_id, tbrcs.kanban_id, tbrcs.pic_id NULLS LAST, date_num
+        ORDER BY tbrcs.freq_id, tbrcs.zone_id, tbrcs.kanban_id, date_num
     `;
-
-    console.log(childrenSql);
-    
-
+console.log("childrensql", childrenSql);
     const startTime = Date.now();
     const result = await poolQuery(childrenSql);
     const timeTaken = Date.now() - startTime;
@@ -211,18 +193,19 @@ const getAllChildrenSubSchedulesOptimized = async (
 };
 
 /**
- * Group children by parent composite key
+ * Group children by parent composite key (freq + zone + kanban ONLY)
  */
-const groupChildrenByParent = (children) => {
+const groupChildrenByParent2 = (children) => {
     const grouped = {};
-
+    
     children.forEach(child => {
-        const key = `${child.freq_real_id}_${child.zone_real_id}_${child.kanban_real_id}_${child.pic_real_id || 'null'}`;
-
+        // Key is based on freq, zone, kanban ONLY - not pic_id
+        const key = `${child.freq_real_id}_${child.zone_real_id}_${child.kanban_real_id}`;
+        
         if (!grouped[key]) {
             grouped[key] = [];
         }
-
+        
         // Keep only the fields needed by frontend
         const cleanChild = {
             sub_schedule_id: child.sub_schedule_id,
@@ -239,48 +222,56 @@ const groupChildrenByParent = (children) => {
             has_sh_sign: child.has_sh_sign,
             total_comment: child.total_comment
         };
-
+        
         grouped[key].push(cleanChild);
     });
-
+    
     return grouped;
 };
 
 /**
- * MAIN FUNCTION - Replaces the original async map iteration
+ * MAIN FUNCTION - Attaches children to parent schedules
+ * Children are matched by freq_id + zone_id + kanban_id (NOT pic_id)
  */
-const attachChildrenToSchedules = async (scheduleFinalResult, mainScheduleRealId) => {
+const attachChildrenToSchedules2 = async (scheduleFinalResult, mainScheduleRealId) => {
     if (!scheduleFinalResult || scheduleFinalResult.length === 0) {
         return [];
     }
 
     const startTime = Date.now();
 
-    // Step 1: Extract unique filters from parent rows
-    const scheduleFilters = scheduleFinalResult.map(item => ({
-        freq_real_id: item.freq_real_id,
-        zone_real_id: item.zone_real_id,
-        kanban_real_id: item.kanban_real_id,
-        pic_real_id: item.pic_real_id
-    }));
+    // Step 1: Extract UNIQUE combinations of freq, zone, kanban (not pic)
+    const uniqueFilters = new Map();
+    scheduleFinalResult.forEach(item => {
+        const key = `${item.freq_real_id}_${item.zone_real_id}_${item.kanban_real_id}`;
+        if (!uniqueFilters.has(key)) {
+            uniqueFilters.set(key, {
+                freq_real_id: item.freq_real_id,
+                zone_real_id: item.zone_real_id,
+                kanban_real_id: item.kanban_real_id
+            });
+        }
+    });
 
-    // Step 2: Fetch ALL children in ONE query
-    const allChildren = await getAllChildrenSubSchedulesOptimized(
-        mainScheduleRealId,
+    const scheduleFilters = Array.from(uniqueFilters.values());
+    const allChildren = await getAllChildrenSubSchedulesOptimized2(
+        mainScheduleRealId, 
         scheduleFilters
     );
 
-    // Step 3: Group children by their parent key
-    const groupedChildren = groupChildrenByParent(allChildren);
+    // Step 3: Group children by their parent key (freq + zone + kanban)
+    const groupedChildren = groupChildrenByParent2(allChildren);
 
-    // Step 4: Synchronously attach children to parents (NO Promise.all needed!)
+    // Step 4: Synchronously attach children to parents
     const scheduleRows = scheduleFinalResult.map(item => {
-        const key = `${item.freq_real_id}_${item.zone_real_id}_${item.kanban_real_id}_${item.pic_real_id || 'null'}`;
-
+        // Match using freq + zone + kanban ONLY
+        const key = `${item.freq_real_id}_${item.zone_real_id}_${item.kanban_real_id}`;
+        
         return {
+            no: item.no,
             line_id: item.line_id,
             group_id: item.group_id,
-            main_schedule_id: item.main_schedule_uuid, // Renamed here
+            main_schedule_id: item.main_schedule_uuid,
             sub_schedule_id: item.sub_schedule_id,
             kanban_id: item.kanban_id,
             zone_id: item.zone_id,
@@ -303,12 +294,13 @@ const attachChildrenToSchedules = async (scheduleFinalResult, mainScheduleRealId
             row_span_pic: 1,
             row_span_freq: 1,
             row_span_zone: 1,
-            children: groupedChildren[key] || [] // Attach children array
+            // All children for this freq+zone+kanban combination
+            children: groupedChildren[key] || []
         };
     });
 
     const timeTaken = Date.now() - startTime;
-    console.log(`✓ Total attachChildrenToSchedules: ${timeTaken}ms for ${scheduleRows.length} parent rows`);
+    console.log(`✓ Total attachChildrenToSchedules: ${timeTaken}ms for ${scheduleRows.length} parent rows with ${allChildren.length} total children`);
 
     return scheduleRows;
 };
@@ -384,6 +376,7 @@ const subScheduleRows = async (params) => {
 
     console.log('scheduleSql', scheduleSql)
 
+
     const scheduleFinalResult = (await poolQuery(scheduleSql)).rows;
 
     // Extract the real main_schedule_id
@@ -402,7 +395,7 @@ const subScheduleRows = async (params) => {
     }
 
     // OPTIMIZED: Single query to fetch all children
-    const scheduleRowsWithChildren = await attachChildrenToSchedules(
+    const scheduleRowsWithChildren = await attachChildrenToSchedules2(
         scheduleFinalResult,
         mainScheduleRealId
     );
@@ -426,6 +419,21 @@ const subScheduleRows = async (params) => {
     return scheduleRowsWithChildren;
 };
 
+/* subScheduleRows({
+  "main_schedule_id": "90c523ad-dbc8-44aa-8839-aca42cd81432",
+  "line_id": "882eaf19-d355-4f62-918d-00cec01cd639",
+  "month_year_num": "2026-02",
+  "limit": "40",
+  "current_page": "1"
+}) */
+/* subScheduleRows({
+  "main_schedule_id": "bb8d813b-ac13-45b5-8c84-e06f231ac0e1",
+  "line_id": "882eaf19-d355-4f62-918d-00cec01cd639",
+  "month_year_num": "2026-02",
+  "limit": "40",
+  "current_page": "1"
+}) */
 module.exports = {
     subScheduleRows
 }
+
