@@ -226,7 +226,7 @@ module.exports = {
 
             // data converter
             const payload = {
-                job_rev_id: `(select coalesce(max(job_rev_id), 0) + 1 from ${table.tb_m_job_revision} where job_id = '${req.body.job_id}')`,
+                job_rev_id: `(select coalesce(max(job_rev_id), 0) + 1 from ${table.tb_m_job_revision})`,
                 job_id: req.body.job_id,
                 attachment: req.body.attachment,
                 stw_finding_id: `(select finding_id from ${table.tb_r_findings} where uuid = '${req.body.stw_finding_id}')`,
