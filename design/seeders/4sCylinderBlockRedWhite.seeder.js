@@ -1,6 +1,6 @@
-const envFilePath = process.env.NODE_ENV.trim() == 'production'
+const envFilePath = (process.env.NODE_ENV || 'local').trim() == 'production'
     ? './.env'
-    : (process.env.NODE_ENV.trim() == 'dev' ? './dev.env' : './local.env')
+    : ((process.env.NODE_ENV || 'local').trim() == 'dev' ? './dev.env' : './local.env')
 require('dotenv').config({ path: envFilePath })
 
 const { uuid } = require('uuidv4');
@@ -332,3 +332,4 @@ const main = async () => {
 
 main().then((r) => process.exit()).catch((e) => process.exit());
 //clearRows().then((r) => process.exit()).catch((e) => process.exit())
+

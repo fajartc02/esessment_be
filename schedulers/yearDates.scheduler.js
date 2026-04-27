@@ -1,6 +1,7 @@
-const envFilePath = process.env.NODE_ENV.trim() == 'production'
+const nodeEnv = (process.env.NODE_ENV || 'local').trim()
+const envFilePath = nodeEnv == 'production'
     ? './.env'
-    : (process.env.NODE_ENV.trim() == 'dev' ? './dev.env' : './local.env')
+    : (nodeEnv == 'dev' ? './dev.env' : './local.env')
 require('dotenv').config({ path: envFilePath })
 
 
@@ -73,7 +74,7 @@ const generateSchedules = async (db) => {
 
 //#region scheduler delete all for testing purpose
 const clear4sRows = async () => {
-    if (process.env.NODE_ENV.trim() == 'dev' || process.env.NODE_ENV.trim() == 'local') {
+    if ((process.env.NODE_ENV || 'local').trim() == 'dev' || (process.env.NODE_ENV || 'local').trim() == 'local') {
         console.log('clearing start')
         await databasePool.query(`SET session_replication_role = 'replica'`)
 
