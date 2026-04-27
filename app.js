@@ -36,7 +36,7 @@ cron.schedule('0 20 * * 6', async () => {
 
 // yearly
 cron.schedule('0 0 25 12 *', async () => {
-    yearlyDates()
+    //yearlyDates()
 });
 //#endregion
 
