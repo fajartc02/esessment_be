@@ -1,7 +1,7 @@
 const envFilePath =
-  process.env.NODE_ENV.trim() == "production"
+  (process.env.NODE_ENV || 'local').trim() == "production"
     ? "./.env"
-    : process.env.NODE_ENV.trim() == "dev"
+    : (process.env.NODE_ENV || 'local').trim() == "dev"
     ? "./dev.env"
     : "./local.env"
 require("dotenv").config({ path: envFilePath })
@@ -459,3 +459,4 @@ main()
     process.exit()
   })
 //clearRows().then((r) => process.exit()).catch((e) => process.exit())
+
