@@ -1,0 +1,282 @@
+[
+    {
+        "Zona": "4.0",
+        "no_kanban": "4.10",
+        "Area": "Tempat Sampah",
+        "Time": "30",
+        "PIC": "Oky",
+        "Periode": "Daily"
+    },
+    {
+        "Zona": "1A-1B",
+        "no_kanban": "1.1",
+        "Area": "SST Buka CR Cap, SST Washer Thrust, Jig Piston",
+        "Time": "30",
+        "PIC": "Kevin",
+        "Periode": "Weekly"
+    },
+    {
+        "Zona": "1A-1B",
+        "no_kanban": "1.1",
+        "Area": "SST Buka CR Cap, SST Washer Thrust, Jig Piston",
+        "Time": "30",
+        "PIC": "Oky",
+        "Periode": "Weekly"
+    },
+    {
+        "Zona": "1A-1B",
+        "no_kanban": "1.3",
+        "Area": "Cyl. Bore Checker",
+        "Time": "30",
+        "PIC": "Kevin",
+        "Periode": "Weekly"
+    },
+    {
+        "Zona": "1A-1B",
+        "no_kanban": "1.3",
+        "Area": "Cyl. Bore Checker",
+        "Time": "30",
+        "PIC": "Oky",
+        "Periode": "Weekly"
+    },
+    {
+        "Zona": "1A-1B",
+        "no_kanban": "1.6",
+        "Area": "Protector Conrod, MC Oiling Cyl Bore, IMAM-002",
+        "Time": "30",
+        "PIC": "Kevin",
+        "Periode": "Weekly"
+    },
+    {
+        "Zona": "1A-1B",
+        "no_kanban": "1.6",
+        "Area": "Protector Conrod, MC Oiling Cyl Bore, IMAM-002",
+        "Time": "30",
+        "PIC": "Oky",
+        "Periode": "Weekly"
+    },
+    {
+        "Zona": "1A-1B",
+        "no_kanban": "1.10",
+        "Area": "JIG Bearing C/R Upper",
+        "Time": "30",
+        "PIC": "Kevin",
+        "Periode": "Weekly"
+    },
+    {
+        "Zona": "1A-1B",
+        "no_kanban": "1.10",
+        "Area": "JIG Bearing C/R Upper",
+        "Time": "30",
+        "PIC": "Oky",
+        "Periode": "Weekly"
+    },
+    {
+        "Zona": "1A-1B",
+        "no_kanban": "1.11",
+        "Area": "JIg Bearing C/R Lower",
+        "Time": "30",
+        "PIC": "Kevin",
+        "Periode": "Weekly"
+    },
+    {
+        "Zona": "1A-1B",
+        "no_kanban": "1.11",
+        "Area": "JIg Bearing C/R Lower",
+        "Time": "30",
+        "PIC": "Oky",
+        "Periode": "Weekly"
+    },
+    {
+        "Zona": "1A-1B",
+        "no_kanban": "1.2",
+        "Area": "IMZY-0013, IMTS-0027",
+        "Time": "240",
+        "PIC": "Kevin",
+        "Periode": "Monthly"
+    },
+    {
+        "Zona": "1A-1B",
+        "no_kanban": "1.4",
+        "Area": "IMAT-0014, IMZK-009",
+        "Time": "240",
+        "PIC": "Oky",
+        "Periode": "Monthly"
+    },
+    {
+        "Zona": "1A-1B",
+        "no_kanban": "1.8",
+        "Area": "IMAT-0011, Impact Bolt Crank Shaft",
+        "Time": "240",
+        "PIC": "Kevin",
+        "Periode": "Monthly"
+    },
+    {
+        "Zona": "1A-1B",
+        "no_kanban": "1.13",
+        "Area": "IMAM-001",
+        "Time": "240",
+        "PIC": "Oky",
+        "Periode": "Monthly"
+    },
+    {
+        "Zona": "2.0",
+        "no_kanban": "2.3",
+        "Area": "IMAT-0041, IMZY-0026",
+        "Time": "240",
+        "PIC": "Kevin",
+        "Periode": "Monthly"
+    },
+    {
+        "Zona": "2.0",
+        "no_kanban": "2.4",
+        "Area": "IMTS-0039, IMTS-0040",
+        "Time": "240",
+        "PIC": "Oky",
+        "Periode": "Monthly"
+    },
+    {
+        "Zona": "2.0",
+        "no_kanban": "2.5",
+        "Area": "IMTS-0037, IMTS-0038",
+        "Time": "240",
+        "PIC": "Kevin",
+        "Periode": "Monthly"
+    },
+    {
+        "Zona": "2.0",
+        "no_kanban": "2.6",
+        "Area": "Shifter Transfer",
+        "Time": "240",
+        "PIC": "Oky",
+        "Periode": "Monthly"
+    },
+    {
+        "Zona": "3.0",
+        "no_kanban": "3.2",
+        "Area": "IMZY-0028, Raku-raku",
+        "Time": "240",
+        "PIC": "Kevin",
+        "Periode": "Monthly"
+    },
+    {
+        "Zona": "1A-1B",
+        "no_kanban": "1.5",
+        "Area": "Rak Bolt Conrod, Rak Bearing & Crank Shaft",
+        "Time": "30",
+        "PIC": "Oky",
+        "Periode": "2 Month"
+    },
+    {
+        "Zona": "1A-1B",
+        "no_kanban": "1.7",
+        "Area": "Panel MC 1, Panel MC 2, Panel Lighting",
+        "Time": "30",
+        "PIC": "Kevin",
+        "Periode": "2 Month"
+    },
+    {
+        "Zona": "2.0",
+        "no_kanban": "2.2",
+        "Area": "Kaca Test Bench, Tabung C)2",
+        "Time": "30",
+        "PIC": "Oky",
+        "Periode": "2 Month"
+    },
+    {
+        "Zona": "2.0",
+        "no_kanban": "2.1",
+        "Area": "papan Engine Inspection",
+        "Time": "30",
+        "PIC": "Kevin",
+        "Periode": "2 Month"
+    },
+    {
+        "Zona": "3.0",
+        "no_kanban": "3.1",
+        "Area": "Charger AGV, Panel AGV, Lemari Material",
+        "Time": "30",
+        "PIC": "Oky",
+        "Periode": "2 Month"
+    },
+    {
+        "Zona": "3.0",
+        "no_kanban": "3.3",
+        "Area": "Shutter Engine, Shutter Repair, Shutter Buffer Stock",
+        "Time": "30",
+        "PIC": "Kevin",
+        "Periode": "2 Month"
+    },
+    {
+        "Zona": "4.0",
+        "no_kanban": "4.1",
+        "Area": "Kaca Oasis",
+        "Time": "30",
+        "PIC": "Oky",
+        "Periode": "2 Month"
+    },
+    {
+        "Zona": "4.0",
+        "no_kanban": "4.4",
+        "Area": "Papan 3 Pillar, Papan 4S, Papan Jishu Hozen",
+        "Time": "30",
+        "PIC": "Kevin",
+        "Periode": "2 Month"
+    },
+    {
+        "Zona": "4.0",
+        "no_kanban": "4.2",
+        "Area": "Meja GL, TL & All Equipment",
+        "Time": "30",
+        "PIC": "Oky",
+        "Periode": "2 Month"
+    },
+    {
+        "Zona": "COMMON",
+        "no_kanban": "2.17",
+        "Area": "Curring Time",
+        "Time": "480",
+        "PIC": "Kevin",
+        "Periode": "2 Month"
+    },
+    {
+        "Zona": "COMMON",
+        "no_kanban": "2.17",
+        "Area": "Gondola C/B",
+        "Time": "960",
+        "PIC": "Oky",
+        "Periode": "3 Month"
+    },
+    {
+        "Zona": "COMMON",
+        "no_kanban": "2.8",
+        "Area": "Ducting",
+        "Time": "480",
+        "PIC": "Kevin",
+        "Periode": "3 Month"
+    },
+    {
+        "Zona": "Daily by MS",
+        "no_kanban": "1.26",
+        "Area": "Slipper Piston",
+        "Time": "120",
+        "PIC": "Oky",
+        "Periode": "Daily"
+    },
+    {
+        "Zona": "Daily by MS",
+        "no_kanban": "1.12",
+        "Area": "Slipper Cyl Block",
+        "Time": "120",
+        "PIC": "Kevin",
+        "Periode": "Daily"
+    },
+    {
+        "Zona": "Daily by MS",
+        "no_kanban": "3.11",
+        "Area": "Stand Engine",
+        "Time": "120",
+        "PIC": "Oky",
+        "Periode": "Daily"
+    }
+]

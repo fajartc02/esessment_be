@@ -1,0 +1,42 @@
+{
+    "name": "be-e-asessment",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "start": "node ./bin/www",
+        "local": "SET NODE_ENV=local && nodemon ./bin/www",
+        "dev": "SET NODE_ENV=dev && nodemon ./bin/www",
+        "dev-mac": "export NODE_ENV=dev && nodemon ./bin/www",
+        "dev-vps": "SET NODE_ENV=dev && pm2 start ./bin/www --name=eas-dev",
+        "yearly-scheduler": "SET NODE_ENV=dev && node ./schedulers/yearDates.scheduler.js",
+        "4s-scheduler": "SET NODE_ENV=dev && node ./schedulers/4s.scheduler.js",
+        "om-scheduler": "SET NODE_ENV=dev && node ./schedulers/om.scheduler.js",
+        "4s-camshaft-trans": "SET NODE_ENV=dev && node ./design/transaction/4sCamShaft.transaction.js",
+        "delete-unmapped-schedule": "export NODE_ENV=dev && node ./cmd/deleteUnmappedSchedule.js",
+        "delete-duplicate-schedule": "export NODE_ENV=dev && node ./cmd/deleteDuplicateSchedule.js"
+    },
+    "dependencies": {
+        "axios": "^1.4.0",
+        "bcryptjs": "^2.4.3",
+        "cookie-parser": "~1.4.4",
+        "cors": "^2.8.5",
+        "debug": "~2.6.9",
+        "dotenv": "^16.4.5",
+        "exceljs": "^4.4.0",
+        "express": "~4.16.1",
+        "http-errors": "~1.6.3",
+        "jsonwebtoken": "^9.0.0",
+        "memory-cache": "^0.2.0",
+        "moment": "^2.29.4",
+        "morgan": "~1.9.1",
+        "multer": "^1.4.5-lts.1",
+        "node-cron": "^3.0.3",
+        "nodemon": "^2.0.22",
+        "pg": "^8.11.0",
+        "swagger-jsdoc": "^6.2.8",
+        "swagger-ui-express": "^5.0.1",
+        "uuidv4": "^6.2.13",
+        "winston": "^3.13.0",
+        "winston-daily-rotate-file": "^5.0.0"
+    }
+}

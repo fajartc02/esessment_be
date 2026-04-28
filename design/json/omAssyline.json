@@ -1,0 +1,1122 @@
+[
+    {
+        "Mesin": "IMAM-0001",
+        "Item": "Socket",
+        "Location": "Spindle",
+        "Methode": "Ganti",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "No Abnormality",
+        "Periode": "3M"
+    },
+    {
+        "Mesin": "IMAM-0005",
+        "Item": "SPRING JIG DATUM",
+        "Location": "Jig Unit",
+        "Methode": "Check up",
+        "Duration": "10",
+        "PIC": "",
+        "Standart": "No abnormality",
+        "Periode": "6m"
+    },
+    {
+        "Mesin": "IMAM-0016",
+        "Item": "SPRING JIG DATUM",
+        "Location": "Jig Unit",
+        "Methode": "Check up",
+        "Duration": "10",
+        "PIC": "",
+        "Standart": "No abnormality",
+        "Periode": "6m"
+    },
+    {
+        "Mesin": "IMAM-0010",
+        "Item": "Chain balancer",
+        "Location": "Balancer",
+        "Methode": "Check",
+        "Duration": "10",
+        "PIC": "1",
+        "Standart": "Tidak aus",
+        "Periode": "6M"
+    },
+    {
+        "Mesin": "IMAM-0010",
+        "Item": "Jig steam",
+        "Location": "Jig unit",
+        "Methode": "Check",
+        "Duration": "15",
+        "PIC": "1",
+        "Standart": "Tidak aus",
+        "Periode": "6M"
+    },
+    {
+        "Mesin": "IMAM-0010",
+        "Item": "Cam follower",
+        "Location": "Shutter",
+        "Methode": "Ganti",
+        "Duration": "30",
+        "PIC": "1",
+        "Standart": "Tidak aus",
+        "Periode": "6M"
+    },
+    {
+        "Mesin": "IMAM-0010",
+        "Item": "Roller stopper completed",
+        "Location": "Jig unit",
+        "Methode": "Check",
+        "Duration": "10",
+        "PIC": "1",
+        "Standart": "Tidak aus",
+        "Periode": "6M"
+    },
+    {
+        "Mesin": "IMAM-0011",
+        "Item": "FILTER AIR REGULATOR",
+        "Location": "SIDE PANEL",
+        "Methode": "CLEANING",
+        "Duration": "20",
+        "PIC": "1",
+        "Standart": "BERSIH",
+        "Periode": "1M"
+    },
+    {
+        "Mesin": "IMAM-0011",
+        "Item": "ANTIBACK",
+        "Location": "Shutter",
+        "Methode": "Check",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "Tidak aus",
+        "Periode": "6M"
+    },
+    {
+        "Mesin": "IMAM-0011",
+        "Item": "HANDLE",
+        "Location": "HANDLE",
+        "Methode": "Check",
+        "Duration": "15",
+        "PIC": "1",
+        "Standart": "TIDAK RETAK",
+        "Periode": "6M"
+    },
+    {
+        "Mesin": "IMAM 0009A",
+        "Item": "LM GUIDE Z AXIS",
+        "Location": "",
+        "Methode": "GREASE UP",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "GREASE ADA",
+        "Periode": "3M"
+    },
+    {
+        "Mesin": "IMAM 0009A",
+        "Item": "LM GUIDE X AXIS",
+        "Location": "",
+        "Methode": "GREASE UP",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "GREASE ADA",
+        "Periode": "3M"
+    },
+    {
+        "Mesin": "IMAM 0009A",
+        "Item": "LM GUIDE TILTING",
+        "Location": "",
+        "Methode": "GREASE UP",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "GREASE ADA",
+        "Periode": "3M"
+    },
+    {
+        "Mesin": "IMAM 0009A",
+        "Item": "BALL SCREW Z AXIS",
+        "Location": "",
+        "Methode": "GREASE UP",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "GREASE ADA",
+        "Periode": "3M"
+    },
+    {
+        "Mesin": "IMAM 0009A",
+        "Item": "BALL SCREW X AXIS",
+        "Location": "",
+        "Methode": "GREASE UP",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "GREASE ADA",
+        "Periode": "3M"
+    },
+    {
+        "Mesin": "IMAM 0009A",
+        "Item": "CHAIN",
+        "Location": "",
+        "Methode": "GREASE UP",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "GREASE ADA",
+        "Periode": "3M"
+    },
+    {
+        "Mesin": "IMAT-0011",
+        "Item": "Filter Chiller",
+        "Location": "CHILLER",
+        "Methode": "Cleaning",
+        "Duration": "10",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "IMAT-0011",
+        "Item": "All pressure",
+        "Location": "pressure",
+        "Methode": "Check",
+        "Duration": "15",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "1m"
+    },
+    {
+        "Mesin": "IMAT-0012",
+        "Item": "FILTER AIR REGULATOR",
+        "Location": "SIDE PANEL",
+        "Methode": "CLEANING",
+        "Duration": "20",
+        "PIC": "1",
+        "Standart": "BERSIH",
+        "Periode": "3M"
+    },
+    {
+        "Mesin": "IMAT-0012",
+        "Item": "FAN",
+        "Location": "CONTROL PANEL",
+        "Methode": "CLEANING",
+        "Duration": "20",
+        "PIC": "1",
+        "Standart": "BERSIH",
+        "Periode": "3M"
+    },
+    {
+        "Mesin": "IMAT-0012",
+        "Item": "Tombol NR start",
+        "Location": "Handle",
+        "Methode": "Ganti",
+        "Duration": "60",
+        "PIC": "2",
+        "Standart": "no abnormal",
+        "Periode": "2Y"
+    },
+    {
+        "Mesin": "IMCK-0005-1-1",
+        "Item": "STOPER FULLER",
+        "Location": "CONVEYOR",
+        "Methode": "OILING",
+        "Duration": "60",
+        "PIC": "1",
+        "Standart": "NO ABNORMAL",
+        "Periode": "1M"
+    },
+    {
+        "Mesin": "IMCK-0005-1-1",
+        "Item": "SOCKET TERMINAL/SLAVE/ID ANTENA",
+        "Location": "CONVEYOR",
+        "Methode": "CHECK",
+        "Duration": "60",
+        "PIC": "2",
+        "Standart": "NO ABNORMAL",
+        "Periode": "6M"
+    },
+    {
+        "Mesin": "IMCK-0005-2-1",
+        "Item": "STOPER FULLER",
+        "Location": "CONVEYOR",
+        "Methode": "OILING",
+        "Duration": "60",
+        "PIC": "1",
+        "Standart": "NO ABNORMAL",
+        "Periode": "1M"
+    },
+    {
+        "Mesin": "IMCK-0005-2-1",
+        "Item": "SOCKET TERMINAL/SLAVE/ID ANTENA",
+        "Location": "CONVEYOR",
+        "Methode": "CHECK",
+        "Duration": "60",
+        "PIC": "2",
+        "Standart": "NO ABNORMAL",
+        "Periode": "6M"
+    },
+    {
+        "Mesin": "IMCK-0005-3-1",
+        "Item": "STOPER FULLER",
+        "Location": "CONVEYOR",
+        "Methode": "OILING",
+        "Duration": "60",
+        "PIC": "1",
+        "Standart": "NO ABNORMAL",
+        "Periode": "1M"
+    },
+    {
+        "Mesin": "IMCK-0005-3-1",
+        "Item": "SOCKET TERMINAL/SLAVE/ID ANTENA",
+        "Location": "CONVEYOR",
+        "Methode": "CHECK",
+        "Duration": "60",
+        "PIC": "2",
+        "Standart": "NO ABNORMAL",
+        "Periode": "6M"
+    },
+    {
+        "Mesin": "IMTS-0027",
+        "Item": "GREASE UP SLIDE UNIT",
+        "Location": "SLIDE UNIT",
+        "Methode": "GREASE UP",
+        "Duration": "30",
+        "PIC": "1",
+        "Standart": "Ada Grease",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMTS-0028",
+        "Item": "All RUBBER",
+        "Location": "WORK UNIT",
+        "Methode": "CHECK",
+        "Duration": "15",
+        "PIC": "1",
+        "Standart": "NO ABNORMAL",
+        "Periode": "1M"
+    },
+    {
+        "Mesin": "IMTS-0028",
+        "Item": "ALL PRESSURE",
+        "Location": "PRESSURE",
+        "Methode": "CHECK",
+        "Duration": "15",
+        "PIC": "1",
+        "Standart": "NO ABNORMAL",
+        "Periode": "1M"
+    },
+    {
+        "Mesin": "IMTS-0029",
+        "Item": "FILTER AIR REGULATOR",
+        "Location": "SIDE PANEL",
+        "Methode": "CLEANING",
+        "Duration": "20",
+        "PIC": "1",
+        "Standart": "BERSIH",
+        "Periode": "3M"
+    },
+    {
+        "Mesin": "IMTS-0029",
+        "Item": "COUPLER",
+        "Location": "WORK UNIT",
+        "Methode": "GANTI",
+        "Duration": "10",
+        "PIC": "1",
+        "Standart": "TDAK AUS",
+        "Periode": "3M"
+    },
+    {
+        "Mesin": "IMTS-0029",
+        "Item": "COUPLER",
+        "Location": "WORK UNIT",
+        "Methode": "GANTI",
+        "Duration": "10",
+        "PIC": "1",
+        "Standart": "TDAK AUS",
+        "Periode": "3M"
+    },
+    {
+        "Mesin": "IMTS-0029",
+        "Item": "COUPLER",
+        "Location": "WORK UNIT",
+        "Methode": "GANTI",
+        "Duration": "10",
+        "PIC": "1",
+        "Standart": "TDAK AUS",
+        "Periode": "3M"
+    },
+    {
+        "Mesin": "IMTS-0029",
+        "Item": "COUPLER",
+        "Location": "WORK UNIT",
+        "Methode": "GANTI",
+        "Duration": "10",
+        "PIC": "1",
+        "Standart": "TDAK AUS",
+        "Periode": "3M"
+    },
+    {
+        "Mesin": "IMTS-0030",
+        "Item": "All pressure",
+        "Location": "pressure",
+        "Methode": "check",
+        "Duration": "10",
+        "PIC": "1",
+        "Standart": "no abnormal",
+        "Periode": "1m"
+    },
+    {
+        "Mesin": "IMTS-0037",
+        "Item": "STRAINER",
+        "Location": "",
+        "Methode": "Cleaning ",
+        "Duration": "30",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "IMTS-0037",
+        "Item": "AIR FILTER REGULATOR",
+        "Location": "",
+        "Methode": "Cleaning",
+        "Duration": "20",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMTS-0037",
+        "Item": "COUPLER Water by pass",
+        "Location": "",
+        "Methode": "Ganti",
+        "Duration": "10",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "6M"
+    },
+    {
+        "Mesin": "IMTS-0037",
+        "Item": "COUPLER Water Plug",
+        "Location": "",
+        "Methode": "Ganti",
+        "Duration": "10",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "6M"
+    },
+    {
+        "Mesin": "IMTS-0037",
+        "Item": "COUPLER WTO",
+        "Location": "",
+        "Methode": "Ganti",
+        "Duration": "10",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "6M"
+    },
+    {
+        "Mesin": "IMTS-0037",
+        "Item": "COUPLER Fuel",
+        "Location": "",
+        "Methode": "Ganti",
+        "Duration": "10",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "6M"
+    },
+    {
+        "Mesin": "IMTS-0037",
+        "Item": "COUPLER WTI",
+        "Location": "",
+        "Methode": "Ganti",
+        "Duration": "10",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "6M"
+    },
+    {
+        "Mesin": "IMTS-0037",
+        "Item": "MUFFLER",
+        "Location": "",
+        "Methode": "Ganti",
+        "Duration": "20",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "6M"
+    },
+    {
+        "Mesin": "IMTS-0037",
+        "Item": "Cek Valve",
+        "Location": "",
+        "Methode": "Cleaning",
+        "Duration": "30",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMTS-0037",
+        "Item": "Vacum Hose",
+        "Location": "",
+        "Methode": "Ganti",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "6M"
+    },
+    {
+        "Mesin": "IMTS-0037",
+        "Item": "Filter vacum throtle",
+        "Location": "",
+        "Methode": "Cleaning",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMTS-0037",
+        "Item": "ALL PRESSURE",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "15",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMTS-0038",
+        "Item": "STRAINER",
+        "Location": "",
+        "Methode": "Cleaning ",
+        "Duration": "30",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "IMTS-0038",
+        "Item": "AIR FILTER REGULATOR",
+        "Location": "",
+        "Methode": "Cleaning",
+        "Duration": "20",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMTS-0038",
+        "Item": "Cek Valve",
+        "Location": "",
+        "Methode": "Cleaning",
+        "Duration": "30",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMTS-0038",
+        "Item": "Filter vacum throtle",
+        "Location": "",
+        "Methode": "Cleaning",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMTS-0038",
+        "Item": "ALL PRESSURE",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "15",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMTS-0039",
+        "Item": "STRAINER",
+        "Location": "",
+        "Methode": "Cleaning ",
+        "Duration": "30",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "IMTS-0039",
+        "Item": "AIR FILTER REGULATOR",
+        "Location": "",
+        "Methode": "Cleaning",
+        "Duration": "20",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMTS-0039",
+        "Item": "Cek Valve",
+        "Location": "",
+        "Methode": "Cleaning",
+        "Duration": "30",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMTS-0039",
+        "Item": "Filter vacum throtle",
+        "Location": "",
+        "Methode": "Cleaning",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMTS-0039",
+        "Item": "HANDLE COVER PULLY",
+        "Location": "",
+        "Methode": "GREASE",
+        "Duration": "15",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "6M"
+    },
+    {
+        "Mesin": "IMTS-0039",
+        "Item": "ALL PRESSURE",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "15",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMTS-0040",
+        "Item": "STRAINER",
+        "Location": "",
+        "Methode": "Cleaning ",
+        "Duration": "30",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "IMTS-0040",
+        "Item": "AIR FILTER REGULATOR",
+        "Location": "",
+        "Methode": "Cleaning",
+        "Duration": "20",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMTS-0040",
+        "Item": "Cek Valve",
+        "Location": "",
+        "Methode": "Cleaning",
+        "Duration": "30",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMTS-0040",
+        "Item": "Filter vacum throtle",
+        "Location": "",
+        "Methode": "Cleaning",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMTS-0040",
+        "Item": "ALL PRESSURE",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "15",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMTS-0041",
+        "Item": "STRAINER",
+        "Location": "",
+        "Methode": "Cleaning ",
+        "Duration": "30",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "IMTS-0041",
+        "Item": "AIR FILTER REGULATOR",
+        "Location": "",
+        "Methode": "Cleaning",
+        "Duration": "20",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMTS-0041",
+        "Item": "Cek Valve",
+        "Location": "",
+        "Methode": "Cleaning",
+        "Duration": "30",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMTS-0041",
+        "Item": "Filter vacum throtle",
+        "Location": "",
+        "Methode": "Cleaning",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "No abnormality",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMTS-0041",
+        "Item": "ALL PRESSURE",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "15",
+        "PIC": "",
+        "Standart": "No abnormality",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMZY-0025",
+        "Item": "FAN MOTOR",
+        "Location": "MOTOR UNIT",
+        "Methode": "CLEANING",
+        "Duration": "20",
+        "PIC": "1",
+        "Standart": "BERSIH",
+        "Periode": "6M"
+    },
+    {
+        "Mesin": "IMZY 018",
+        "Item": "FILTER REGULATOR",
+        "Location": "SIDE PANEL",
+        "Methode": "CLEANING",
+        "Duration": "20",
+        "PIC": "1",
+        "Standart": "BERSIH",
+        "Periode": "3M"
+    },
+    {
+        "Mesin": "IMZY-0019",
+        "Item": "FILTER REGULATOR",
+        "Location": "SIDE PANEL",
+        "Methode": "CLEANING",
+        "Duration": "20",
+        "PIC": "1",
+        "Standart": "BERSIH",
+        "Periode": "3M"
+    },
+    {
+        "Mesin": "IMZY-0020",
+        "Item": "FILTER REGULATOR",
+        "Location": "SIDE PANEL",
+        "Methode": "CLEANING",
+        "Duration": "20",
+        "PIC": "1",
+        "Standart": "BERSIH",
+        "Periode": "3M"
+    },
+    {
+        "Mesin": "IMZY-0021",
+        "Item": "ALL PRESSURE",
+        "Location": "PRESSURE",
+        "Methode": "CHECK",
+        "Duration": "15",
+        "PIC": "1",
+        "Standart": "No abnormal",
+        "Periode": "1M"
+    },
+    {
+        "Mesin": "IMZY-0026",
+        "Item": "WATER STRAINER",
+        "Location": "FUTAI UNIT",
+        "Methode": "CLEANING",
+        "Duration": "30",
+        "PIC": "1",
+        "Standart": "Bersih",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "IMZY-0026",
+        "Item": "Mist collector",
+        "Location": "FUTAI UNIT",
+        "Methode": "CLEANING",
+        "Duration": "240",
+        "PIC": "2",
+        "Standart": "Bersih",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMZY-0026",
+        "Item": "ALL PRESSURE",
+        "Location": "PRESSURE",
+        "Methode": "CHECK",
+        "Duration": "10",
+        "PIC": "1",
+        "Standart": "NO ABNORMAL",
+        "Periode": "1M"
+    },
+    {
+        "Mesin": "IMZY-0026",
+        "Item": "ALL PIPA",
+        "Location": "FUTAI UNIT",
+        "Methode": "CHECK KEBOCORAN",
+        "Duration": "20",
+        "PIC": "2",
+        "Standart": "NO ABNORMAL",
+        "Periode": "1M"
+    },
+    {
+        "Mesin": "IMZY-0027",
+        "Item": "WATER STRAINER",
+        "Location": "FUTAI UNIT",
+        "Methode": "CLEANING",
+        "Duration": "30",
+        "PIC": "1",
+        "Standart": "Bersih",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "IMZY-0027",
+        "Item": "Mist collector",
+        "Location": "FUTAI UNIT",
+        "Methode": "CLEANING",
+        "Duration": "240",
+        "PIC": "2",
+        "Standart": "Bersih",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMZY-0027",
+        "Item": "ALL PRESSURE",
+        "Location": "FUTAI UNIT",
+        "Methode": "CHECK",
+        "Duration": "15",
+        "PIC": "1",
+        "Standart": "NO ABNORMAL",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMZY-0027",
+        "Item": "ALL PIPA",
+        "Location": "FUTAI UNIT",
+        "Methode": "CHECK",
+        "Duration": "30",
+        "PIC": "2",
+        "Standart": "NO ABNORMAL",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMZY-0022",
+        "Item": "Exhaust Fan",
+        "Location": "",
+        "Methode": "Cleaning",
+        "Duration": "10",
+        "PIC": "",
+        "Standart": "",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "IMZY-0022",
+        "Item": "all host",
+        "Location": "",
+        "Methode": "check kebocoran",
+        "Duration": "10",
+        "PIC": "",
+        "Standart": "tidak bocor",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMZY-0022",
+        "Item": "HOIST",
+        "Location": "",
+        "Methode": "CHECK CREK",
+        "Duration": "15",
+        "PIC": "1",
+        "Standart": "TIDAK RETAK",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "IMZY-0022",
+        "Item": "ALL PIPA",
+        "Location": "",
+        "Methode": "CHECK KEBOCORAN",
+        "Duration": "10",
+        "PIC": "1",
+        "Standart": "TIDAK BOCOR",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "SST BOLT TQ C/S",
+        "Item": "SOCKET",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "15",
+        "PIC": "1",
+        "Standart": "TIDAK AUS",
+        "Periode": "M"
+    },
+    {
+        "Mesin": "HOIST CYL.HEAD",
+        "Item": "CHAIN ROPE",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "15",
+        "PIC": "1",
+        "Standart": "TIDAK ADA RETAK",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "HOIST CYL.HEAD",
+        "Item": "UNIT HOOK",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "TIDAK ADA RETAK",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "HOIST CYL.HEAD",
+        "Item": "LOCK HOOK",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "BERFUNGSI",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "HOIST CYL.HEAD",
+        "Item": "ENGINE HANGER",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "TIDAK ADA RETAK",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "HOIST CAM HOUSING",
+        "Item": "CHAIN ROPE",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "15",
+        "PIC": "1",
+        "Standart": "TIDAK ADA RETAK",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "HOIST CAM HOUSING",
+        "Item": "UNIT HOOK",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "TIDAK ADA RETAK",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "HOIST CAM HOUSING",
+        "Item": "LOCK HOOK",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "BERFUNGSI",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "HOIST CAM HOUSING",
+        "Item": "ENGINE HANGER",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "TIDAK ADA RETAK",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "HOIST TURN E/G",
+        "Item": "CHAIN ROPE",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "15",
+        "PIC": "1",
+        "Standart": "TIDAK ADA RETAK",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "HOIST TURN E/G",
+        "Item": "UNIT HOOK",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "TIDAK ADA RETAK",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "HOIST TURN E/G",
+        "Item": "LOCK HOOK",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "BERFUNGSI",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "HOIST TURN E/G",
+        "Item": "ENGINE HANGER",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "TIDAK ADA RETAK",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "HOIST E/G FINISH",
+        "Item": "CHAIN ROPE",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "15",
+        "PIC": "1",
+        "Standart": "TIDAK ADA RETAK",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "HOIST E/G FINISH",
+        "Item": "UNIT HOOK",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "TIDAK ADA RETAK",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "HOIST E/G FINISH",
+        "Item": "LOCK HOOK",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "BERFUNGSI",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "HOIST E/G FINISH",
+        "Item": "ENGINE HANGER",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "TIDAK ADA RETAK",
+        "Periode": "W"
+    },
+    {
+        "Mesin": "BLOCK TRANSFER",
+        "Item": "RODA",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "10",
+        "PIC": "1",
+        "Standart": "PUTARAN SMOOTH",
+        "Periode": "1M"
+    },
+    {
+        "Mesin": "BLOCK TRANSFER",
+        "Item": "SELING WIRE ROPE",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "10",
+        "PIC": "1",
+        "Standart": "TIDAK PUTUS",
+        "Periode": "1M"
+    },
+    {
+        "Mesin": "CHECK CRANK",
+        "Item": "URETAN HANGER",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "TIDAK AUS",
+        "Periode": "1M"
+    },
+    {
+        "Mesin": "CHECK PISTON",
+        "Item": "ANTI BACK",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "TIDAK AUS",
+        "Periode": "1M"
+    },
+    {
+        "Mesin": "CHECK PISTON",
+        "Item": "STOPPER",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "TIDAK AUS",
+        "Periode": "1M"
+    },
+    {
+        "Mesin": "OILING BORE",
+        "Item": "STOPPER SET",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "TIDAK AUS",
+        "Periode": "1M"
+    },
+    {
+        "Mesin": "OILING BORE",
+        "Item": "ANTI BACK",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "TIDAK AUS",
+        "Periode": "1M"
+    },
+    {
+        "Mesin": "RAKU RAKU",
+        "Item": "SELING STOPPER",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "5",
+        "PIC": "1",
+        "Standart": "TIDAK AUS",
+        "Periode": "1M"
+    },
+    {
+        "Mesin": "RAKU RAKU",
+        "Item": "HANGER",
+        "Location": "",
+        "Methode": "CHECK",
+        "Duration": "60",
+        "PIC": "1",
+        "Standart": "TIDAK CRACK",
+        "Periode": "1M"
+    }
+]

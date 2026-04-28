@@ -1,0 +1,342 @@
+[
+ {
+  "Mesin": "IKCM (001-006)",
+  "Item Check": "Seal press piston",
+  "Methode": "Ganti tiap 5000 shoot",
+  "Standard": "Tidak aus",
+  "Location": "Press piston",
+  "Duration": 15,
+  "Periode": "1 Week",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKCM (001-006)",
+  "Item Check": "Sand leak",
+  "Methode": "Ganti baru",
+  "Standard": "Tidak robek",
+  "Location": "Base okama",
+  "Duration": 15,
+  "Periode": "1 Week",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKCM (001-006)",
+  "Item Check": "Chucky valve",
+  "Methode": "Cleaning",
+  "Standard": "Tidak tersumbat",
+  "Location": "Ujung hose material",
+  "Duration": 10,
+  "Periode": "Daily",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKCM (001-006)",
+  "Item Check": "LM guide",
+  "Methode": "Cleaning",
+  "Standard": "Tidak macet",
+  "Location": "penampung pasir",
+  "Duration": 5,
+  "Periode": "Daily",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKCM (001-006)",
+  "Item Check": "Filter hopper",
+  "Methode": "Ganti",
+  "Standard": "Tidak mampet",
+  "Location": "Hopper pasir",
+  "Duration": 10,
+  "Periode": "2 Week",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKFM (001-005)",
+  "Item Check": "Filter panel",
+  "Methode": "Ganti",
+  "Standard": "Bersih",
+  "Location": "Panel ",
+  "Duration": 5,
+  "Periode": "1 Week",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKHU 001-002 (SAND)",
+  "Item Check": "Filter panel",
+  "Methode": "Ganti",
+  "Standard": "Bersih",
+  "Location": "Motor vacuum",
+  "Duration": 5,
+  "Periode": "1 Week",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKDM (001-005)",
+  "Item Check": "Check Pressure",
+  "Methode": "Check pressure",
+  "Standard": "Tidak bocor",
+  "Location": "Pressure room",
+  "Duration": 60,
+  "Periode": "1 Month",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKDM (001-005)",
+  "Item Check": "Filter motor pump",
+  "Methode": "ganti ",
+  "Standard": "Bersih",
+  "Location": "pompa hydolik",
+  "Duration": 5,
+  "Periode": "1 Week",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKMC (001-002)",
+  "Item Check": "Cleaning pasir tangki",
+  "Methode": "Cleaning dg stick",
+  "Standard": "Bersih",
+  "Location": "Tanki  bawah",
+  "Duration": 350,
+  "Periode": "1 Month",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKMC (001-002)",
+  "Item Check": "Cleaning pasir atas",
+  "Methode": "Cleaning dg stick",
+  "Standard": "Bersih",
+  "Location": "Tanki atas",
+  "Duration": 30,
+  "Periode": "1 Week",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKMC (001-002)",
+  "Item Check": "Roller shutter",
+  "Methode": "Visual",
+  "Standard": "Tidak aus",
+  "Location": "Shutter",
+  "Duration": 5,
+  "Periode": "1 Month",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKMC (001-002)",
+  "Item Check": "Loader auto",
+  "Methode": "Visual",
+  "Standard": "Tidak kendor",
+  "Location": "Loader",
+  "Duration": 3,
+  "Periode": "Daily",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKMC (001-002)",
+  "Item Check": "Sling loader",
+  "Methode": "Visual",
+  "Standard": "Tidak putus",
+  "Location": "Loader",
+  "Duration": 2,
+  "Periode": "Daily",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKMC (001-002)",
+  "Item Check": "oil lubrikasi cylinder",
+  "Methode": "Visual",
+  "Standard": "level standar",
+  "Location": "samping mesin",
+  "Duration": 2,
+  "Periode": "Daily",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKND (001-002)",
+  "Item Check": "Pin  in\/ex manifold",
+  "Methode": "Visual",
+  "Standard": "Tidak bengkok",
+  "Location": "Numbering mc",
+  "Duration": 5,
+  "Periode": "Daily",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKND (001-002)",
+  "Item Check": "Roller work",
+  "Methode": "Visual",
+  "Standard": "Lancar",
+  "Location": "Roller Conveyor",
+  "Duration": 5,
+  "Periode": "Daily",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKND (001-002)",
+  "Item Check": "Balancer",
+  "Methode": "Visual",
+  "Standard": "Normal",
+  "Location": "Hunten",
+  "Duration": 2,
+  "Periode": "Daily",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKND (001-002)",
+  "Item Check": "Stopper hunten",
+  "Methode": "Visual",
+  "Standard": "Tidak aus",
+  "Location": "Hunten",
+  "Duration": 2,
+  "Periode": "Daily",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKND (001-002)",
+  "Item Check": "Clamp work hunten",
+  "Methode": "Visual",
+  "Standard": "Tidak aus",
+  "Location": "Hunten",
+  "Duration": 2,
+  "Periode": "Daily",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKND (001-002)",
+  "Item Check": "Base penopang work",
+  "Methode": "Visual",
+  "Standard": "Tidak aus",
+  "Location": "Numbering mesin",
+  "Duration": 2,
+  "Periode": "Daily",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKKO (001-002)",
+  "Item Check": "Hose dan pipa blow",
+  "Methode": "Visual",
+  "Standard": "Tidak aus",
+  "Location": "IKKO unit",
+  "Duration": 2,
+  "Periode": "Daily",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKKO (001-002)",
+  "Item Check": "Output air blow pressure",
+  "Methode": "Visual",
+  "Standard": "Sesuai Std",
+  "Location": "Display indikator",
+  "Duration": 2,
+  "Periode": "Daily",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKGC (001-002)",
+  "Item Check": "Cutting oil blube",
+  "Methode": "Visual",
+  "Standard": "Sesuai level std",
+  "Location": "Tabung oli",
+  "Duration": 2,
+  "Periode": "Daily",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKGC (001-002)",
+  "Item Check": "Metal saw",
+  "Methode": "Visual",
+  "Standard": "Tidak gompal",
+  "Location": "Cutting unit",
+  "Duration": 5,
+  "Periode": "Daily",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKWI (001-002)",
+  "Item Check": "Urethane",
+  "Methode": "Visual",
+  "Standard": "Bersih",
+  "Location": "Probe sensor",
+  "Duration": 5,
+  "Periode": "1 Month",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKWI (001-002)",
+  "Item Check": "Roller",
+  "Methode": "Visual",
+  "Standard": "Tidak aus",
+  "Location": "Roller conveyor",
+  "Duration": 10,
+  "Periode": "1 Month",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKCU (001-002)",
+  "Item Check": "Stopper output work AGV",
+  "Methode": "Visual",
+  "Standard": "Tidak bengkok",
+  "Location": "Shuter AGV",
+  "Duration": 5,
+  "Periode": "1 Week",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKCU (001-002)",
+  "Item Check": "Gerakan stopper",
+  "Methode": "Check gerakan",
+  "Standard": "Tidak seret",
+  "Location": "Shutter AGV",
+  "Duration": 5,
+  "Periode": "1 Week",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKCU (001-002)",
+  "Item Check": "Baut stopper",
+  "Methode": "Check putaran",
+  "Standard": "Tidak kendor",
+  "Location": "Shutter AGV",
+  "Duration": 5,
+  "Periode": "1 Week",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKFH (001-002)",
+  "Item Check": "Filter blower",
+  "Methode": "Ganti",
+  "Standard": "Bersih",
+  "Location": "Solution",
+  "Duration": 5,
+  "Periode": "1 Week",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "IKFH (001-002)",
+  "Item Check": "Filter air RO",
+  "Methode": "Ganti",
+  "Standard": "Bersih",
+  "Location": "T6",
+  "Duration": 15,
+  "Periode": "1 Week",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "WJ Deburing Robot",
+  "Item Check": "Kikir baritori",
+  "Methode": "Visual",
+  "Standard": "Tidak aus",
+  "Location": "Robot",
+  "Duration": 5,
+  "Periode": "Daily",
+  "Group": "WHITE"
+ },
+ {
+  "Mesin": "WJ Deburing Robot",
+  "Item Check": "Dudukan WJ",
+  "Methode": "Visual",
+  "Standard": "Tidak aus",
+  "Location": "Table",
+  "Duration": 5,
+  "Periode": "Daily",
+  "Group": "WHITE"
+ }
+]

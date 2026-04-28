@@ -1,0 +1,505 @@
+[
+ {
+  "Zona": "Zone 1",
+  "no_kanban": "C 03-07",
+  "Area": "Meja Strength Core 01 & Dolly Ikomi",
+  "Item Check Kanban": "Meja kerja ",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Kondisi meja strength bersih",
+  "Periode": "Daily",
+  "Group": "WHITE",
+  "Time": 10
+ },
+ {
+  "no_kanban": "C 02-11",
+  "Area": "Lemari Baju Tahan Api & Shutter Terak",
+  "Item Check Kanban": "Lemari baju dan shuter terak",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Mika lemari bersih",
+  "Periode": "Daily",
+  "Group": "WHITE",
+  "Time": 15
+ },
+ {
+  "Zona": "Zone 2",
+  "no_kanban": "A 01-01",
+  "Area": "Jalur Pejalan Kaki  (A)",
+  "Item Check Kanban": "Jalur pejalan kaki",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Tidak ada tapak kaki",
+  "Periode": "Daily",
+  "Group": "WHITE",
+  "Time": 15
+ },
+ {
+  "no_kanban": "C 03-09",
+  "Area": "Stand Dolly Die Change (B)",
+  "Item Check Kanban": "Dolly die change",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Body berih dari debu",
+  "Periode": "Daily",
+  "Group": "WHITE",
+  "Time": 15
+ },
+ {
+  "Zona": "Zone 3",
+  "no_kanban": "C 02-16",
+  "Area": "Pallet Filter Dust Collector (B)",
+  "Item Check Kanban": "Pallet filter",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Tidak sisa kiriko di meja",
+  "Periode": "Daily",
+  "Group": "WHITE",
+  "Time": 20
+ },
+ {
+  "Zona": "Zone 4",
+  "no_kanban": "C 04-01",
+  "Area": "Area Teji Tenken & Jig Teji Tenken   (A)",
+  "Item Check Kanban": "Area teji tenken",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Tidak ada kiriko di table",
+  "Periode": "Daily",
+  "Group": "WHITE",
+  "Time": 15
+ },
+ {
+  "no_kanban": "D 01-03",
+  "Area": "Locker APD & Lemari APD  (B)",
+  "Item Check Kanban": "Lemari APD",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Kaca bersih",
+  "Periode": "Daily",
+  "Group": "WHITE",
+  "Time": 15
+ },
+ {
+  "Zona": "Zone 1",
+  "no_kanban": "C 03-08",
+  "Area": "Dolly Touch Up & Lemari Stand Burner",
+  "Item Check Kanban": "Dolly touch up",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Body bersih dari debu",
+  "Periode": "Weekly",
+  "Group": "WHITE",
+  "Time": 40
+ },
+ {
+  "Zona": "Zone 2",
+  "no_kanban": "C 01-01",
+  "Area": "Meja Baritori TV Core 01 ~ 06  (A)",
+  "Item Check Kanban": "Meja baritori",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Tidak ada pasir di meja",
+  "Periode": "Weekly",
+  "Group": "WHITE",
+  "Time": 30
+ },
+ {
+  "no_kanban": "C 02-14",
+  "Area": "Panel M\/C Finishing 01 ~ 02   (B)",
+  "Item Check Kanban": "Panel M\/C Finishing 1-2",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Body panel bersih dari debu",
+  "Periode": "Weekly",
+  "Group": "WHITE",
+  "Time": 20
+ },
+ {
+  "no_kanban": "C 03-10",
+  "Area": "Dolly Mat. Surfactan, Ro & Binder 01 & 02  (C)",
+  "Item Check Kanban": "Dolly Material",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Body bersih dari debu",
+  "Periode": "Weekly",
+  "Group": "WHITE",
+  "Time": 20
+ },
+ {
+  "no_kanban": "C 03-11",
+  "Area": "Dolly Mat.Surfactan, Ro & Binder 03 & 04  (D)",
+  "Item Check Kanban": "Dolly Material",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Body bersih dari debu",
+  "Periode": "Weekly",
+  "Group": "WHITE",
+  "Time": 20
+ },
+ {
+  "Zona": "Zone 3",
+  "no_kanban": "C 02-17",
+  "Area": "Robot T6 1   (A)",
+  "Item Check Kanban": "Robot",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Body bersih dari debu",
+  "Periode": "Weekly",
+  "Group": "WHITE",
+  "Time": 40
+ },
+ {
+  "no_kanban": "B 02-01",
+  "Area": "Safety Stock area & Area Work NG  (B)",
+  "Item Check Kanban": "Area safety stock",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Cover plastik bersih dari debu",
+  "Periode": "Weekly",
+  "Group": "WHITE",
+  "Time": 40
+ },
+ {
+  "no_kanban": "C 02-12",
+  "Area": "Dolly Mat. Surfactan, Ro & Binder 05 & 06  ©",
+  "Item Check Kanban": "Dolly Material",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Body bersih dari debu",
+  "Periode": "Weekly",
+  "Group": "WHITE",
+  "Time": 13
+ },
+ {
+  "Zona": "Zone 4",
+  "no_kanban": "C 01-02",
+  "Area": "Area Master Jig Tool's (A)",
+  "Item Check Kanban": "Master jig",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Master jig bersih dari debu",
+  "Periode": "Weekly",
+  "Group": "WHITE",
+  "Time": 30
+ },
+ {
+  "no_kanban": "D 02-01",
+  "Area": "Lemari Oasis & Meja Printer (B)",
+  "Item Check Kanban": "Lemari oasis",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Bersih dari debu",
+  "Periode": "Weekly",
+  "Group": "WHITE",
+  "Time": 40
+ },
+ {
+  "no_kanban": "D 01-05",
+  "Area": "Kaca Oasis & Rak ATK   ",
+  "Item Check Kanban": "Kaca oasis",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Kaca bersih",
+  "Periode": "Weekly",
+  "Group": "WHITE",
+  "Time": 30
+ },
+ {
+  "Zona": "Zone 1",
+  "no_kanban": "C 02-12",
+  "Area": "Cover Ingot LP 01 ~ LP  05",
+  "Metode 4S": "Cleaning             ( Menit )",
+  "Control Point": "Cover bersih dari debu",
+  "Periode": "Monthly",
+  "Group": "WHITE",
+  "Time": 240
+ },
+ {
+  "Zona": "Zone 2",
+  "no_kanban": "C 02-13",
+  "Area": "Dolly Pasir Ex Okama TV Core 01 ~ 06  (A)",
+  "Metode 4S": "Cleaning             ( Menit )",
+  "Control Point": "Bersih dari debu",
+  "Periode": "Monthly",
+  "Group": "WHITE",
+  "Time": 240
+ },
+ {
+  "no_kanban": "C 01-14",
+  "Area": "Atap, cerobong Dust Collector   (B)",
+  "Metode 4S": "Cleaning             ( Menit )",
+  "Control Point": "Bersih dari debu",
+  "Periode": "Monthly",
+  "Group": "WHITE",
+  "Time": 245
+ },
+ {
+  "Zona": "Zone 3",
+  "no_kanban": "C 02-18",
+  "Area": "Dek atas M\/C Solution & Aging 02 (A)",
+  "Metode 4S": "Cleaning             ( Menit )",
+  "Control Point": "Bersih dari debu",
+  "Periode": "Monthly",
+  "Group": "WHITE",
+  "Time": 245
+ },
+ {
+  "no_kanban": "C 02-19",
+  "Area": "Roller T6 01 ~ 02  (B)",
+  "Metode 4S": "Cleaning             ( Menit )",
+  "Control Point": "Bersih dari debu",
+  "Periode": "Monthly",
+  "Group": "WHITE",
+  "Time": 245
+ },
+ {
+  "Zona": "Zone 4",
+  "no_kanban": "C.02-20",
+  "Area": "Cover Roller T6 01-02   (A)",
+  "Metode 4S": "Cleaning             ( Menit )",
+  "Control Point": "Bersih dari debu",
+  "Periode": "Monthly",
+  "Group": "WHITE",
+  "Time": 250
+ },
+ {
+  "no_kanban": "D 01-06",
+  "Area": "Kolong Fumiday \/ Deck  (B)",
+  "Metode 4S": "Cleaning             ( Menit )",
+  "Control Point": "Lantai bersih dari pasir",
+  "Periode": "Monthly",
+  "Group": "WHITE",
+  "Time": 480
+ },
+ {
+  "Zona": "Zone 1",
+  "no_kanban": "A.01-01",
+  "Area": "Dolly Die Change & Dolly Jizhu Hozen (A)",
+  "Item Check Kanban": "Dolly tempat kerja",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Body bersih dari debu",
+  "Periode": "Daily",
+  "Group": "RED",
+  "Time": 15
+ },
+ {
+  "no_kanban": "C.03-04",
+  "Area": "Meja Strength Core 02  (B)",
+  "Item Check Kanban": "Meja kerja",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Kondisi meja strength bersih",
+  "Periode": "Daily",
+  "Group": "RED"
+ },
+ {
+  "Zona": "Zone 2",
+  "no_kanban": "A.02-01",
+  "Area": " Eye Wash (A)",
+  "Item Check Kanban": "Eye Wash",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Body bersih dari debu",
+  "Periode": "Daily",
+  "Group": "RED",
+  "Time": 15
+ },
+ {
+  "no_kanban": "C.02-02",
+  "Area": "Shuter IKMC 01 ~ 02  (B)",
+  "Item Check Kanban": "Shuter",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Shuter berih dari pasir",
+  "Periode": "Daily",
+  "Group": "RED"
+ },
+ {
+  "Zona": "Zone 3",
+  "no_kanban": "C.03-06",
+  "Area": "Meja Test Piece (A)",
+  "Item Check Kanban": "Meja kerja",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Kondisi meja bersih dari pasir",
+  "Periode": "Daily",
+  "Group": "RED"
+ },
+ {
+  "no_kanban": "B.03-01",
+  "Area": "Lemari Tool Sand Treatment (B)",
+  "Item Check Kanban": "Lemari tool's",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Kaca lemari bersih dari debu",
+  "Periode": "Daily",
+  "Group": "RED"
+ },
+ {
+  "Zona": "Zone 4",
+  "no_kanban": "B.03-02",
+  "Area": "Penempatan Tool Visual  Check 01 ~ 02 (A)",
+  "Item Check Kanban": "Tempat Tool's",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Tool bersih dari kiriko",
+  "Periode": "Daily",
+  "Group": "RED",
+  "Time": 15
+ },
+ {
+  "Zona": "Zone 1",
+  "no_kanban": "C.03-00",
+  "Area": "Penempatan Oli  & Gardosol (A)",
+  "Item Check Kanban": "Gardosol",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Oil pan bersih dari gardosol",
+  "Periode": "Weekly",
+  "Group": "RED",
+  "Time": 30
+ },
+ {
+  "no_kanban": "C.03.02",
+  "Area": "Dolly Transfer Die Change  & Alat Norokaki (B)",
+  "Item Check Kanban": "Dolly Transfer die Ikomi",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Body bersih dari debu",
+  "Periode": "Weekly",
+  "Group": "RED"
+ },
+ {
+  "Zona": "Zone 2",
+  "no_kanban": "C.02-03",
+  "Area": "Body IKMC 01 ~ 02  (A)",
+  "Item Check Kanban": "Body Cooling Mesin",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Body bersih dari debu",
+  "Periode": "Weekly",
+  "Group": "RED",
+  "Time": 30
+ },
+ {
+  "no_kanban": "C.03-05",
+  "Area": "Dolly Prea pasir & Lemari Kawool 01-04 (B)",
+  "Item Check Kanban": "Lemari kawool",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Body bersih dari debu",
+  "Periode": "Weekly",
+  "Group": "RED"
+ },
+ {
+  "Zona": "Zone 3",
+  "no_kanban": "C.05-01",
+  "Area": "Notifikasi in line  (A)",
+  "Item Check Kanban": "Notifikasi in line",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Body bersih dari debu",
+  "Periode": "Weekly",
+  "Group": "RED",
+  "Time": 30
+ },
+ {
+  "no_kanban": "C.02-05",
+  "Area": "Lantai Robot T6 01 ~ 02 (B)",
+  "Item Check Kanban": "Lantai robot",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Lantai bersih dari pasir",
+  "Periode": "Weekly",
+  "Group": "RED"
+ },
+ {
+  "no_kanban": "C.02-06",
+  "Area": "Robot T6 2 ©",
+  "Item Check Kanban": "Robot",
+  "Metode 4S": "Min : 1, Max : 20",
+  "Control Point": "Body bersih dari debu",
+  "Periode": "Weekly",
+  "Group": "RED"
+ },
+ {
+  "Zona": "Zone 4",
+  "no_kanban": "D.01-01",
+  "Area": "Lantai Oasis & Meja GL 1 & 2 (A)",
+  "Item Check Kanban": "Lantai robot",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Lantai dan meja GL Bersih",
+  "Periode": "Weekly",
+  "Group": "RED",
+  "Time": 32
+ },
+ {
+  "no_kanban": "D.01 -02",
+  "Area": "Rak Minum & Dispenser & Rak Sepatu (B)",
+  "Item Check Kanban": "Rak minum",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Body bersih dari debu",
+  "Periode": "Weekly",
+  "Group": "RED"
+ },
+ {
+  "no_kanban": "C.02-08",
+  "Area": "Cleaning IKHU dan IKSX  ©",
+  "Item Check Kanban": "Area IKHU",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Body bersih dari debu",
+  "Periode": "Weekly",
+  "Group": "RED"
+ },
+ {
+  "no_kanban": "D.03-01",
+  "Area": "Rak Dokumen & Board Management  (D)",
+  "Item Check Kanban": "Rak dokumen",
+  "Metode 4S": "Cleaning (menit)",
+  "Control Point": "Kaca lemari bersih dari debu",
+  "Periode": "Weekly",
+  "Group": "RED"
+ },
+ {
+  "Zona": "Zone 1",
+  "no_kanban": "C.03-03",
+  "Area": "Cover Mesin LP 01 ~ LP  0",
+  "Item Check Kanban": "Equipment produksi",
+  "Metode 4S": "Cleaning             ( Menit )",
+  "Control Point": "Cover bersih dari debu",
+  "Periode": "MONTHLY",
+  "Group": "RED",
+  "Time": 120
+ },
+ {
+  "Zona": "Zone 2",
+  "no_kanban": "C.02-01",
+  "Area": "Cover Mesin  TV Core  01 ~ 06  (A)",
+  "Item Check Kanban": "Equipment produksi",
+  "Metode 4S": "Cleaning             ( Menit )",
+  "Control Point": "Cover bersih dari debu",
+  "Periode": "MONTHLY",
+  "Group": "RED",
+  "Time": 430
+ },
+ {
+  "no_kanban": "C.02-04",
+  "Area": "Kipas Angin Roller T6 01 ~ 02  (B)",
+  "Item Check Kanban": "Kipas angin T61",
+  "Metode 4S": "Cleaning             ( Menit )",
+  "Control Point": "Kipas angin bersih dari debu",
+  "Periode": "MONTHLY",
+  "Group": "RED"
+ },
+ {
+  "Zona": "Zone 3",
+  "no_kanban": "C.02-07",
+  "Area": "Dek atas M\/C Solution & Aging 01 (A)",
+  "Item Check Kanban": "Dek atas M\/C Solution & Aging 01 (A)",
+  "Metode 4S": "Cleaning             ( Menit )",
+  "Control Point": "Bersih dari pasir dan debu",
+  "Periode": "MONTHLY",
+  "Group": "RED",
+  "Time": 1050
+ },
+ {
+  "no_kanban": "C.02-09",
+  "Area": "Roller T6 01 ~ 02 (B)",
+  "Item Check Kanban": "Roller T62",
+  "Metode 4S": "Cleaning             ( Menit )",
+  "Control Point": "Roller bersih dari debu",
+  "Periode": "MONTHLY",
+  "Group": "RED"
+ },
+ {
+  "Zona": "Zone 4",
+  "no_kanban": "C.02-10",
+  "Area": "Cover Roller T6 01 ~ 02 (A)",
+  "Item Check Kanban": "Cover roller",
+  "Metode 4S": "Cleaning             ( Menit )",
+  "Control Point": "Cover bersih dari debu",
+  "Periode": "MONTHLY",
+  "Group": "RED"
+ },
+ {
+  "no_kanban": "D.01-03",
+  "Area": "Atap Oasis & Screen Exhaust (B)",
+  "Item Check Kanban": "Atap Oasis",
+  "Metode 4S": "Cleaning             ( Menit )",
+  "Control Point": "Atas dan Exhaust  bersih dari debu",
+  "Periode": "MONTHLY",
+  "Group": "RED",
+  "Time": 300
+ }
+]

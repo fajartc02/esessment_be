@@ -1,0 +1,1085 @@
+const table = require("../../config/table");
+const {
+  queryPOST,
+  queryBulkPOST,
+  queryCustom,
+  queryGET,
+  queryPUT,
+  queryPutTransaction,
+  queryTransaction,
+  queryDeleteTransaction,
+  queryPostTransaction,
+} = require("../../helpers/query");
+
+const response = require("../../helpers/response");
+const getLastIdData = require("../../helpers/getLastIdData");
+const uuidToId = require("../../helpers/uuidToId");
+const idToUuid = require("../../helpers/idToUuid");
+
+const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData");
+const addAttrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData");
+const condDataNotDeleted = `deleted_dt IS NULL`;
+
+const moment = require("moment");
+const getLastIdDataNew = require("../../helpers/getLastIdDataNew");
+const uuidToIdV2 = require("../../helpers/uuidToIdV2");
+
+module.exports = {
+  addScheduleObservation: async (req, res) => {
+    try {
+      req.body.pos_id = await uuidToId(
+        table.tb_m_pos,
+        "pos_id",
+        req.body.pos_id
+      );
+      req.body.job_id = await uuidToId(
+        table.tb_m_jobs,
+        "job_id",
+        req.body.job_id
+      );
+      req.body.group_id = await uuidToId(
+        table.tb_m_groups,
+        "group_id",
+        req.body.group_id
+      );
+      req.body.uuid = req.uuid();
+      req.body.observation_id =
+        (await getLastIdData(table.tb_r_observations, "observation_id")) + 1;
+
+      const lastIdChecker =
+        (await getLastIdData(table.tb_r_obs_checker, "obs_checker_id")) + 1;
+      const checkers = req.body.checkers;
+      // INSERT TO tb_r_observation
+      delete req.body.checkers;
+      const addAttrsUserInst = await attrsUserInsertData(req, req.body);
+      const observation = await queryPOST(
+        table.tb_r_observations,
+        addAttrsUserInst
+      );
+
+      const obs_id = observation.rows[0].observation_id;
+      const mapCheckers = await checkers.map((checker, i) => {
+        checker.observation_id = obs_id;
+        checker.uuid = req.uuid();
+        checker.obs_checker_id = lastIdChecker + i;
+        return checker;
+      });
+      // INSERT TO tb_r_obs_checker
+
+      await queryBulkPOST(table.tb_r_obs_checker, mapCheckers);
+      response.success(
+        res,
+        "Success to add schedule observation",
+        observation.rows
+      );
+    } catch (error) {
+      console.log(error);
+      response.failed(res, "Error to add schedule observation");
+    }
+  },
+  getObservationScheduleList: async (req, res) => {
+    try {
+      let { id, line, month, year, limit, current_page } = req.query;
+
+      // =========================
+      // ✅ WHITELIST PARAM
+      // =========================
+      const allowedParams = ['id', 'line', 'month', 'year', 'limit', 'current_page'];
+
+      for (const key in req.query) {
+        if (!allowedParams.includes(key)) {
+          return response.failed(res, `Invalid param: ${key}`);
+        }
+      }
+
+      // =========================
+      // ✅ HELPER VALIDASI STRICT
+      // =========================
+      const uuidRegex = /^[0-9a-fA-F-]{32,36}$/;
+      const numberRegex = /^[0-9]+$/; // HANYA angka, tidak boleh ada ; atau karakter lain
+      const hasInjection = (val) => /('|--|;|\|\||\bOR\b|\bAND\b)/i.test(val);
+
+      // ==========================================
+      // ✅ VALIDASI PAGINATION (ANTI-JEBOL)
+      // ==========================================
+      // Jika limit/current_page dikirim tapi mengandung karakter non-angka, langsung REJECT
+      if (limit && !numberRegex.test(limit)) {
+        return response.failed(res, "Invalid limit");
+      }
+      if (current_page && !numberRegex.test(current_page)) {
+        return response.failed(res, "Invalid current_page");
+      }
+
+      // Setelah lolos regex, baru aman diparse ke integer
+      const safeLimit = parseInt(limit) || 10;
+      const safeCurrentPage = parseInt(current_page) || 1;
+
+      if (safeLimit < 1 || safeLimit > 100) {
+        return response.failed(res, "Invalid limit range");
+      }
+
+      // =========================
+      // ✅ VALIDASI ID & LINE
+      // =========================
+      if (id && (!uuidRegex.test(id) || hasInjection(id))) {
+        return response.failed(res, "Invalid id");
+      }
+
+      if (line && line !== "0" && line !== "-1") {
+        if (!uuidRegex.test(line) || hasInjection(line)) {
+          return response.failed(res, "Invalid line");
+        }
+      }
+
+      // =========================
+      // ✅ VALIDASI MONTH & YEAR
+      // =========================
+      if (month && (!numberRegex.test(month) || +month < 1 || +month > 12)) {
+        return response.failed(res, "Invalid month");
+      }
+
+      if (year && (!numberRegex.test(year) || +year < 2000 || +year > 2100)) {
+        return response.failed(res, "Invalid year");
+      }
+
+      // =========================
+      // ✅ BUILD SAFE QUERY
+      // =========================
+      let containerQuery = "";
+
+      if (id) {
+        containerQuery += ` AND tro.uuid = '${id.replace(/'/g, "''")}'`;
+      }
+
+      if (month && year) {
+        containerQuery += `
+          AND EXTRACT(MONTH FROM tro.plan_check_dt) = ${+month}
+          AND EXTRACT(YEAR FROM tro.plan_check_dt) = ${+year}
+        `;
+      }
+
+      if (line && line !== "0" && line !== "-1") {
+        const convertedLineId = await uuidToId(table.tb_m_lines, "line_id", line);
+        if (!convertedLineId) {
+          return response.failed(res, "Line not found");
+        }
+        containerQuery += ` AND tml.line_id = ${convertedLineId}`;
+      }
+
+      // Menggunakan variabel numerik yang sudah divalidasi ketat
+      const qLimit = `LIMIT ${safeLimit}`;
+      const qOffset = safeCurrentPage > 1 ? `OFFSET ${safeLimit * (safeCurrentPage - 1)}` : ``;
+
+      // =========================
+      // ✅ MAIN QUERY
+      // =========================
+      let observationList = await queryCustom(`
+        SELECT 
+          tro.uuid as id,
+          tro.member_nm,
+          tro.plan_check_dt,
+          tro.actual_check_dt,
+          tro.created_dt,
+          tro.created_by,
+          tro.is_new_form,
+          tmp.uuid as pos_id,
+          tmp.pos_nm,
+          tml.uuid as line_id,
+          tml.line_nm,
+          tmj.uuid as job_id,
+          tmj.job_nm,
+          tmjt.job_type_nm,
+          tmj.attachment as sop,
+          tmg.uuid as group_id,
+          tmg.group_nm,
+          tro.parent_revision_id,
+          tro.reason_revision,
+          (select plan_check_dt from tb_r_observations where observation_id = tro.parent_revision_id) as date_revision
+        FROM ${table.tb_r_observations} tro
+        JOIN ${table.tb_m_pos} tmp ON tmp.pos_id = tro.pos_id
+        JOIN ${table.tb_m_lines} tml ON tml.line_id = tmp.line_id
+        JOIN ${table.tb_m_jobs} tmj ON tmj.job_id = tro.job_id
+        JOIN ${table.tb_m_job_types} tmjt ON tmjt.job_type_id = tmj.job_type_id
+        JOIN ${table.tb_m_groups} tmg ON tmg.group_id = tro.group_id
+        WHERE tro.${condDataNotDeleted}
+        ${containerQuery}
+        ORDER BY tro.created_dt DESC ${qLimit} ${qOffset}
+      `);
+
+      // =========================
+      // ✅ COUNT QUERY
+      // =========================
+      let countTotal = await queryCustom(`
+        SELECT count(tro.observation_id) as total
+        FROM ${table.tb_r_observations} tro
+        JOIN ${table.tb_m_pos} tmp ON tmp.pos_id = tro.pos_id
+        JOIN ${table.tb_m_lines} tml ON tml.line_id = tmp.line_id
+        JOIN ${table.tb_m_jobs} tmj ON tmj.job_id = tro.job_id
+        JOIN ${table.tb_m_job_types} tmjt ON tmjt.job_type_id = tmj.job_type_id
+        JOIN ${table.tb_m_groups} tmg ON tmg.group_id = tro.group_id
+        WHERE tro.${condDataNotDeleted}
+        ${containerQuery}
+      `);
+
+      const totalRowTable = countTotal.rows[0].total;
+
+      let mapObsCheckers = observationList.rows.map(async (obs) => {
+        let obsUuidtoId = await uuidToId(table.tb_r_observations, "observation_id", obs.id);
+
+        let checkers = await queryGET(
+          table.tb_r_obs_checker,
+          `WHERE observation_id = '${obsUuidtoId}'`,
+          ["uuid as id", "checker_nm", "checker_nm as label"]
+        );
+
+        obs.checkers = checkers;
+        obs.total_page = totalRowTable > 0 ? Math.ceil(totalRowTable / safeLimit) : 1;
+        obs.limit = safeLimit;
+        obs.current_page = safeCurrentPage;
+        obs.total_data = totalRowTable;
+        obs.plan_check_dt = moment(obs.plan_check_dt).format("YYYY-MM-DD");
+        obs.actual_check_dt = obs.actual_check_dt ? moment(obs.actual_check_dt).format("YYYY-MM-DD") : null;
+
+        return obs;
+      });
+
+      const waitObser = await Promise.all(mapObsCheckers);
+      response.success(res, "Success to get schedule observation list", waitObser);
+
+    } catch (error) {
+      console.log(error);
+      response.failed(res, "Error to get schedule observation list");
+    }
+  },
+  getScheduleObservations: async (req, res) => {
+    try {
+      const { month, year, line, group_id } = req.query;
+      let whereCond = ``;
+      // console.log(req.query);
+      if (month && year)
+        whereCond = `AND (EXTRACT(month from  tro.plan_check_dt), EXTRACT('year' from tro.plan_check_dt))=(${+month},${+year})`;
+      if (line != "0" && line && line != -1 && line != null)
+        whereCond += ` AND tmp.line_id = ${await uuidToId(
+          table.tb_m_lines,
+          "line_id",
+          line
+        )}`;
+      if (group_id && group_id != null)
+        whereCond += ` AND tmg.uuid = '${group_id}'`;
+      let observations = await queryCustom(`
+                SELECT 
+                    tro.uuid as observation_id,
+                    tmp.uuid as pos_id,
+                    tml.uuid as line_id,
+                    tml.line_snm,
+                    tmp.pos_nm,
+                    tmm.machine_nm,
+                    tmg.uuid AS group_id,
+                    tmg.group_nm,
+                    tmj.uuid as job_id,
+                    tmj.job_no,
+                    tmj.job_nm,
+                    tmjt.job_type_nm,
+                    tmjt.colors as job_type_color,
+                    member_nm,
+                    tro.plan_check_dt,
+                    tro.actual_check_dt,
+                    EXTRACT('day' from  tro.plan_check_dt) as idxDate,
+                    tro.comment_sh,
+                    tro.comment_ammgr,
+                    tro.deleted_dt,
+                    tro.is_new_form,
+                    tro.parent_revision_id,
+                    tro.reason_revision,
+                    (SELECT plan_check_dt FROM ${table.tb_r_observations} WHERE observation_id = tro.parent_revision_id) as date_revision
+                FROM ${table.tb_r_observations} tro
+                LEFT JOIN ${table.tb_m_pos} tmp
+                    ON tro.pos_id = tmp.pos_id
+                LEFT JOIN ${table.tb_m_groups} tmg
+                    ON tro.group_id = tmg.group_id
+                LEFT JOIN ${table.tb_m_jobs} tmj
+                    ON tro.job_id = tmj.job_id
+                LEFT JOIN ${table.tb_m_machines} tmm
+                    ON tmj.machine_id = tmm.machine_id
+                LEFT JOIN ${table.tb_m_job_types} tmjt
+                    ON tmj.job_type_id = tmjt.job_type_id
+                LEFT JOIN ${table.tb_m_lines} tml
+                    ON tml.line_id = tmp.line_id
+                WHERE 
+                    ${"tro." + condDataNotDeleted}
+                    ${whereCond}
+                ORDER BY tml.line_nm,tmp.pos_nm ASC
+            `);
+      let mapObs = await observations.rows.map(async (obser) => {
+        // console.log('obserDAta', obser);
+        // OPTIMIZE NEED
+        // let obserId = await uuidToId(
+        //   table.tb_r_observations,
+        //   "observation_id",
+        //   obser.observation_id
+        // );
+        let obserId = `(select observation_id from tb_r_observations where uuid = '${obser.observation_id}')`
+        let checkersData = await queryGET(
+          table.tb_r_obs_checker,
+          `WHERE observation_id = ${obserId}`,
+          ["uuid as obs_checker_id", "checker_nm"]
+        );
+        // console.log(checkersData, 'CheckersData');
+        let qCheckFinding = `
+                    SELECT * FROM ${table.v_finding_list} WHERE observation_id = '${obser.observation_id}'
+                `;
+        let findingData = await queryCustom(qCheckFinding);
+        let is_finding = findingData.rows.length > 0;
+        obser.is_finding = is_finding;
+        obser.checkers = await checkersData.map((mp) => {
+          return mp.checker_nm;
+        });
+        obser.comments = await queryGET(
+          table.tb_r_observations_comments,
+          `WHERE observation_id = (SELECT observation_id FROM ${table.tb_r_observations} WHERE uuid = '${obser.observation_id}')`,
+          ["id"]
+        )
+        obser.checkers.length > 1
+          ? (obser.is_wajik = true)
+          : (obser.is_wajik = false);
+        return obser;
+      });
+      let waitDataObs = await Promise.all(mapObs);
+      let containerGroup = [];
+      for (let i = 0; i < waitDataObs.length; i++) {
+        const item = waitDataObs[i];
+        let posAvail = containerGroup.find(
+          (child) => child.pos_id === item.pos_id
+        );
+        if (!posAvail) {
+          item.children = [];
+          item.children.push(JSON.parse(JSON.stringify(item)));
+          containerGroup.push(item);
+          continue;
+        }
+        for (let idxChecker = 0; idxChecker < item.checkers.length; idxChecker++) {
+          const checkerChild = item.checkers[idxChecker];
+          let isCheckerAvail = posAvail.checkers.find(checkerParent => checkerParent === checkerChild);
+          // console.log(posAvail)
+          if (!isCheckerAvail) {
+            posAvail.checkers.unshift(checkerChild);
+            continue;
+          }
+        }
+        posAvail.children.push(item);
+      }
+      let resAwait = await Promise.all(containerGroup);
+
+      response.success(res, "Success to get schedule observation", resAwait);
+    } catch (error) {
+      console.log(error);
+      response.failed(res, error);
+    }
+  },
+  getTodaySchedule: async (req, res) => {
+    try {
+      const { date, line_id, group_id } = req.query;
+      let whereCond = ``;
+      console.log(req.query);
+      whereCond = `AND tro.plan_check_dt = '${date}'`;
+      if (line_id != "0" && line_id && line_id != -1 && line_id != null)
+        whereCond += ` AND tmp.line_id = '${await uuidToId(
+          table.tb_m_lines,
+          "line_id",
+          line_id
+        )}'`;
+      if (group_id && group_id != null)
+        whereCond += ` AND tmg.uuid = '${group_id}'`;
+      let observations = await queryCustom(`
+                SELECT 
+                    tro.uuid as observation_id,
+                    tmp.uuid as pos_id,
+                    tml.uuid as line_id,
+                    tml.line_snm,
+                    tmp.pos_nm,
+                    tmm.machine_nm,
+                    tmg.uuid AS group_id,
+                    tmg.group_nm,
+                    tmj.uuid as job_id,
+                    tmj.job_no,
+                    tmj.job_nm,
+                    tmjt.job_type_nm,
+                    tmjt.colors as job_type_color,
+                    member_nm,
+                    tro.plan_check_dt,
+                    tro.actual_check_dt,
+                    EXTRACT('day' from  tro.plan_check_dt) as idxDate,
+                    tro.comment_sh,
+                    tro.comment_ammgr,
+                    tro.deleted_dt,
+                    tro.is_new_form,
+                    CASE
+                        WHEN tro.plan_check_dt < CURRENT_DATE AND tro.actual_check_dt IS NULL THEN '#ff0505'::text
+                        WHEN tro.actual_check_dt IS NULL THEN '#00afef'::text
+                        WHEN tro.actual_check_dt IS NOT NULL THEN '#05ff50'::text
+                    END AS color_status
+                FROM ${table.tb_r_observations} tro
+                LEFT JOIN ${table.tb_m_pos} tmp
+                    ON tro.pos_id = tmp.pos_id
+                LEFT JOIN ${table.tb_m_groups} tmg
+                    ON tro.group_id = tmg.group_id
+                LEFT JOIN ${table.tb_m_jobs} tmj
+                    ON tro.job_id = tmj.job_id
+                LEFT JOIN ${table.tb_m_machines} tmm
+                    ON tmj.machine_id = tmm.machine_id
+                LEFT JOIN ${table.tb_m_job_types} tmjt
+                    ON tmj.job_type_id = tmjt.job_type_id
+                LEFT JOIN ${table.tb_m_lines} tml
+                    ON tml.line_id = tmp.line_id
+                WHERE 
+                    ${"tro." + condDataNotDeleted}
+                    ${whereCond}
+                ORDER BY tml.line_nm,tmp.pos_nm ASC
+            `);
+      response.success(
+        res,
+        "Success to get today schedule observation",
+        observations.rows
+      );
+    } catch (error) {
+      console.log(error);
+      response.failed(res, "Error to get today schedule observation");
+    }
+  },
+  getDetailObservation: async (req, res) => {
+    try {
+      const id = req.params.id;
+
+      // =========================
+      // ✅ HELPER VALIDASI
+      // =========================
+      const uuidRegex = /^[0-9a-fA-F-]{36}$/;
+      const hasInjection = (val) =>
+        /('|--|;|\|\||\bOR\b|\bAND\b|\bSELECT\b|\bINSERT\b|\bDELETE\b|\bUPDATE\b)/i.test(val);
+
+      // =========================
+      // ✅ VALIDASI PARAM ID
+      // =========================
+      if (!id || !uuidRegex.test(id) || hasInjection(id)) {
+        return response.failed(res, "Invalid observation id");
+      }
+
+      // =========================
+      // ✅ QUERY UTAMA (AMAN)
+      // =========================
+      let obser = await queryCustom(`
+        SELECT 
+            tro.uuid as observation_id,
+            tmp.uuid as pos_id,
+            tml.uuid as line_id,
+            tml.line_nm,
+            tml.line_snm,
+            tmp.pos_nm,
+            tmm.machine_nm,
+            tmg.uuid as group_id,
+            tmg.group_nm,
+            tmj.uuid as job_id,
+            tmj.job_no,
+            tmj.job_nm,
+            tmj.attachment as sop,
+            tmp.tsk,
+            tmp.tskk,
+            tmjt.job_type_nm,
+            tmjt.colors as job_type_color,
+            member_nm,
+            tro.plan_check_dt,
+            tro.actual_check_dt,
+            tro.comment_sh,
+            tro.comment_ammgr,
+            case 
+                when video is not null then
+                    '${process.env.IMAGE_URL}'::text || video
+            end as video,
+            EXTRACT('day' from tro.plan_check_dt) as idxDate
+        FROM ${table.tb_r_observations} tro
+        LEFT JOIN ${table.tb_m_pos} tmp ON tro.pos_id = tmp.pos_id  
+        LEFT JOIN ${table.tb_m_groups} tmg ON tro.group_id = tmg.group_id
+        LEFT JOIN ${table.tb_m_jobs} tmj ON tro.job_id = tmj.job_id
+        LEFT JOIN ${table.tb_m_machines} tmm ON tmj.machine_id = tmm.machine_id
+        LEFT JOIN ${table.tb_m_job_types} tmjt ON tmj.job_type_id = tmjt.job_type_id
+        LEFT JOIN ${table.tb_m_lines} tml ON tml.line_id = tmp.line_id
+        WHERE tro.${condDataNotDeleted}
+        AND tro.uuid = '${id}'
+      `);
+
+      // =========================
+      // ✅ FORMAT DATE
+      // =========================
+      obser.rows.map((itm) => {
+        itm.plan_check_dt = moment(itm.plan_check_dt).format("YYYY-MM-DD");
+        itm.actual_check_dt = moment(itm.actual_check_dt).format("YYYY-MM-DD");
+        return itm;
+      });
+
+      // =========================
+      // ✅ UUID TO ID (AMAN)
+      // =========================
+      const obsId = await uuidToId(
+        table.tb_r_observations,
+        "observation_id",
+        id
+      );
+
+      if (!obsId) {
+        return response.failed(res, "Observation not found");
+      }
+
+      // =========================
+      // ✅ QUERY RESULT CHECK (AMAN)
+      // =========================
+      let resChecks = await queryGET(
+        table.tb_r_obs_results,
+        `WHERE observation_id = ${obsId}`,
+        [
+          "obs_result_id",
+          "category_id",
+          "judgment_id",
+          "stw_ct1",
+          "stw_ct2",
+          "stw_ct3",
+          "stw_ct4",
+          "stw_ct5",
+          "sub_category_id"
+        ]
+      );
+
+      let mapChecks = await Promise.all(resChecks.map(async (check) => {
+
+        check.category_id = await idToUuid(
+          table.tb_m_categories,
+          "category_id",
+          check.category_id
+        );
+
+        let categoryData = await queryGET(
+          table.tb_m_categories,
+          `WHERE uuid = '${check.category_id}'`,
+          ["category_nm"]
+        );
+
+        check.category_nm = categoryData[0]?.category_nm ?? null;
+
+        let resFindingIdData = await queryGET(
+          table.tb_r_result_findings,
+          `WHERE obs_result_id = ${check.obs_result_id}`,
+          ["uuid"]
+        );
+
+        let resFindingId = null;
+
+        if (resFindingIdData.length === 1) {
+          if (!hasInjection(resFindingIdData[0].uuid)) {
+            resFindingId = `finding_obs_id = '${resFindingIdData[0].uuid}'`;
+          }
+        } else if (resFindingIdData.length > 1) {
+          resFindingId = resFindingIdData
+            .filter(item => uuidRegex.test(item.uuid))
+            .map(item => `finding_obs_id = '${item.uuid}'`)
+            .join(" OR ");
+        }
+
+        check.findings = resFindingId
+          ? await queryGET(table.v_finding_list, `WHERE ${resFindingId}`)
+          : [];
+
+        check.judgment_id =
+          (await idToUuid(
+            table.tb_m_judgments,
+            "judgment_id",
+            check.judgment_id
+          )) ?? null;
+
+        return check;
+      }));
+
+      // =========================
+      // ✅ HITUNG AVG
+      // =========================
+      let isStw = true;
+
+      const mapResCheckAvg = mapChecks.map((item) => {
+        let avg = null;
+        let perc = null;
+
+        if (isStw && item.stw_ct1) {
+          const containerCT = [
+            +item.stw_ct1,
+            +item.stw_ct2,
+            +item.stw_ct3,
+            +item.stw_ct4,
+            +item.stw_ct5
+          ];
+
+          avg = containerCT.reduce((a, b) => a + b, 0) / 5;
+
+          perc = +(
+            ((Math.max(...containerCT) - Math.min(...containerCT)) / 2 / avg) *
+            100
+          ).toFixed(2);
+
+          isStw = false;
+        }
+
+        item.avg = avg;
+        item.perc = perc;
+
+        return item;
+      });
+
+      obser.rows.push(mapResCheckAvg);
+
+      response.success(
+        res,
+        "Success to get detail schedule observation",
+        obser.rows
+      );
+
+    } catch (error) {
+      console.log(error);
+      response.failed(res, "Error to get detail schedule observation");
+    }
+  },
+  getSummaryObservations: async (req, res) => {
+    try {
+      let { month, year, currentDate, line_id } = req.query;
+
+      var whereLineId = ``;
+      console.log(req.query);
+      if (line_id) {
+        whereLineId = `AND tmp.line_id = ${await uuidToId(
+          table.tb_m_lines,
+          "line_id",
+          line_id
+        )}`;
+      }
+
+      const delay = await queryCustom(`
+            SELECT 
+                COUNT(observation_id) as delay_count
+            FROM tb_r_observations tro
+            JOIN tb_m_pos tmp
+                ON tro.pos_id = tmp.pos_id
+            WHERE
+                ${"tro." + condDataNotDeleted}
+                AND (EXTRACT(month from  plan_check_dt), EXTRACT('year' from plan_check_dt))=(${month},${year})
+                AND plan_check_dt < '${currentDate}'
+                AND actual_check_dt IS NULL
+                ${whereLineId}
+            `);
+      const done = await queryCustom(`
+            SELECT 
+                COUNT(observation_id) as done_count
+            FROM tb_r_observations tro
+            JOIN tb_m_pos tmp
+                ON tro.pos_id = tmp.pos_id
+            WHERE
+                ${"tro." + condDataNotDeleted}
+                AND (EXTRACT(month from  plan_check_dt), EXTRACT('year' from plan_check_dt))=(${month},${year})
+                AND actual_check_dt IS NOT NULL
+                ${whereLineId}
+            `);
+      const total = await queryCustom(`
+            SELECT 
+                COUNT(observation_id) as total_count
+            FROM tb_r_observations tro
+            JOIN tb_m_pos tmp
+                ON tro.pos_id = tmp.pos_id
+            WHERE
+                ${"tro." + condDataNotDeleted}
+                AND (EXTRACT(month from  plan_check_dt), EXTRACT('year' from plan_check_dt))=(${month},${year})
+                ${whereLineId}
+            `);
+      const objRes = {
+        delay: +delay.rows[0].delay_count,
+        done: +done.rows[0].done_count,
+        total: +total.rows[0].total_count,
+      };
+      response.success(res, "Success to get summary observation", objRes);
+    } catch (error) {
+      console.log(error);
+      response.failed(res, "Error to get summary observation");
+    }
+  },
+  addCheckObservation: async (req, res) => {
+    // observation_id
+    // category_id,judgement_id, factor_id(opt), findings ARRAY
+    try {
+      console.log(req.body);
+      req.body.results_check = JSON.parse(req.body.results_check);
+      req.body.findings = JSON.parse(req.body.findings);
+
+      // console.log(req.body);
+      // 1. UPDATE tb_r_observations ALREADY CHECK
+      const obsId = await uuidToId(
+        table.tb_r_observations,
+        "observation_id",
+        req.body.observation_id
+      );
+      const groupId = await uuidToId(
+        table.tb_m_groups,
+        "group_id",
+        req.body.group_id
+      );
+      let updateActual = {
+        actual_check_dt: req.body.actual_check_dt,
+        group_id: groupId,
+        comment_sh: req.body.comment_sh,
+        comment_ammgr: req.body.comment_ammgr,
+      };
+      let attrsUserUpd = await addAttrsUserUpdateData(req, updateActual);
+      await queryPUT(
+        table.tb_r_observations,
+        attrsUserUpd,
+        `WHERE observation_id = '${obsId}'`
+      );
+
+      // 2. INSERT tb_r_obs_results FROM req.body.results_check
+      let resultCheckData = req.body.results_check;
+
+      const lastIdResCheck =
+        (await getLastIdData(table.tb_r_obs_results, "obs_result_id")) + 1;
+      let mapResultChecks = await resultCheckData.map(async (item, i) => {
+        item.observation_id = obsId;
+        item.obs_result_id = lastIdResCheck + i;
+        item.uuid = req.uuid();
+        item.category_id = await uuidToId(
+          table.tb_m_categories,
+          "category_id",
+          item.category_id
+        );
+        item.judgment_id = await uuidToId(
+          table.tb_m_judgments,
+          "judgment_id",
+          item.judgment_id
+        );
+        return item;
+      });
+      let waitMapResCheck = await Promise.all(mapResultChecks);
+      const addAttrsUserInst = await attrsUserInsertData(req, waitMapResCheck);
+
+      req.body.group_id = await uuidToId(
+        table.tb_m_groups,
+        "group_id",
+        req.body.group_id
+      );
+      let resInstCheck = await queryBulkPOST(
+        table.tb_r_obs_results,
+        addAttrsUserInst
+      );
+
+      // 3. INSERT tb_r_result_findings, GET obs_result_id AFTER INSERT tb_r_obs_results
+      // REV: tb_r_result_findings (result_finding_id, uuid, obs_result_id)
+      let findingsMapInstData = await resInstCheck.rows.map(
+        async (resCheckData) => {
+          let judgData = await queryGET(
+            table.tb_m_judgments,
+            `WHERE judgment_id = ${resCheckData.judgment_id}`,
+            ["is_abnormal"]
+          );
+          let isJudgAbnor = judgData[0].is_abnormal;
+          if (isJudgAbnor) {
+            let selectFindingData = await req.body.findings.find(
+              async (finding) =>
+                (await uuidToId(
+                  table.tb_m_categories,
+                  "category_id",
+                  finding.category_id
+                )) == resCheckData.category_id
+            );
+            let obs_result_id = resCheckData.obs_result_id;
+            selectFindingData.category_id =
+              (await uuidToId(
+                table.tb_m_categories,
+                "category_id",
+                selectFindingData.category_id
+              )) ?? null;
+            selectFindingData.line_id =
+              (await uuidToId(
+                table.tb_m_lines,
+                "line_id",
+                selectFindingData.line_id
+              )) ?? null;
+            selectFindingData.cm_pic_id =
+              (await uuidToId(
+                table.tb_m_users,
+                "user_id",
+                selectFindingData.cm_pic_id.pic_id
+              )) ?? null;
+            selectFindingData.factor_id =
+              (await uuidToId(
+                table.tb_m_factors,
+                "factor_id",
+                selectFindingData.factor_id
+              )) ?? null;
+            selectFindingData.cm_result_factor_id =
+              (await uuidToId(
+                table.tb_m_factors,
+                "factor_id",
+                selectFindingData.cm_result_factor_id
+              )) ?? null;
+
+            selectFindingData.uuid = req.uuid();
+            let findingObj = {
+              ...selectFindingData,
+              obs_result_id,
+            };
+            let attrsUserFindingData = await attrsUserInsertData(
+              req,
+              findingObj
+            );
+            return {
+              ...attrsUserFindingData,
+            };
+          }
+          return null;
+        }
+      );
+      let waitFindingsMap = await Promise.all(findingsMapInstData);
+      // console.log(waitFindingsMap);
+
+      for (let i = 0; i < waitFindingsMap.length; i++) {
+        const findingData = waitFindingsMap[i];
+        if (findingData) {
+          let objResultFinding = {
+            result_finding_id:
+              (await getLastIdData(
+                table.tb_r_result_findings,
+                "result_finding_id"
+              )) + 1,
+            uuid: req.uuid(),
+            obs_result_id: findingData.obs_result_id,
+          };
+          let instDataObsFinding = await queryPOST(
+            table.tb_r_result_findings,
+            objResultFinding
+          );
+          let obsFindingId = instDataObsFinding.rows[0].result_finding_id;
+
+          delete findingData.obs_result_id;
+          // 4. INSERT to tb_r_findings
+          let lastFindingId =
+            (await getLastIdData(table.tb_r_findings, "finding_id")) + 1;
+          let dataFinding = {
+            uuid: req.uuid(),
+            finding_id: lastFindingId,
+            finding_obs_id: obsFindingId,
+            cm_judg: waitFindingsMap.cm_judg,
+            ...findingData,
+          };
+          await queryPOST(table.tb_r_findings, dataFinding);
+        }
+      }
+      response.success(res, "Success to add CHECK observation");
+    } catch (error) {
+      console.log(error);
+      response.failed(res, "Error to add CHECK observation");
+    }
+  },
+  // handling error if any missing data not inserted into table
+  addCheckObservationV2: async (req, res) => {
+    // observation_id
+    // category_id,judgement_id, factor_id(opt), findings ARRAY
+    try {
+      // console.log(req.body);
+      await queryTransaction(async (db) => {
+        req.body.results_check = JSON.parse(req.body.results_check);
+        req.body.findings = JSON.parse(req.body.findings);
+        // 1. UPDATE tb_r_observations ALREADY CHECK
+        const obsId = await uuidToIdV2(
+          table.tb_r_observations,
+          "observation_id",
+          req.body.observation_id,
+          db
+        );
+        const groupId = await uuidToIdV2(
+          table.tb_m_groups,
+          "group_id",
+          req.body.group_id,
+          db
+        );
+        let updateActual = {
+          actual_check_dt: req.body.actual_check_dt,
+          group_id: groupId,
+          comment_sh: req.body.comment_sh,
+          comment_ammgr: req.body.comment_ammgr,
+        };
+        let attrsUserUpd = await addAttrsUserUpdateData(req, updateActual);
+        await queryPutTransaction(db, table.tb_r_observations, attrsUserUpd,
+          `WHERE observation_id = '${obsId}'`)
+        return 'success'
+      })
+      // 2. INSERT tb_r_obs_results FROM req.body.results_check
+      let resultCheckData = req.body.results_check;
+
+      const lastIdResCheck =
+        (await getLastIdData(table.tb_r_obs_results, "obs_result_id")) + 1;
+      let mapResultChecks = await resultCheckData.map(async (item, i) => {
+        item.observation_id = obsId;
+        item.obs_result_id = lastIdResCheck + i;
+        item.uuid = req.uuid();
+        item.category_id = await uuidToId(
+          table.tb_m_categories,
+          "category_id",
+          item.category_id
+        );
+        item.judgment_id = await uuidToId(
+          table.tb_m_judgments,
+          "judgment_id",
+          item.judgment_id
+        );
+        return item;
+      });
+      let waitMapResCheck = await Promise.all(mapResultChecks);
+      const addAttrsUserInst = await attrsUserInsertData(req, waitMapResCheck);
+
+      req.body.group_id = await uuidToId(
+        table.tb_m_groups,
+        "group_id",
+        req.body.group_id
+      );
+      let resInstCheck = await queryBulkPOST(
+        table.tb_r_obs_results,
+        addAttrsUserInst
+      );
+      response.success(res, "Success to add CHECK observation");
+    } catch (error) {
+      console.log(error);
+      response.failed(res, "Error to add CHECK observation");
+    }
+  },
+  editScheduleObservation: async (req, res) => {
+    try {
+      await queryTransaction(async (db) => {
+        let body = req.body;
+        let observationId = req.params.id;
+        observationId = await uuidToId(
+          table.tb_r_observations,
+          "observation_id",
+          observationId
+        );
+        // console.log(body);
+        // console.log(observationId);
+
+        const mapCheckers = await body.checkers.map(async (checker, i) => {
+          const lastId = await getLastIdData(
+            table.tb_r_obs_checker,
+            "obs_checker_id"
+          );
+          checker.observation_id = observationId;
+          checker.uuid = req.uuid();
+          checker.obs_checker_id = (await lastId) + (i + 1);
+          // console.log(checker);
+
+          return checker;
+        });
+        // DELETE tb_r_obs_checker where schedule_id = observationId
+        await queryDeleteTransaction(
+          db,
+          table.tb_r_obs_checker,
+          observationId,
+          "observation_id"
+        );
+        const promiseMapChecker = await Promise.all(mapCheckers);
+        await promiseMapChecker.forEach(async (checker) => {
+          console.log(checker);
+
+          // INSERT tb_r_obs_checker
+          await queryPostTransaction(db, table.tb_r_obs_checker, checker);
+        });
+
+        // edit tb_r_observations
+        delete body.checkers;
+        body.pos_id = `(select pos_id FROM tb_m_pos WHERE uuid = '${body?.pos_id}')`;
+        body.job_id = `(select job_id FROM tb_m_jobs WHERE uuid = '${body?.job_id}')`;
+        body.group_id = `(select group_id FROM tb_m_groups WHERE uuid = '${body?.group_id}')`;
+        console.log(body, 'body');
+
+        await queryPutTransaction(
+          db,
+          table.tb_r_observations,
+          body,
+          `WHERE observation_id = ${observationId}`
+        );
+
+        // await queryPostTransaction(db, table.tb_r_obs_checker, )
+        return true;
+      });
+      response.success(res, "Success to edit schedule");
+    } catch (error) {
+      console.log(error);
+      response.failed(res, "Error to edit schedule observation");
+    }
+  },
+  deleteScheduleObservation: async (req, res) => {
+    try {
+      let obj = {
+        deleted_dt: moment().format().split("+")[0].split("T").join(" "),
+        deleted_by: req.user.fullname,
+      };
+      let attrsUserUpdate = await addAttrsUserUpdateData(req, obj);
+      console.log(attrsUserUpdate);
+      const result = await queryPUT(
+        table.tb_r_observations,
+        attrsUserUpdate,
+        `WHERE uuid = '${req.params.id}'`
+      );
+
+      response.success(res, "Success to soft delete obser", result);
+    } catch (error) {
+      console.log(error);
+      response.failed(res, "Error to delete schedule observation list");
+    }
+  },
+  countTotalSummarySTW: async (req, res) => {
+    try {
+      console.log(req.query);
+      const { line_id = null, month, year } = req.query;
+      let whereLineId = ``;
+      if (line_id && line_id != -1)
+        whereLineId = `AND tmp.line_id = (SELECT line_id FROM ${table.tb_m_lines} WHERE uuid = '${line_id}')`;
+      let q = `select
+            COUNT(observation_id) as delay
+        from tb_r_observations tro
+        JOIN tb_m_pos tmp ON tro.pos_id = tmp.pos_id
+        where 
+            (EXTRACT(month from  tro.plan_check_dt), EXTRACT('year' from tro.plan_check_dt))=(${+month},${+year})
+            and actual_check_dt IS NULL
+            and plan_check_dt < CURRENT_DATE
+            and tro.deleted_by IS NULL
+            ${whereLineId};
+        select
+            COUNT(observation_id) as progress
+        from tb_r_observations tro
+        JOIN tb_m_pos tmp ON tro.pos_id = tmp.pos_id
+        where 
+            (EXTRACT(month from  tro.plan_check_dt), EXTRACT('year' from tro.plan_check_dt))=(${+month},${+year})
+            and actual_check_dt IS NULL
+            and plan_check_dt > CURRENT_DATE
+            and tro.deleted_by IS NULL
+            ${whereLineId};
+        select
+            COUNT(observation_id) as done
+        from tb_r_observations tro
+        JOIN tb_m_pos tmp ON tro.pos_id = tmp.pos_id
+        where 
+            (EXTRACT(month from  tro.plan_check_dt), EXTRACT('year' from tro.plan_check_dt))=(${+month},${+year})
+            and actual_check_dt IS NOT NULL
+            and tro.deleted_by IS NULL
+            ${whereLineId};`;
+      let result = await queryCustom(q);
+      result = result.map((item) => {
+        return item.rows[0];
+      });
+      console.log(result);
+      response.success(res, "Success to count total summary STW", result);
+    } catch (error) {
+      console.log(error);
+      response.failed(res, "Error to count total summary STW");
+    }
+  },
+};
