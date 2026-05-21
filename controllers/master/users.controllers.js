@@ -36,6 +36,7 @@ module.exports = {
         "created_by",
         "created_dt",
         "role",
+        "is_activated",
       ];
       if (isForm) {
         cols = [
@@ -47,6 +48,7 @@ module.exports = {
           "password",
           "phone_number",
           "role",
+          "is_activated",
         ];
         const users = await queryGET(
           table.tb_m_users,

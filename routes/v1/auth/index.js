@@ -1,5 +1,6 @@
 const register = require('./register')
 const login = require('./login')
+const profile = require('./profile')
 
 /**
  * @swagger
@@ -56,5 +57,6 @@ const login = require('./login')
 
 module.exports = {
     register,
-    login
+    login,
+    profile
 }
