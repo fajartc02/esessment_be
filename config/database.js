@@ -12,6 +12,10 @@ const config = {
 pg.defaults.poolSize = 250;
 const database = new pg.Client(config);
 
+database.on('error', (err) => {
+    console.error('Unexpected error on idle client', err);
+});
+
 /**
  * Use a pool if you have or expect to have multiple concurrent requests. 
  * That is literally what it is there for: 

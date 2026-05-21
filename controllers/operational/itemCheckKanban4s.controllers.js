@@ -260,6 +260,7 @@ module.exports = {
                         where
                             item_check_kanban_id = (select item_check_kanban_id from ${table.tb_m_4s_item_check_kanbans} where uuid = '${req.body.item_check_kanban_id}')
                             and sub_schedule_id = (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}')
+                            and deleted_dt is null
                             /* and main_schedule_id = (select main_schedule_id from ${table.tb_r_4s_main_schedules} where uuid = '${req.body.main_schedule_id}') */
                     `
                 );

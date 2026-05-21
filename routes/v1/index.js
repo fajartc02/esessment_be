@@ -4,7 +4,7 @@ const response = require('../../helpers/response')
 const fs = require('fs')
 const stream = require('stream')
 
-const { register, login } = require('./auth/index')
+const { register, login, profile } = require('./auth/index')
 const operational = require('./operational/index')
 const master = require('./master/index');
 const auth = require('../../helpers/auth');
@@ -32,6 +32,7 @@ router.use('/verify', auth.verifyToken, (req, res) => {
 
 router.use('/login', login)
 router.use('/register', register)
+router.use('/auth/profile', profile)
 
 router.use('/operational', operational)
 router.use('/master', master)
@@ -49,17 +50,29 @@ router.use('/master', master)
  *       - application/pdf
  */
 router.get('/file', (req, res) => {
-    const path = req.query.path
-    if (fs.existsSync(path)) {
-        if (path.includes('pdf')) {
-            res.contentType("application/pdf");
+    const filePath = req.query.path
+    if (fs.existsSync(filePath)) {
+        const ext = filePath.split('.').pop().toLowerCase();
+        const mimeTypes = {
+            'pdf': 'application/pdf',
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'png': 'image/png',
+            'gif': 'image/gif',
+            'svg': 'image/svg+xml',
+            'mp4': 'video/mp4',
+            'mov': 'video/quicktime',
+        };
+        if (mimeTypes[ext]) {
+            res.contentType(mimeTypes[ext]);
         }
-        fs.createReadStream(path).pipe(res)
+        fs.createReadStream(filePath).pipe(res)
     } else {
         res.status(500)
-        console.log('File not found')
+        console.log('File not found:', filePath)
         res.send('File not found')
     }
 })
+
 
 module.exports = router;
