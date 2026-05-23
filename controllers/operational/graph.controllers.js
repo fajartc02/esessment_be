@@ -25,7 +25,7 @@ module.exports = {
                 SELECT 
                     ${isLine ? "EXTRACT('MONTH' FROM finding_date)::int" : "line_id"} as group_key,
                     source_category,
-                    COUNT(finding_id) FILTER (WHERE status_finding = 'problem')::int as problem_count,
+                    COUNT(finding_id)::int as problem_count,
                     COUNT(finding_id) FILTER (WHERE status_finding = 'closed')::int as closed_count,
                     COUNT(finding_id) FILTER (WHERE status_finding = 'remain')::int as remain_count
                 FROM v_finding_list

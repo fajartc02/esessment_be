@@ -82,7 +82,7 @@ module.exports = {
                 let findingTagRedProblem = await queryGET(
                     table.v_om_finding_list,
                     `WHERE ${condDataNotDeleted} AND line_id = '${isLine ? line_id : line.line_id
-                    }' AND source_tag = 'Tag Red' AND status_finding = 'problem' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ""
+                    }' AND source_tag = 'Tag Red' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ""
                     } ${isLine
                         ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}`
                         : ""
@@ -137,7 +137,7 @@ module.exports = {
                 let findingTagWhiteProblem = await queryGET(
                     table.v_om_finding_list,
                     `WHERE ${condDataNotDeleted} AND line_id = '${isLine ? line_id : line.line_id
-                    }' AND source_tag = 'Tag White' AND status_finding = 'problem' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ""
+                    }' AND source_tag = 'Tag White' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ""
                     } ${isLine
                         ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}`
                         : ""

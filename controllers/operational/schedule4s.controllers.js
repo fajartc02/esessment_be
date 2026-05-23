@@ -1373,7 +1373,9 @@ module.exports = {
                 const year = moment(selectedDate).format('YYYY')
                 console.log(req.body);
                 const kanbanID = selectedKanban?.id
-                if (!kanbanID) return response.failed(res, "Error to add sub schedule, can't find kanban data")
+                if (!kanbanID) {
+                    throw new Error("Data Kanban tidak ditemukan.")
+                }
 
                 const payload = {
                     group_id: `(select group_id from ${table.tb_m_groups} where uuid = '${selectedGroup}')`,
@@ -1383,15 +1385,21 @@ module.exports = {
                 }
                 // db.query(`SET session_replication_role = 'replica'`)
                 const mainScheduleQuery = await db.query(`select * from ${table.tb_r_4s_main_schedules} where group_id = ${payload.group_id} and line_id = ${payload.line_id} and month_num = ${payload.month_num} and year_num = ${payload.year_num} limit 1`)
+                if (mainScheduleQuery.rows.length === 0) {
+                    throw new Error("Jadwal Utama (Main Schedule) tidak ditemukan untuk Line dan Shift di bulan ini.")
+                }
                 const mainSchedule = mainScheduleQuery.rows[0].main_schedule_id
+                const mainGroupId = mainScheduleQuery.rows[0].group_id
+                const mainLineId = mainScheduleQuery.rows[0].line_id
                 console.log(mainSchedule, 'Main sche');
-                if (!mainSchedule) return response.failed(res, "Error to add sub schedule, can't find main schedule data")
 
                 // 2. get m schedule (is_holiday, schedule_id)
                 const getScheduleId = await db.query(`select schedule_id, is_holiday from ${table.tb_m_schedules} where date between '${req.body.selectedDate}' and '${req.body.selectedDate}' limit 1`)
                 // console.log(getScheduleId);
                 console.log(getScheduleId, 'getScheduleId');
-                if (!getScheduleId) return response.failed(res, "Error to add sub schedule, can't find schedule data")
+                if (getScheduleId.rows.length === 0) {
+                    throw new Error("Data Jadwal Harian (Schedule) tidak ditemukan.")
+                }
                 const { schedule_id, is_holiday } = getScheduleId.rows[0]
 
                 // 3. get m shifts (shift_type) : selectedDate
@@ -1402,10 +1410,37 @@ module.exports = {
 
 
                 // 4. get Kanban (kanban_id, zone_id, freq_id)
-                const getKanban = await db.query(`select kanban_id, zone_id, freq_id from ${table.tb_m_kanbans} where uuid = '${kanbanID}' limit 1`)
+                const getKanban = await db.query(`
+                    select tmk.kanban_id, tmk.zone_id, tmk.freq_id, tmk.group_id, tmz.line_id 
+                    from ${table.tb_m_kanbans} tmk
+                    join ${table.tb_m_zones} tmz on tmk.zone_id = tmz.zone_id
+                    where tmk.uuid = '${kanbanID}' limit 1
+                `)
                 console.log(getKanban, 'getKanban');
-                if (!getKanban) return response.failed(res, "Error to add sub schedule, can't find kanban data")
-                const { kanban_id, zone_id, freq_id } = getKanban.rows[0]
+                if (getKanban.rows.length === 0) {
+                    throw new Error("Data Kanban tidak ditemukan.")
+                }
+                const { kanban_id, zone_id, freq_id, group_id, line_id } = getKanban.rows[0]
+
+                // Validate Shift / Group
+                if (group_id !== mainGroupId) {
+                    throw new Error("Shift Kanban tidak sesuai dengan Shift jadwal yang dipilih.")
+                }
+
+                // Validate Line
+                if (line_id !== mainLineId) {
+                    throw new Error("Line Kanban tidak sesuai dengan Line jadwal yang dipilih.")
+                }
+
+                // Validate uniqueness of sub schedule (no duplicate kanban_id + schedule_id)
+                const getExistSub = await db.query(`
+                    select sub_schedule_id 
+                    from ${table.tb_r_4s_sub_schedules} 
+                    where kanban_id = $1 and schedule_id = $2 limit 1
+                `, [kanban_id, schedule_id])
+                if (getExistSub.rows.length > 0) {
+                    throw new Error("Jadwal untuk Kanban ini pada tanggal tersebut sudah terdaftar.")
+                }
 
                 const insertPayload = {
                     sub_schedule_id: `(select COALESCE(MAX(sub_schedule_id), 0) + 1 FROM ${table.tb_r_4s_sub_schedules})`,
@@ -1495,7 +1530,7 @@ module.exports = {
 
         } catch (error) {
             console.log(error)
-            response.failed(res, "Error to add sub schedule")
+            response.failed(res, error)
         }
     },
 }

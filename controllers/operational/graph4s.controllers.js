@@ -83,7 +83,7 @@ module.exports = {
                 let findingProblem = await queryGET(
                     table.v_4s_finding_list,
                     `WHERE ${condDataNotDeleted} AND line_id = '${isLine ? line_id : line.line_id
-                    }' AND status_finding = 'problem' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ""
+                    }' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ""
                     } ${isLine
                         ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}`
                         : ""
