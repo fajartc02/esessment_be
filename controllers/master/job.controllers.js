@@ -57,6 +57,7 @@ module.exports = {
                     tmm.machine_nm,
                     tmm.uuid as machine_id,
                     tmj.attachment,
+                    tmw.wras_id,
                     tmj.created_by,
                     tmj.created_dt
                 FROM ${table.tb_m_jobs} tmj
@@ -64,6 +65,7 @@ module.exports = {
                 LEFT JOIN ${table.tb_m_pos} tmp ON tmp.pos_id = tmj.pos_id
                 LEFT JOIN ${table.tb_m_machines} tmm ON tmj.machine_id = tmm.machine_id 
                 LEFT JOIN ${table.tb_m_lines} tml ON tmp.line_id = tml.line_id
+                LEFT JOIN ${table.tb_m_wras} tmw ON tmj.wras_id  = tmw.wras_id
                 ${condDataNotDeleted}
                 ${containerQuery}
                 ${orderBy} ${qLimit} ${qOffset}
@@ -94,6 +96,8 @@ module.exports = {
             response.failed(res, "Error to get job");
         }
     },
+
+
     postJob: async (req, res) => {
         try {
             /* 
