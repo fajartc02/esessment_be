@@ -32,8 +32,6 @@ const fromSubScheduleSql = `
     join ${table.tb_m_freqs} tmf on tbrcs.freq_id = tmf.freq_id
     join ${table.tb_r_4s_main_schedules} trmsc on 
       tbrcs.main_schedule_id = trmsc.main_schedule_id 
-      and trmsc.month_num = date_part('month', tmsc.date)
-      and trmsc.year_num = date_part('year', tmsc.date)
     left join ${table.tb_m_users} tmu on tmu.user_id = tbrcs.pic_id
     left join ${table.tb_m_users} tmu_actual on tmu_actual.user_id = tbrcs.actual_pic_id
     join lateral (
