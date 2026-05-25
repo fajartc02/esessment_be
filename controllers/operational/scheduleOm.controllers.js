@@ -935,7 +935,7 @@ module.exports = {
                                 ${newMainScheduleSet}
                             where 
                                 ${updateCondition} 
-                                and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')
+                                and schedule_id IN (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')
                         `
 
                         console.log('sqlUpdateNewPlanDate', s);
@@ -950,7 +950,7 @@ module.exports = {
                                 plan_time = null
                             where 
                                 ${updateCondition} 
-                                and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.before_plan_date}')
+                                and schedule_id IN (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.before_plan_date}')
                         `
 
                         console.log('sqlUpdateOldPlanDate', s);

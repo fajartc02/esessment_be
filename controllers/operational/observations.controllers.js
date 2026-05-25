@@ -138,15 +138,11 @@ module.exports = {
         WHERE tro.${condDataNotDeleted}
         ${containerQuery}`);
       const totalRowTable = await countTotal.rows[0].total;
-      let mapObsCheckers = await observationList.rows.map(async (obs) => {
-        let obsUuidtoId = await uuidToId(
-          table.tb_r_observations,
-          "observation_id",
-          obs.id
-        );
+      let mapObsCheckers = observationList.rows.map(async (obs) => {
+        let obserId = `(select observation_id from tb_r_observations where uuid = '${obs.id}')`;
         let checkers = await queryGET(
           table.tb_r_obs_checker,
-          `WHERE observation_id = '${obsUuidtoId}'`,
+          `WHERE observation_id = ${obserId}`,
           ["uuid as id", "checker_nm", "checker_nm as label"]
         );
         obs.checkers = checkers;
@@ -232,38 +228,29 @@ module.exports = {
                     ${whereCond}
                 ORDER BY tml.line_nm,tmp.pos_nm ASC
             `);
-      let mapObs = await observations.rows.map(async (obser) => {
-        // console.log('obserDAta', obser);
-        // OPTIMIZE NEED
-        // let obserId = await uuidToId(
-        //   table.tb_r_observations,
-        //   "observation_id",
-        //   obser.observation_id
-        // );
+      let mapObs = observations.rows.map(async (obser) => {
         let obserId = `(select observation_id from tb_r_observations where uuid = '${obser.observation_id}')`
-        let checkersData = await queryGET(
-          table.tb_r_obs_checker,
-          `WHERE observation_id = ${obserId}`,
-          ["uuid as obs_checker_id", "checker_nm"]
-        );
-        // console.log(checkersData, 'CheckersData');
-        let qCheckFinding = `
-                    SELECT * FROM ${table.v_finding_list} WHERE observation_id = '${obser.observation_id}'
-                `;
-        let findingData = await queryCustom(qCheckFinding);
-        let is_finding = findingData.rows.length > 0;
-        obser.is_finding = is_finding;
-        obser.checkers = await checkersData.map((mp) => {
-          return mp.checker_nm;
-        });
-        obser.comments = await queryGET(
-          table.tb_r_observations_comments,
-          `WHERE observation_id = (SELECT observation_id FROM ${table.tb_r_observations} WHERE uuid = '${obser.observation_id}')`,
-          ["id"]
-        )
-        obser.checkers.length > 1
-          ? (obser.is_wajik = true)
-          : (obser.is_wajik = false);
+        
+        // Execute inner queries in parallel using Promise.all
+        const [checkersData, findingData, commentsData] = await Promise.all([
+          queryGET(
+            table.tb_r_obs_checker,
+            `WHERE observation_id = ${obserId}`,
+            ["uuid as obs_checker_id", "checker_nm"]
+          ),
+          queryCustom(`SELECT 1 FROM ${table.v_finding_list} WHERE observation_id = '${obser.observation_id}' LIMIT 1`),
+          queryGET(
+            table.tb_r_observations_comments,
+            `WHERE observation_id = ${obserId}`,
+            ["id"]
+          )
+        ]);
+
+        obser.is_finding = findingData.rows.length > 0;
+        obser.checkers = checkersData.map((mp) => mp.checker_nm);
+        obser.comments = commentsData;
+        obser.is_wajik = obser.checkers.length > 1;
+
         return obser;
       });
       let waitDataObs = await Promise.all(mapObs);

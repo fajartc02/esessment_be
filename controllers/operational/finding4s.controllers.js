@@ -420,7 +420,7 @@ module.exports = {
               {
                 item_check_kanban_id: queryFindFinding.item_check_kanban_id,
                 sub_schedule_id: queryFindFinding.sub_schedule_id,
-                kaizen_file: queryFindFinding.kaizen_file,
+                kaizen_file: kaizen_file,
                 created_by: req.user.noreg,
                 created_dt: moment().format("YYYY-MM-DD HH:mm:ss"),
               }
@@ -466,7 +466,7 @@ module.exports = {
         response.success(
           res,
           "Success to upload 4s kaizen finding",
-          req.body.kaizen_file
+          kaizen_file
         );
       } catch (error) {
         response.failed(
@@ -537,7 +537,7 @@ module.exports = {
               {
                 item_check_kanban_id: queryFindFinding.item_check_kanban_id,
                 sub_schedule_id: queryFindFinding.sub_schedule_id,
-                cm_image: queryFindFinding.cm_image,
+                cm_image: cm_image,
                 created_by: req.user.noreg,
                 created_dt: moment().format("YYYY-MM-DD HH:mm:ss"),
               }
@@ -548,7 +548,7 @@ module.exports = {
         response.success(
           res,
           "Success to upload 4s kaizen finding",
-          req.body.kaizen_file
+          cm_image
         );
       } catch (error) {
         response.failed(

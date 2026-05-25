@@ -61,6 +61,10 @@ const table = {
   v_om_finding_list: "v_om_finding_list",
   v_om_sub_schedules: "v_om_sub_schedules",
   //#endregion
+
+  //#region material training
+  tb_m_material_trainings: "tb_m_material_trainings",
+  //#endregion
 };
 
 module.exports = table;
