@@ -1070,6 +1070,14 @@ module.exports = {
                                   checked_date = '${req.body.plan_date}'
                               where sub_schedule_id = '${oldRow.sub_schedule_id}'
                             `)
+
+                            // Move findings from old to new sub_schedule and update finding_date to new plan_date
+                            await db.query(`
+                              update ${table.tb_r_4s_findings}
+                              set sub_schedule_id = '${newRow.sub_schedule_id}',
+                                  finding_date = '${req.body.plan_date}'
+                              where sub_schedule_id = '${oldRow.sub_schedule_id}'
+                            `)
                         } else {
                             // Fallback: just set plan_time on new date
                             await db.query(`
@@ -1165,21 +1173,59 @@ module.exports = {
                                 await db.query(sqlInSignChecker)
                             }
                         } else {
+                            const targetSubSchedule = await db.query(`
+                              select sub_schedule_id
+                              from ${table.tb_r_4s_sub_schedules}
+                              where ${updateCondition}
+                                ${byScheduleIdPlanDateSql}
+                              limit 1
+                            `)
+
                             // updating previous plan date (cross-month, target month already has schedule rows)
                             await db.query(`
                               update ${table.tb_r_4s_sub_schedules}
                               set plan_time = null, actual_time = null, actual_pic_id = null
-                              where ${updateCondition}
-                                ${byScheduleIdPreviousDateSql}
+                              where sub_schedule_id = '${schedulRow.sub_schedule_id}'
                             `)
 
-                            // updating new plan date
-                            await db.query(`
-                              update ${table.tb_r_4s_sub_schedules}
-                              set plan_time = '${req.body.plan_date}' ${newMainScheduleSet}
-                              where ${updateCondition}
-                                ${byScheduleIdPlanDateSql}
-                            `)
+                            if (targetSubSchedule.rowCount > 0) {
+                                const targetRow = targetSubSchedule.rows[0]
+                                
+                                // Move item check records and findings to the new month's sub_schedule
+                                await db.query(`
+                                  update ${table.tb_r_4s_schedule_item_check_kanbans}
+                                  set sub_schedule_id = '${targetRow.sub_schedule_id}',
+                                      checked_date = '${req.body.plan_date}'
+                                  where sub_schedule_id = '${schedulRow.sub_schedule_id}'
+                                `)
+                                
+                                await db.query(`
+                                  update ${table.tb_r_4s_findings}
+                                  set sub_schedule_id = '${targetRow.sub_schedule_id}',
+                                      finding_date = '${req.body.plan_date}'
+                                  where sub_schedule_id = '${schedulRow.sub_schedule_id}'
+                                `)
+
+                                // Transfer other data
+                                let transferSets = [`plan_time = '${req.body.plan_date}'`]
+                                if (schedulRow.pic_id) transferSets.push(`pic_id = '${schedulRow.pic_id}'`)
+                                if (schedulRow.actual_pic_id) transferSets.push(`actual_pic_id = '${schedulRow.actual_pic_id}'`)
+                                if (schedulRow.actual_time) transferSets.push(`actual_time = '${schedulRow.actual_time}'`)
+
+                                await db.query(`
+                                  update ${table.tb_r_4s_sub_schedules}
+                                  set ${transferSets.join(', ')}
+                                  where sub_schedule_id = '${targetRow.sub_schedule_id}'
+                                `)
+                            } else {
+                                // updating new plan date fallback
+                                await db.query(`
+                                  update ${table.tb_r_4s_sub_schedules}
+                                  set plan_time = '${req.body.plan_date}' ${newMainScheduleSet}
+                                  where ${updateCondition}
+                                    ${byScheduleIdPlanDateSql}
+                                `)
+                            }
                         }
                     }
                 }
