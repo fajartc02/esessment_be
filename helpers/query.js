@@ -10,13 +10,12 @@ const poolQuery = async (raw) => {
     client = await databasePool.connect();
     console.log("raw query", raw);
     const query = await client.query(raw);
-    client.release();
     return query;
   } catch (error) {
     throw error;
   } finally {
     if (client) {
-      //client.release();
+      client.release();
     }
   }
 };
@@ -256,24 +255,28 @@ module.exports = {
   queryTransaction: async (callback = _defaultCallbackTrans) => {
     const db = await databasePool.connect();
 
-    const finish = async () => {
-      await db.query(`SET session_replication_role = 'origin'`);
-      db.release();
-    };
-
     try {
       await db.query(`SET session_replication_role = 'replica'`);
       await db.query("BEGIN");
 
       const r = await callback(db);
       await db.query("COMMIT");
-      await finish();
       return r;
     } catch (error) {
       //console.log('error transaction', error)
-      await db.query("ROLLBACK");
-      await finish();
+      try {
+        await db.query("ROLLBACK");
+      } catch (rollbackError) {
+        console.error('error during ROLLBACK', rollbackError);
+      }
       throw error;
+    } finally {
+      try {
+        await db.query(`SET session_replication_role = 'origin'`);
+      } catch (resetError) {
+        console.error('error resetting session_replication_role', resetError);
+      }
+      db.release();
     }
   },
   queryGetTransaction: async (dbPool, table, whereCond = "") => {

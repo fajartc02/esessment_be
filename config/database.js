@@ -19,6 +19,16 @@ const databasePool = new pg.Pool({
     application_name: 'easessment-ops-app'
 })
 
+// Handle unexpected errors on idle pool clients to prevent silent connection leak
+databasePool.on('error', (err, client) => {
+    console.error('[DB POOL] Unexpected error on idle client:', err.message);
+})
+
+// Log pool stats every 5 minutes to monitor connection usage
+setInterval(() => {
+    console.log(`[DB POOL MONITOR] total: ${databasePool.totalCount}, idle: ${databasePool.idleCount}, waiting: ${databasePool.waitingCount}`);
+}, 5 * 60 * 1000).unref();
+
 // Wrapper database replacing the single pg.Client transparently to use the pool
 const database = {
     query: function (text, params, callback) {
