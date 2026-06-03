@@ -94,9 +94,9 @@ module.exports = {
             year = new Date().getFullYear();
         }
 
-        if (!month)
+        if (month === undefined || month === null)
         {
-            month = new Date().getMonth() + 2;
+            month = new Date().getMonth();
         }
 
         let lastDay = moment([year, month]).endOf('month');
