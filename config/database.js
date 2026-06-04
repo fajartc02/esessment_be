@@ -10,14 +10,7 @@ const config = {
 }
 
 pg.defaults.poolSize = 250;
-const database = new pg.Client(config);
 
-/**
- * Use a pool if you have or expect to have multiple concurrent requests. 
- * That is literally what it is there for: 
- * to provide a pool of re-usable open client instances (reduces latency whenever a client can be reused).
- * usecase : transaction
- */
 const databasePool = new pg.Pool({
     ...config,
     idleTimeoutMillis: 30000,      // 30 detik
@@ -25,6 +18,35 @@ const databasePool = new pg.Pool({
     max: 200,
     application_name: 'easessment-ops-app'
 })
+
+// Handle unexpected errors on idle pool clients to prevent silent connection leak
+databasePool.on('error', (err, client) => {
+    console.error('[DB POOL] Unexpected error on idle client:', err.message);
+})
+
+// Log pool stats every 5 minutes to monitor connection usage
+setInterval(() => {
+    console.log(`[DB POOL MONITOR] total: ${databasePool.totalCount}, idle: ${databasePool.idleCount}, waiting: ${databasePool.waitingCount}`);
+}, 5 * 60 * 1000).unref();
+
+// Wrapper database replacing the single pg.Client transparently to use the pool
+const database = {
+    query: function (text, params, callback) {
+        return databasePool.query(text, params, callback);
+    },
+    connect: function () {
+        console.log('Verifying DB connection pool...');
+        return databasePool.connect().then(client => {
+            client.release(); // Release immediately back to the pool
+            console.log('DB Pool connected and verified successfully');
+        }).catch(err => {
+            console.error('DB Pool Connection Error:', err);
+        });
+    },
+    on: function (event, listener) {
+        return databasePool.on(event, listener);
+    }
+};
 
 
 const types = pg.types;

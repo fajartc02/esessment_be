@@ -36,7 +36,7 @@ cron.schedule('0 20 * * 6', async () => {
 
 // yearly
 cron.schedule('0 0 25 12 *', async () => {
-    yearlyDates()
+    //yearlyDates()
 });
 //#endregion
 
@@ -67,6 +67,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 

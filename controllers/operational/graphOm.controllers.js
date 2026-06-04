@@ -7,166 +7,239 @@ const condDataNotDeleted = `deleted_dt IS NULL`;
 
 module.exports = {
     graphFindingOm: async (req, res) => {
-        try {
+        try
+        {
             let { start_date, end_date, line_id, group_id, source_tag } = req.query;
-
-            // =========================
-            // ✅ WHITELIST PARAM
-            // =========================
-            const allowedParams = ['start_date','end_date','line_id','group_id','source_tag'];
-
-            for (const key in req.query) {
-                if (!allowedParams.includes(key)) {
-                return response.failed(res, `Invalid param: ${key}`);
-                }
+            if (!start_date)
+            {
+                start_date = moment().format('YYYY-MM-DD')
+            }
+            if (!end_date)
+            {
+                end_date = moment().format('YYYY-MM-DD')
             }
 
-            // =========================
-            // ✅ HELPER VALIDASI
-            // =========================
-            const uuidRegex = /^[0-9a-fA-F-]{32,36}$/;
-            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-            const isSafeString = (val) => /^[a-zA-Z0-9_\s-]+$/.test(val);
-            const hasInjection = (val) => /('|--|;|\|\||\bOR\b|\bAND\b)/i.test(val);
-
-            // =========================
-            // ✅ DEFAULT DATE
-            // =========================
-            if (!start_date) start_date = moment().format('YYYY-MM-DD');
-            if (!end_date) end_date = moment().format('YYYY-MM-DD');
-
-            // =========================
-            // ✅ VALIDASI DATE (STRICT)
-            // =========================
-            if (!dateRegex.test(start_date) || hasInjection(start_date)) {
-                return response.failed(res, "Invalid start_date");
-            }
-
-            if (!dateRegex.test(end_date) || hasInjection(end_date)) {
-                return response.failed(res, "Invalid end_date");
-            }
-
-            // =========================
-            // ✅ VALIDASI UUID
-            // =========================
-            if (line_id && (!uuidRegex.test(line_id) || hasInjection(line_id))) {
-                return response.failed(res, "Invalid line_id");
-            }
-
-            if (group_id && (!uuidRegex.test(group_id) || hasInjection(group_id))) {
-                return response.failed(res, "Invalid group_id");
-            }
-
-            // =========================
-            // ✅ VALIDASI STRING DINAMIS
-            // =========================
-            if (source_tag && (!isSafeString(source_tag) || hasInjection(source_tag))) {
-                return response.failed(res, "Invalid source_tag");
-            }
-
-            // =========================
-            // ✅ FLAG
-            // =========================
-            let isLine = !!line_id;
-            let isGroup = !!group_id;
-
-            // =========================
-            // ✅ QUERY LINE (AMAN)
-            // =========================
+            let isLine = false;
+            let isGroup = false;
+            // end_date To fixing / handler from FE
+            end_date = `${end_date}`.replace("/", "");
+            line_id &&
+                (line_id != "") & (line_id != null) & (line_id != "null") &&
+                line_id != -1 &&
+                line_id != "-1/"
+                ? (isLine = true)
+                : (isLine = false);
+            group_id &&
+                (group_id != "") & (group_id != null) & (group_id != "null") &&
+                group_id != -1 &&
+                group_id != "-1/"
+                ? (isGroup = true)
+                : (isGroup = false);
             const q = `
                 SELECT 
-                uuid as line_id, 
-                case 
-                    when line_nm like '%Line%' then 'Assy Line - ' || line_nm 
-                    else line_nm 
-                end as line_nm, 
-                line_snm 
-                FROM ${table.tb_m_lines} 
-                WHERE ${condDataNotDeleted}
-                ${isLine ? ` AND uuid = '${line_id}'` : ""}
-            `;
+                    uuid as line_id, 
+                    case 
+                        when line_nm like '%Line%' then 
+                            'Assy Line - ' || line_nm 
+                        else line_nm 
+                    end as line_nm, 
+                    line_snm 
+                FROM 
+                    ${table.tb_m_lines} 
+                WHERE 
+                    ${condDataNotDeleted} 
+                    ${isLine ? ` AND uuid = '${line_id}'` : ""} 
+                `;
 
             const rawLines = await queryCustom(q);
             let linesData = rawLines.rows;
-
             let months = [
-                "January","February","March","April","May","June",
-                "July","August","September","October","November","December"
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December",
             ];
 
-            let mapLineMonth = months.map((month, i) => ({
-                month,
-                idxMonth: i + 1,
-                ...linesData[0],
-            }));
-
-            if (isLine) linesData = mapLineMonth;
-
-            // =========================
-            // ✅ FUNCTION BUILDER QUERY
-            // =========================
-            const buildWhere = (line, status, tag) => {
-                return `
-                WHERE ${condDataNotDeleted}
-                AND line_id = '${isLine ? line_id : line.line_id}'
-                AND source_tag = '${tag}'
-                AND status_finding = '${status}'
-                AND finding_date BETWEEN '${start_date}' AND '${end_date}'
-                ${isGroup ? ` AND group_id = '${group_id}'` : ""}
-                ${isLine ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}` : ""}
-                ${isLine ? ` GROUP BY source_tag, EXTRACT('MONTH' FROM finding_date)` : ""}
-                `;
-            };
-
-            // =========================
-            // ✅ LOOP DATA
-            // =========================
-            let mapLinesCountFindings = linesData.map(async (line) => {
-
-                const getCount = async (tag, status) => {
-                return await queryGET(
-                    table.v_om_finding_list,
-                    buildWhere(line, status, tag),
-                    [
-                    `count(finding_id)::int${
-                        isLine ? ", EXTRACT('MONTH' FROM finding_date)::int AS month, source_tag" : ""
-                    }`,
-                    ]
-                );
+            let mapLineMonth = await months.map((month, i) => {
+                return {
+                    month: month,
+                    idxMonth: i + 1,
+                    ...linesData[0],
                 };
-
-                let redProblem = await getCount('Tag Red','problem');
-                let redClosed = await getCount('Tag Red','closed');
-                let redRemain = await getCount('Tag Red','remain');
-
-                let whiteProblem = await getCount('Tag White','problem');
-                let whiteClosed = await getCount('Tag White','closed');
-                let whiteRemain = await getCount('Tag White','remain');
-
-                const safe = (val) => +val?.[0]?.count || 0;
-
-                line.chartData = [
-                {
-                    name: "Tag Red",
-                    data: [safe(redProblem), safe(redClosed), safe(redRemain)],
-                },
-                {
-                    name: "Tag White",
-                    data: [safe(whiteProblem), safe(whiteClosed), safe(whiteRemain)],
-                },
-                ];
-
-                return line;
             });
 
-            let result = await Promise.all(mapLinesCountFindings);
+            isLine ? (linesData = mapLineMonth) : null;
 
-            response.success(res, "Success tp get graph finding om", result);
+            let mapLinesCountFindings = await linesData.map(async (line) => {
+                let findingTagRedProblem = await queryGET(
+                    table.v_om_finding_list,
+                    `WHERE ${condDataNotDeleted} AND line_id = '${isLine ? line_id : line.line_id
+                    }' AND source_tag = 'Tag Red' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ""
+                    } ${isLine
+                        ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}`
+                        : ""
+                    } ${isLine
+                        ? "GROUP BY source_tag, EXTRACT('MONTH' FROM finding_date)"
+                        : ""
+                    }`,
+                    [
+                        `count(finding_id)::int${isLine
+                            ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_tag"
+                            : ""
+                        }`,
+                    ]
+                );
+                let findingTagRedClosed = await queryGET(
+                    table.v_om_finding_list,
+                    `WHERE ${condDataNotDeleted} AND line_id = '${isLine ? line_id : line.line_id
+                    }' AND source_tag = 'Tag Red' AND status_finding = 'closed' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ""
+                    } ${isLine
+                        ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}`
+                        : ""
+                    } ${isLine
+                        ? "GROUP BY source_tag, EXTRACT('MONTH' FROM finding_date)"
+                        : ""
+                    }`,
+                    [
+                        `count(finding_id)::int${isLine
+                            ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_tag"
+                            : ""
+                        }`,
+                    ]
+                );
+                let findingTagRedRemain = await queryGET(
+                    table.v_om_finding_list,
+                    `WHERE ${condDataNotDeleted} AND line_id = '${isLine ? line_id : line.line_id
+                    }' AND source_tag = 'Tag Red' AND status_finding = 'remain' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ""
+                    } ${isLine
+                        ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}`
+                        : ""
+                    } ${isLine
+                        ? "GROUP BY source_tag, EXTRACT('MONTH' FROM finding_date)"
+                        : ""
+                    }`,
+                    [
+                        `count(finding_id)::int${isLine
+                            ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_tag"
+                            : ""
+                        }`,
+                    ]
+                );
 
-            } catch (error) {
+                let findingTagWhiteProblem = await queryGET(
+                    table.v_om_finding_list,
+                    `WHERE ${condDataNotDeleted} AND line_id = '${isLine ? line_id : line.line_id
+                    }' AND source_tag = 'Tag White' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ""
+                    } ${isLine
+                        ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}`
+                        : ""
+                    } ${isLine
+                        ? "GROUP BY source_tag, EXTRACT('MONTH' FROM finding_date)"
+                        : ""
+                    }`,
+                    [
+                        `count(finding_id)::int${isLine
+                            ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_tag"
+                            : ""
+                        }`,
+                    ]
+                );
+                let findingTagWhiteClosed = await queryGET(
+                    table.v_om_finding_list,
+                    `WHERE ${condDataNotDeleted} AND line_id = '${isLine ? line_id : line.line_id
+                    }' AND source_tag = 'Tag White' AND status_finding = 'closed' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ""
+                    } ${isLine
+                        ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}`
+                        : ""
+                    } ${isLine
+                        ? "GROUP BY source_tag, EXTRACT('MONTH' FROM finding_date)"
+                        : ""
+                    }`,
+                    [
+                        `count(finding_id)::int${isLine
+                            ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_tag"
+                            : ""
+                        }`,
+                    ]
+                );
+                let findingTagWhiteRemain = await queryGET(
+                    table.v_om_finding_list,
+                    `WHERE ${condDataNotDeleted} AND line_id = '${isLine ? line_id : line.line_id
+                    }' AND source_tag = 'Tag White' AND status_finding = 'remain' AND finding_date BETWEEN '${start_date}' AND '${end_date}' ${isGroup ? ` AND group_id = '${group_id}'` : ""
+                    } ${isLine
+                        ? ` AND EXTRACT('MONTH' FROM finding_date)::int = ${line.idxMonth}`
+                        : ""
+                    } ${isLine
+                        ? "GROUP BY source_tag, EXTRACT('MONTH' FROM finding_date)"
+                        : ""
+                    }`,
+                    [
+                        `count(finding_id)::int${isLine
+                            ? ",  EXTRACT('MONTH' FROM finding_date)::int AS month, source_tag"
+                            : ""
+                        }`,
+                    ]
+                );
+
+                if (!isLine)
+                {
+                    line.chartData = [
+                        {
+                            name: "Tag Red",
+                            data: [
+                                +findingTagRedProblem[0].count,
+                                +findingTagRedClosed[0].count,
+                                +findingTagRedRemain[0].count,
+                            ],
+                        },
+                        {
+                            name: "Tag White",
+                            data: [
+                                +findingTagWhiteProblem[0].count,
+                                +findingTagWhiteClosed[0].count,
+                                +findingTagWhiteRemain[0].count,
+                            ],
+                        },
+                    ];
+                } else
+                {
+                    line.chartData = [
+                        {
+                            name: "Tag Red",
+                            data: [
+                                +findingTagRedProblem[0]?.count ? +findingTagRedProblem[0]?.count : 0,
+                                +findingTagRedClosed[0]?.count ? +findingTagRedClosed[0]?.count : 0,
+                                +findingTagRedRemain[0]?.count ? +findingTagRedRemain[0]?.count : 0,
+                            ],
+                        },
+                        {
+                            name: "Tag White",
+                            data: [
+                                +findingTagWhiteProblem[0]?.count ? +findingTagWhiteProblem[0]?.count : 0,
+                                +findingTagWhiteClosed[0]?.count ? +findingTagWhiteClosed[0]?.count : 0,
+                                +findingTagWhiteRemain[0]?.count ? +findingTagWhiteRemain[0]?.count : 0,
+                            ],
+                        },
+                    ];
+                }
+                return line;
+            });
+            let waitGraphData = await Promise.all(mapLinesCountFindings);
+            console.log(waitGraphData);
+            response.success(res, "Success tp get graph finding om", waitGraphData);
+        } catch (error)
+        {
             console.log(error);
             response.failed(res, "Error to get graph finding om");
-            }
+        }
     },
     graphOverallOm: async (req, res) => {
         try

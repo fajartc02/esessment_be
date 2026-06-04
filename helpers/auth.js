@@ -11,6 +11,8 @@ async function userCheck(noreg) {
     "fullname",
     "line_id",
     "role",
+    "uuid",
+    "photo_url"
   ])
     .then(async (result) => {
       // console.log(result);

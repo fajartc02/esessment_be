@@ -30,145 +30,102 @@ module.exports = {
         status_finding,
         limit,
         current_page,
-        start_date,
-        end_date
       } = req.query;
+      const fromCondition = `  
+                ${table.v_4s_finding_list} vfl 
+            `;
 
-      // =========================
-      // ✅ WHITELIST PARAM
-      // =========================
-      const allowedParams = [
-        'id','line_id','freq_id','group_id','zone_id','kanban_id',
-        'status_finding','limit','current_page','start_date','end_date'
-      ];
-
-      for (const key in req.query) {
-        if (!allowedParams.includes(key)) {
-          return response.failed(res, `Invalid param: ${key}`);
-        }
-      }
-
-      // =========================
-      // ✅ HELPER VALIDASI
-      // =========================
-      const uuidRegex = /^[0-9a-fA-F-]{32,36}$/;
-      const isValidDate = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d);
-      const hasInjection = (val) => /('|--|;|\|\||\bOR\b|\bAND\b)/i.test(val);
-
-      // =========================
-      // ✅ VALIDASI UUID
-      // =========================
-      const uuidFields = { id, line_id, freq_id, group_id, zone_id, kanban_id };
-
-      for (const key in uuidFields) {
-        const val = uuidFields[key];
-        if (val && (!uuidRegex.test(val) || hasInjection(val))) {
-          return response.failed(res, `Invalid ${key}`);
-        }
-      }
-
-      // =========================
-      // ✅ VALIDASI DATE (STRICT)
-      // =========================
-      if (start_date && !isValidDate(start_date)) {
-        return response.failed(res, "Invalid start_date");
-      }
-
-      if (end_date && !isValidDate(end_date)) {
-        return response.failed(res, "Invalid end_date");
-      }
-
-      if (start_date && hasInjection(start_date)) {
-        return response.failed(res, "Invalid start_date");
-      }
-
-      if (end_date && hasInjection(end_date)) {
-        return response.failed(res, "Invalid end_date");
-      }
-
-      // =========================
-      // ✅ VALIDASI STATUS
-      // =========================
-      const allowedStatus = ['problem','closed','remain'];
-
-      if (status_finding && !allowedStatus.includes(status_finding)) {
-        return response.failed(res, "Invalid status_finding");
-      }
-
-      // =========================
-      // ✅ PAGINATION
-      // =========================
       current_page = parseInt(current_page ?? 1);
       limit = parseInt(limit ?? 10);
 
-      if (isNaN(limit) || isNaN(current_page) || limit < 1 || limit > 100) {
-        return response.failed(res, "Invalid pagination");
-      }
-
-      const qOffset =
-        current_page > 1 ? `OFFSET ${limit * (current_page - 1)}` : '';
-      const qLimit = `LIMIT ${limit}`;
-
-      // =========================
-      // ✅ BUILD QUERY AMAN
-      // =========================
-      const fromCondition = `${table.v_4s_finding_list} vfl`;
-
-      let filterCondition = ["vfl.deleted_dt IS NULL"];
-
-      if (id) filterCondition.push(`vfl.finding_id = '${id}'`);
-      if (line_id) filterCondition.push(`vfl.line_id = '${line_id}'`);
-      if (zone_id) filterCondition.push(`vfl.zone_id = '${zone_id}'`);
-      if (kanban_id) filterCondition.push(`vfl.kanban_id = '${kanban_id}'`);
-      if (freq_id) filterCondition.push(`vfl.freq_id = '${freq_id}'`);
-      if (group_id) filterCondition.push(`vfl.group_id = '${group_id}'`);
-      if (status_finding) filterCondition.push(`vfl.status_finding = '${status_finding}'`);
-
-      if (start_date && end_date) {
-        filterCondition.push(
-          `vfl.finding_date BETWEEN '${start_date}' AND '${end_date}'`
-        );
-      }
-
-      let whereClause = filterCondition.join(" AND ");
+      let filterCondition = ["vfl.deleted_dt is null"];
 
       let findingSql = `
-        SELECT
-          row_number () over (
-            order by vfl.plan_cm_date,
-            case when cm_judg = true then 1 else 2 end
-          )::integer as no,
-          *,
-          case when finding_img is not null then finding_img end as finding_img
-        FROM ${fromCondition}
-        WHERE ${whereClause}
-        ORDER BY vfl.finding_date DESC,
-          case when cm_judg = true then 1 else 2 end
-        ${qLimit} ${qOffset}
-      `;
+                    select
+                        row_number () over (
+                            order by
+                            vfl.plan_cm_date,
+                            case 
+                                when cm_judg = true then 1
+                                else 2
+                            end
+                        )::integer as no,
+                        *,
+                        case when finding_img is not null then
+                            finding_img
+                        end as finding_img
+                    from
+                       ${fromCondition}
+                    where
+                        
+                `;
+      //#region filter
+      if (id) {
+        filterCondition.push(` vfl.finding_id = '${id}' `);
+      }
+      if (line_id) {
+        filterCondition.push(` vfl.line_id = '${line_id}' `);
+      }
+      if (zone_id) {
+        filterCondition.push(` vfl.zone_id = '${zone_id}' `);
+      }
+      if (kanban_id) {
+        filterCondition.push(` vfl.kanban_id = '${kanban_id}' `);
+      }
+      if (status_finding) {
+        filterCondition.push(` vfl.status_finding = '${status_finding}' `);
+      }
+      if (freq_id) {
+        filterCondition.push(` vfl.freq_id = '${freq_id}' `);
+      }
+      if (group_id) {
+        filterCondition.push(` vfl.group_id = '${group_id}' `);
+      }
+      if (req.query.start_date && req.query.end_date) {
+        filterCondition.push(
+          ` vfl.finding_date between '${req.query.start_date}' and '${req.query.end_date}' `
+        );
+      }
+      const qOffset =
+        limit != -1 && limit && current_page > 1
+          ? `OFFSET ${limit * (current_page - 1)}`
+          : ``;
+      const qLimit = limit != -1 && limit ? `LIMIT ${limit}` : ``;
 
-      console.log("SAFE QUERY:", findingSql);
+      filterCondition = filterCondition.join(" and ");
+      findingSql = findingSql.concat(` ${filterCondition} `);
+      findingSql = findingSql.concat(
+        ` 
+                    order by vfl.finding_date DESC,
+                      case 
+                          when cm_judg = true then 1
+                          else 2
+                      end ${qLimit} ${qOffset} 
+                `
+      );
+      //#endregion
 
       let findingQuery = await queryCustom(findingSql);
-
       const nullId = id == null || id == -1 || id == "";
       let result = findingQuery.rows;
 
       if (result.length > 0) {
         if (nullId) {
           const count = await queryCustom(
-            `SELECT count(*)::integer as count FROM ${fromCondition} WHERE ${whereClause}`
+            `select count(*)::integer as count from ${fromCondition} where ${filterCondition}`
           );
-
           const countRows = count.rows[0];
-
           result = {
-            current_page,
+            current_page: current_page,
             total_page:
-              +countRows.count > 0 ? Math.ceil(countRows.count / limit) : 0,
+              +countRows.count > 0 ? Math.ceil(countRows.count / +limit) : 0,
             total_data: countRows.count,
-            limit,
+            limit: limit,
             list: findingQuery.rows,
+            // .map((item) => {
+            //     item.kaizen_file = item.kaizen_file ? process.env.APP_HOST + "/file?path=" + item.kaizen_file : null;
+            //     return item;
+            // }),
           };
         } else {
           result = result[0];
@@ -179,7 +136,6 @@ module.exports = {
       }
 
       response.success(res, "Success to get 4s finding list", result);
-
     } catch (error) {
       console.log(error);
       response.failed(res, "Error to get 4s finding list");
@@ -464,7 +420,7 @@ module.exports = {
               {
                 item_check_kanban_id: queryFindFinding.item_check_kanban_id,
                 sub_schedule_id: queryFindFinding.sub_schedule_id,
-                kaizen_file: queryFindFinding.kaizen_file,
+                kaizen_file: kaizen_file,
                 created_by: req.user.noreg,
                 created_dt: moment().format("YYYY-MM-DD HH:mm:ss"),
               }
@@ -510,7 +466,7 @@ module.exports = {
         response.success(
           res,
           "Success to upload 4s kaizen finding",
-          req.body.kaizen_file
+          kaizen_file
         );
       } catch (error) {
         response.failed(
@@ -581,7 +537,7 @@ module.exports = {
               {
                 item_check_kanban_id: queryFindFinding.item_check_kanban_id,
                 sub_schedule_id: queryFindFinding.sub_schedule_id,
-                cm_image: queryFindFinding.cm_image,
+                cm_image: cm_image,
                 created_by: req.user.noreg,
                 created_dt: moment().format("YYYY-MM-DD HH:mm:ss"),
               }
@@ -592,7 +548,7 @@ module.exports = {
         response.success(
           res,
           "Success to upload 4s kaizen finding",
-          req.body.kaizen_file
+          cm_image
         );
       } catch (error) {
         response.failed(

@@ -80,121 +80,55 @@ module.exports = {
   getObservationScheduleList: async (req, res) => {
     try {
       let { id, line, month, year, limit, current_page } = req.query;
-
-      // =========================
-      // ✅ WHITELIST PARAM
-      // =========================
-      const allowedParams = ['id', 'line', 'month', 'year', 'limit', 'current_page'];
-
-      for (const key in req.query) {
-        if (!allowedParams.includes(key)) {
-          return response.failed(res, `Invalid param: ${key}`);
-        }
-      }
-
-      // =========================
-      // ✅ HELPER VALIDASI STRICT
-      // =========================
-      const uuidRegex = /^[0-9a-fA-F-]{32,36}$/;
-      const numberRegex = /^[0-9]+$/; // HANYA angka, tidak boleh ada ; atau karakter lain
-      const hasInjection = (val) => /('|--|;|\|\||\bOR\b|\bAND\b)/i.test(val);
-
-      // ==========================================
-      // ✅ VALIDASI PAGINATION (ANTI-JEBOL)
-      // ==========================================
-      // Jika limit/current_page dikirim tapi mengandung karakter non-angka, langsung REJECT
-      if (limit && !numberRegex.test(limit)) {
-        return response.failed(res, "Invalid limit");
-      }
-      if (current_page && !numberRegex.test(current_page)) {
-        return response.failed(res, "Invalid current_page");
-      }
-
-      // Setelah lolos regex, baru aman diparse ke integer
-      const safeLimit = parseInt(limit) || 10;
-      const safeCurrentPage = parseInt(current_page) || 1;
-
-      if (safeLimit < 1 || safeLimit > 100) {
-        return response.failed(res, "Invalid limit range");
-      }
-
-      // =========================
-      // ✅ VALIDASI ID & LINE
-      // =========================
-      if (id && (!uuidRegex.test(id) || hasInjection(id))) {
-        return response.failed(res, "Invalid id");
-      }
-
-      if (line && line !== "0" && line !== "-1") {
-        if (!uuidRegex.test(line) || hasInjection(line)) {
-          return response.failed(res, "Invalid line");
-        }
-      }
-
-      // =========================
-      // ✅ VALIDASI MONTH & YEAR
-      // =========================
-      if (month && (!numberRegex.test(month) || +month < 1 || +month > 12)) {
-        return response.failed(res, "Invalid month");
-      }
-
-      if (year && (!numberRegex.test(year) || +year < 2000 || +year > 2100)) {
-        return response.failed(res, "Invalid year");
-      }
-
-      // =========================
-      // ✅ BUILD SAFE QUERY
-      // =========================
       let containerQuery = "";
-
-      if (id) {
-        containerQuery += ` AND tro.uuid = '${id.replace(/'/g, "''")}'`;
-      }
-
-      if (month && year) {
-        containerQuery += `
-          AND EXTRACT(MONTH FROM tro.plan_check_dt) = ${+month}
-          AND EXTRACT(YEAR FROM tro.plan_check_dt) = ${+year}
-        `;
-      }
-
-      if (line && line !== "0" && line !== "-1") {
-        const convertedLineId = await uuidToId(table.tb_m_lines, "line_id", line);
-        if (!convertedLineId) {
-          return response.failed(res, "Line not found");
-        }
-        containerQuery += ` AND tml.line_id = ${convertedLineId}`;
-      }
-
-      // Menggunakan variabel numerik yang sudah divalidasi ketat
-      const qLimit = `LIMIT ${safeLimit}`;
-      const qOffset = safeCurrentPage > 1 ? `OFFSET ${safeLimit * (safeCurrentPage - 1)}` : ``;
-
-      // =========================
-      // ✅ MAIN QUERY
-      // =========================
+      let qLimit = ``;
+      let qOffset =
+        limit != -1 && limit && current_page > 1
+          ? `OFFSET ${limit * (current_page - 1)}`
+          : ``;
+      if (limit != -1 && limit) qLimit = `LIMIT ${limit}`;
+      if (id) containerQuery += ` AND tro.uuid = '${id}'`;
+      if (month && year)
+        containerQuery = `AND (EXTRACT(month from  tro.plan_check_dt), EXTRACT('year' from tro.plan_check_dt))=(${+month},${+year})`;
+      if (line != "0" && line && line != -1)
+        containerQuery += ` AND tml.line_id = ${await uuidToId(
+          table.tb_m_lines,
+          "line_id",
+          line
+        )}`;
       let observationList = await queryCustom(`
-        SELECT 
-          tro.uuid as id,
-          tro.member_nm,
-          tro.plan_check_dt,
-          tro.actual_check_dt,
-          tro.created_dt,
-          tro.created_by,
-          tro.is_new_form,
-          tmp.uuid as pos_id,
-          tmp.pos_nm,
-          tml.uuid as line_id,
-          tml.line_nm,
-          tmj.uuid as job_id,
-          tmj.job_nm,
-          tmjt.job_type_nm,
-          tmj.attachment as sop,
-          tmg.uuid as group_id,
-          tmg.group_nm,
-          tro.parent_revision_id,
-          tro.reason_revision,
-          (select plan_check_dt from tb_r_observations where observation_id = tro.parent_revision_id) as date_revision
+                SELECT 
+                    tro.uuid as id,
+                    tro.member_nm,
+                    tro.plan_check_dt,
+                    tro.actual_check_dt,
+                    tro.created_dt,
+                    tro.created_by,
+                    tro.is_new_form,
+                    tmp.uuid as pos_id,
+                    tmp.pos_nm,
+                    tml.uuid as line_id,
+                    tml.line_nm,
+                    tmj.uuid as job_id,
+                    tmj.job_nm,
+                    tmjt.job_type_nm,
+                    tmj.attachment as sop,
+                    tmg.uuid as group_id,
+                    tmg.group_nm,
+                    tro.parent_revision_id,
+                    tro.reason_revision,
+                    (select plan_check_dt from tb_r_observations where observation_id = tro.parent_revision_id) as date_revision
+                FROM ${table.tb_r_observations} tro
+                JOIN ${table.tb_m_pos} tmp ON tmp.pos_id = tro.pos_id
+                JOIN ${table.tb_m_lines} tml ON tml.line_id = tmp.line_id
+                JOIN ${table.tb_m_jobs} tmj ON tmj.job_id = tro.job_id
+                JOIN ${table.tb_m_job_types} tmjt ON tmjt.job_type_id = tmj.job_type_id
+                JOIN ${table.tb_m_groups} tmg ON tmg.group_id = tro.group_id
+                WHERE tro.${condDataNotDeleted}
+                ${containerQuery} ORDER BY tro.created_dt DESC ${qLimit} ${qOffset}
+            `);
+      let countTotal = await queryCustom(`SELECT 
+            count(tro.observation_id) as total
         FROM ${table.tb_r_observations} tro
         JOIN ${table.tb_m_pos} tmp ON tmp.pos_id = tro.pos_id
         JOIN ${table.tb_m_lines} tml ON tml.line_id = tmp.line_id
@@ -202,50 +136,34 @@ module.exports = {
         JOIN ${table.tb_m_job_types} tmjt ON tmjt.job_type_id = tmj.job_type_id
         JOIN ${table.tb_m_groups} tmg ON tmg.group_id = tro.group_id
         WHERE tro.${condDataNotDeleted}
-        ${containerQuery}
-        ORDER BY tro.created_dt DESC ${qLimit} ${qOffset}
-      `);
-
-      // =========================
-      // ✅ COUNT QUERY
-      // =========================
-      let countTotal = await queryCustom(`
-        SELECT count(tro.observation_id) as total
-        FROM ${table.tb_r_observations} tro
-        JOIN ${table.tb_m_pos} tmp ON tmp.pos_id = tro.pos_id
-        JOIN ${table.tb_m_lines} tml ON tml.line_id = tmp.line_id
-        JOIN ${table.tb_m_jobs} tmj ON tmj.job_id = tro.job_id
-        JOIN ${table.tb_m_job_types} tmjt ON tmjt.job_type_id = tmj.job_type_id
-        JOIN ${table.tb_m_groups} tmg ON tmg.group_id = tro.group_id
-        WHERE tro.${condDataNotDeleted}
-        ${containerQuery}
-      `);
-
-      const totalRowTable = countTotal.rows[0].total;
-
+        ${containerQuery}`);
+      const totalRowTable = await countTotal.rows[0].total;
       let mapObsCheckers = observationList.rows.map(async (obs) => {
-        let obsUuidtoId = await uuidToId(table.tb_r_observations, "observation_id", obs.id);
-
+        let obserId = `(select observation_id from tb_r_observations where uuid = '${obs.id}')`;
         let checkers = await queryGET(
           table.tb_r_obs_checker,
-          `WHERE observation_id = '${obsUuidtoId}'`,
+          `WHERE observation_id = ${obserId}`,
           ["uuid as id", "checker_nm", "checker_nm as label"]
         );
-
         obs.checkers = checkers;
-        obs.total_page = totalRowTable > 0 ? Math.ceil(totalRowTable / safeLimit) : 1;
-        obs.limit = safeLimit;
-        obs.current_page = safeCurrentPage;
-        obs.total_data = totalRowTable;
+        obs.total_page =
+          +totalRowTable > 0 ? Math.ceil(totalRowTable / +limit) : 0;
+        obs.limit = +limit;
+        obs.current_page = +current_page;
+        obs.total_data = +totalRowTable;
         obs.plan_check_dt = moment(obs.plan_check_dt).format("YYYY-MM-DD");
-        obs.actual_check_dt = obs.actual_check_dt ? moment(obs.actual_check_dt).format("YYYY-MM-DD") : null;
-
+        obs.actual_check_dt = obs.actual_check_dt
+          ? moment(obs.actual_check_dt).format("YYYY-MM-DD")
+          : null;
         return obs;
       });
-
       const waitObser = await Promise.all(mapObsCheckers);
-      response.success(res, "Success to get schedule observation list", waitObser);
-
+      // console.log(waitObser);
+      response.success(
+        res,
+        "Success to get schedule observation list",
+        waitObser
+      );
     } catch (error) {
       console.log(error);
       response.failed(res, "Error to get schedule observation list");
@@ -310,38 +228,29 @@ module.exports = {
                     ${whereCond}
                 ORDER BY tml.line_nm,tmp.pos_nm ASC
             `);
-      let mapObs = await observations.rows.map(async (obser) => {
-        // console.log('obserDAta', obser);
-        // OPTIMIZE NEED
-        // let obserId = await uuidToId(
-        //   table.tb_r_observations,
-        //   "observation_id",
-        //   obser.observation_id
-        // );
+      let mapObs = observations.rows.map(async (obser) => {
         let obserId = `(select observation_id from tb_r_observations where uuid = '${obser.observation_id}')`
-        let checkersData = await queryGET(
-          table.tb_r_obs_checker,
-          `WHERE observation_id = ${obserId}`,
-          ["uuid as obs_checker_id", "checker_nm"]
-        );
-        // console.log(checkersData, 'CheckersData');
-        let qCheckFinding = `
-                    SELECT * FROM ${table.v_finding_list} WHERE observation_id = '${obser.observation_id}'
-                `;
-        let findingData = await queryCustom(qCheckFinding);
-        let is_finding = findingData.rows.length > 0;
-        obser.is_finding = is_finding;
-        obser.checkers = await checkersData.map((mp) => {
-          return mp.checker_nm;
-        });
-        obser.comments = await queryGET(
-          table.tb_r_observations_comments,
-          `WHERE observation_id = (SELECT observation_id FROM ${table.tb_r_observations} WHERE uuid = '${obser.observation_id}')`,
-          ["id"]
-        )
-        obser.checkers.length > 1
-          ? (obser.is_wajik = true)
-          : (obser.is_wajik = false);
+        
+        // Execute inner queries in parallel using Promise.all
+        const [checkersData, findingData, commentsData] = await Promise.all([
+          queryGET(
+            table.tb_r_obs_checker,
+            `WHERE observation_id = ${obserId}`,
+            ["uuid as obs_checker_id", "checker_nm"]
+          ),
+          queryCustom(`SELECT 1 FROM ${table.v_finding_list} WHERE observation_id = '${obser.observation_id}' LIMIT 1`),
+          queryGET(
+            table.tb_r_observations_comments,
+            `WHERE observation_id = ${obserId}`,
+            ["id"]
+          )
+        ]);
+
+        obser.is_finding = findingData.rows.length > 0;
+        obser.checkers = checkersData.map((mp) => mp.checker_nm);
+        obser.comments = commentsData;
+        obser.is_wajik = obser.checkers.length > 1;
+
         return obser;
       });
       let waitDataObs = await Promise.all(mapObs);
@@ -448,90 +357,62 @@ module.exports = {
   },
   getDetailObservation: async (req, res) => {
     try {
-      const id = req.params.id;
-
-      // =========================
-      // ✅ HELPER VALIDASI
-      // =========================
-      const uuidRegex = /^[0-9a-fA-F-]{36}$/;
-      const hasInjection = (val) =>
-        /('|--|;|\|\||\bOR\b|\bAND\b|\bSELECT\b|\bINSERT\b|\bDELETE\b|\bUPDATE\b)/i.test(val);
-
-      // =========================
-      // ✅ VALIDASI PARAM ID
-      // =========================
-      if (!id || !uuidRegex.test(id) || hasInjection(id)) {
-        return response.failed(res, "Invalid observation id");
-      }
-
-      // =========================
-      // ✅ QUERY UTAMA (AMAN)
-      // =========================
       let obser = await queryCustom(`
-        SELECT 
-            tro.uuid as observation_id,
-            tmp.uuid as pos_id,
-            tml.uuid as line_id,
-            tml.line_nm,
-            tml.line_snm,
-            tmp.pos_nm,
-            tmm.machine_nm,
-            tmg.uuid as group_id,
-            tmg.group_nm,
-            tmj.uuid as job_id,
-            tmj.job_no,
-            tmj.job_nm,
-            tmj.attachment as sop,
-            tmp.tsk,
-            tmp.tskk,
-            tmjt.job_type_nm,
-            tmjt.colors as job_type_color,
-            member_nm,
-            tro.plan_check_dt,
-            tro.actual_check_dt,
-            tro.comment_sh,
-            tro.comment_ammgr,
-            case 
-                when video is not null then
-                    '${process.env.IMAGE_URL}'::text || video
-            end as video,
-            EXTRACT('day' from tro.plan_check_dt) as idxDate
-        FROM ${table.tb_r_observations} tro
-        LEFT JOIN ${table.tb_m_pos} tmp ON tro.pos_id = tmp.pos_id  
-        LEFT JOIN ${table.tb_m_groups} tmg ON tro.group_id = tmg.group_id
-        LEFT JOIN ${table.tb_m_jobs} tmj ON tro.job_id = tmj.job_id
-        LEFT JOIN ${table.tb_m_machines} tmm ON tmj.machine_id = tmm.machine_id
-        LEFT JOIN ${table.tb_m_job_types} tmjt ON tmj.job_type_id = tmjt.job_type_id
-        LEFT JOIN ${table.tb_m_lines} tml ON tml.line_id = tmp.line_id
-        WHERE tro.${condDataNotDeleted}
-        AND tro.uuid = '${id}'
-      `);
-
-      // =========================
-      // ✅ FORMAT DATE
-      // =========================
-      obser.rows.map((itm) => {
+                SELECT 
+                    tro.uuid as observation_id,
+                    tmp.uuid as pos_id,
+                    tml.uuid as line_id,
+                    tml.line_nm,
+                    tml.line_snm,
+                    tmp.pos_nm,
+                    tmm.machine_nm,
+                    tmg.uuid as group_id,
+                    tmg.group_nm,
+                    tmj.uuid as job_id,
+                    tmj.job_no,
+                    tmj.job_nm,
+                    tmj.attachment as sop,
+                    tmp.tsk,
+                    tmp.tskk,
+                    tmjt.job_type_nm,
+                    tmjt.colors as job_type_color,
+                    member_nm,
+                    tro.plan_check_dt,
+                    tro.actual_check_dt,
+                    tro.comment_sh,
+                    tro.comment_ammgr,
+                    case 
+                        when video is not null then
+                            '${process.env.IMAGE_URL}'::text || video
+                    end as video,
+                    EXTRACT('day' from  tro.plan_check_dt) as idxDate
+                FROM ${table.tb_r_observations} tro
+                LEFT JOIN ${table.tb_m_pos} tmp
+                    ON tro.pos_id = tmp.pos_id  
+                LEFT JOIN ${table.tb_m_groups} tmg
+                    ON tro.group_id = tmg.group_id
+                LEFT JOIN ${table.tb_m_jobs} tmj
+                    ON tro.job_id = tmj.job_id
+                LEFT JOIN ${table.tb_m_machines} tmm
+                    ON tmj.machine_id = tmm.machine_id
+                LEFT JOIN ${table.tb_m_job_types} tmjt
+                    ON tmj.job_type_id = tmjt.job_type_id
+                LEFT JOIN ${table.tb_m_lines} tml
+                    ON tml.line_id = tmp.line_id
+                WHERE 
+                    ${"tro." + condDataNotDeleted}
+                    AND tro.uuid = '${req.params.id}'`);
+      await obser.rows.map((itm) => {
         itm.plan_check_dt = moment(itm.plan_check_dt).format("YYYY-MM-DD");
         itm.actual_check_dt = moment(itm.actual_check_dt).format("YYYY-MM-DD");
         return itm;
       });
-
-      // =========================
-      // ✅ UUID TO ID (AMAN)
-      // =========================
       const obsId = await uuidToId(
         table.tb_r_observations,
         "observation_id",
-        id
+        req.params.id
       );
-
-      if (!obsId) {
-        return response.failed(res, "Observation not found");
-      }
-
-      // =========================
-      // ✅ QUERY RESULT CHECK (AMAN)
-      // =========================
+      // factor_id, findings isn't USED AGAIN BECAUSE ALREADY ENHANCEMENT
       let resChecks = await queryGET(
         table.tb_r_obs_results,
         `WHERE observation_id = ${obsId}`,
@@ -547,98 +428,84 @@ module.exports = {
           "sub_category_id"
         ]
       );
-
-      let mapChecks = await Promise.all(resChecks.map(async (check) => {
-
+      let mapChecks = await resChecks.map(async (check) => {
         check.category_id = await idToUuid(
           table.tb_m_categories,
           "category_id",
           check.category_id
         );
-
         let categoryData = await queryGET(
           table.tb_m_categories,
           `WHERE uuid = '${check.category_id}'`,
           ["category_nm"]
         );
-
-        check.category_nm = categoryData[0]?.category_nm ?? null;
-
+        check.category_nm = categoryData[0].category_nm;
         let resFindingIdData = await queryGET(
           table.tb_r_result_findings,
           `WHERE obs_result_id = ${check.obs_result_id}`,
           ["uuid"]
         );
-
-        let resFindingId = null;
-
-        if (resFindingIdData.length === 1) {
-          if (!hasInjection(resFindingIdData[0].uuid)) {
-            resFindingId = `finding_obs_id = '${resFindingIdData[0].uuid}'`;
-          }
-        } else if (resFindingIdData.length > 1) {
-          resFindingId = resFindingIdData
-            .filter(item => uuidRegex.test(item.uuid))
-            .map(item => `finding_obs_id = '${item.uuid}'`)
-            .join(" OR ");
+        console.log('resFindingIdData: ', resFindingIdData)
+        let resFindingId = `finding_obs_id = '${resFindingIdData[0]?.uuid}'` ?? null;
+        if (resFindingIdData.length > 1) {
+          // resFindingId = resFindingIdData[resFindingIdData.length - 1]?.uuid
+          resFindingId = resFindingIdData.map(item => {
+            return `finding_obs_id = '${item.uuid}'`
+          })
+          resFindingId = resFindingId.join(' OR ')
         }
-
-        check.findings = resFindingId
-          ? await queryGET(table.v_finding_list, `WHERE ${resFindingId}`)
-          : [];
-
+        console.log('resFindingId: ', resFindingId)
+        check.findings = await queryGET(
+          table.v_finding_list,
+          `WHERE ${resFindingId}`
+        )
         check.judgment_id =
           (await idToUuid(
             table.tb_m_judgments,
             "judgment_id",
             check.judgment_id
           )) ?? null;
-
+        console.log(check.findings, ': check.findings')
         return check;
-      }));
+      });
 
-      // =========================
-      // ✅ HITUNG AVG
-      // =========================
+      const waitResChecks = await Promise.all(mapChecks);
       let isStw = true;
-
-      const mapResCheckAvg = mapChecks.map((item) => {
+      const mapResCheckAvg = await waitResChecks.map((item, i) => {
         let avg = null;
+        // ((max (dari 5 input) - min (dari 5 input) / 2) / AVG) x 100%
         let perc = null;
-
         if (isStw && item.stw_ct1) {
-          const containerCT = [
-            +item.stw_ct1,
-            +item.stw_ct2,
-            +item.stw_ct3,
-            +item.stw_ct4,
-            +item.stw_ct5
-          ];
-
-          avg = containerCT.reduce((a, b) => a + b, 0) / 5;
-
+          let containerCT = [];
+          containerCT.push(+item.stw_ct1);
+          containerCT.push(+item.stw_ct2);
+          containerCT.push(+item.stw_ct3);
+          containerCT.push(+item.stw_ct4);
+          containerCT.push(+item.stw_ct5);
+          avg = item.stw_ct1
+            ? (item.stw_ct1 +
+              item.stw_ct2 +
+              item.stw_ct3 +
+              item.stw_ct4 +
+              item.stw_ct5) /
+            5
+            : null;
           perc = +(
             ((Math.max(...containerCT) - Math.min(...containerCT)) / 2 / avg) *
             100
           ).toFixed(2);
-
           isStw = false;
         }
-
-        item.avg = avg;
-        item.perc = perc;
-
+        item.avg = avg ?? null;
+        item.perc = perc ?? null;
         return item;
       });
-
       obser.rows.push(mapResCheckAvg);
-
       response.success(
         res,
         "Success to get detail schedule observation",
         obser.rows
       );
-
     } catch (error) {
       console.log(error);
       response.failed(res, "Error to get detail schedule observation");

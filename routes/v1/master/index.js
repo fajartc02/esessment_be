@@ -52,5 +52,8 @@ router.use('/om-item-check-kanbans', oemItemCheckKanbans)
 
 router.use("/wras", wras);
 
+const materialTraining = require("./material_training");
+router.use("/material-training", materialTraining);
+
 
 module.exports = router
