@@ -60,7 +60,7 @@ module.exports = {
             current_page = parseInt(current_page ?? 1);
             limit = parseInt(limit ?? 10);
 
-            if (isNaN(limit) || limit < 1 || limit > 100) {
+            if (isNaN(limit) || (limit < 1 && limit !== -1) || limit > 2000) {
                 return response.failed(res, "Invalid limit");
             }
 

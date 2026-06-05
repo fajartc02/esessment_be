@@ -49,30 +49,58 @@ router.use('/master', master)
  *     produces:
  *       - application/pdf
  */
-router.get('/file', (req, res) => {
-    const filePath = req.query.path
-    if (fs.existsSync(filePath)) {
-        const ext = filePath.split('.').pop().toLowerCase();
-        const mimeTypes = {
-            'pdf': 'application/pdf',
-            'jpg': 'image/jpeg',
-            'jpeg': 'image/jpeg',
-            'png': 'image/png',
-            'gif': 'image/gif',
-            'svg': 'image/svg+xml',
-            'mp4': 'video/mp4',
-            'mov': 'video/quicktime',
-        };
-        if (mimeTypes[ext]) {
-            res.contentType(mimeTypes[ext]);
-        }
-        fs.createReadStream(filePath).pipe(res)
-    } else {
-        res.status(500)
-        console.log('File not found:', filePath)
-        res.send('File not found')
-    }
-})
+const path = require('path');
 
+router.get('/file', (req, res) => {
+    try {
+        const userPath = req.query.path;
+        if (!userPath) return res.status(400).send("Path is required");
+
+        // 1. Tentukan folder dasar yang diizinkan (Base Directory)
+        const baseDirectory = path.join(__dirname, '../../');
+
+        // 2. Normalkan path untuk membuang ../ atau karakter aneh
+        // path.normalize akan mengubah "../../windows/win.ini" menjadi "windows/win.ini"
+        const safePath = path.normalize(userPath).replace(/^(\.\.(\/|\\|$))+/, '');
+
+        // 3. Gabungkan base directory dengan path yang sudah dibersihkan
+        const finalPath = path.join(baseDirectory, safePath);
+
+        // 4. VALIDASI KRITIS: Pastikan hasil akhir masih berada di dalam baseDirectory
+        if (!finalPath.startsWith(baseDirectory)) {
+            console.error("Security Alert: Path Traversal Attempted!");
+            return res.status(403).send("Forbidden: Access Denied");
+        }
+
+        // 5. Cek eksistensi file
+        if (fs.existsSync(finalPath)) {
+            // Cek ekstensi file secara aman
+            const ext = path.extname(finalPath).toLowerCase().replace('.', '');
+            const mimeTypes = {
+                'pdf': 'application/pdf',
+                'jpg': 'image/jpeg',
+                'jpeg': 'image/jpeg',
+                'png': 'image/png',
+                'gif': 'image/gif',
+                'svg': 'image/svg+xml',
+                'mp4': 'video/mp4',
+                'mov': 'video/quicktime',
+            };
+            if (mimeTypes[ext]) {
+                res.contentType(mimeTypes[ext]);
+            }
+            
+            // Gunakan Stream untuk efisiensi
+            const stream = fs.createReadStream(finalPath);
+            stream.on('error', () => res.status(500).send("Error reading file"));
+            stream.pipe(res);
+        } else {
+            res.status(404).send("File not found");
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("Internal Server Error");
+    }
+});
 
 module.exports = router;

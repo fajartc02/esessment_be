@@ -1,7 +1,6 @@
-const nodeEnv = (process.env.NODE_ENV || 'local').trim()
-const envFilePath = nodeEnv == 'production'
+const envFilePath = process.env.NODE_ENV?.trim() == 'production'
     ? './.env'
-    : (nodeEnv == 'dev' ? './dev.env' : './local.env')
+    : (process.env.NODE_ENV?.trim() == 'dev' ? './dev.env' : './local.env')
 require('dotenv').config({ path: envFilePath })
 
 
@@ -27,13 +26,13 @@ const {
 const main = async (yearParam, monthParam) => {
     console.log('4S Schedule Date Scheduler Running...')
     const currentDate = moment()
-        let currentYear = yearParam || parseInt(currentDate.format('YYYY'));
-        let currentMonth = monthParam || currentDate.month() + 2; // need +2 to determine next month
+    let currentYear = yearParam || parseInt(currentDate.format('YYYY'));
+    let currentMonth = monthParam || currentDate.month() + 2; // need +2 to determine next month
 
-        if (!yearParam && currentMonth > 12) {
-            currentYear += 1
-            currentMonth = currentMonth % 12
-        }
+    if (!yearParam && currentMonth > 12) {
+        currentYear += 1
+        currentMonth = currentMonth % 12
+    }
 
     const flagCreatedBy = `SCHEDULERS ${currentDate.format('YYYY-MM-DD')}`
 
