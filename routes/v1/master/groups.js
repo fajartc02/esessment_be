@@ -66,6 +66,6 @@ const auth = require('../../../helpers/auth')
 router.put('/edit/:id', auth.verifyToken, editGroup)
 router.delete('/delete/:id', auth.verifyToken, deleteGroup)
 router.post('/', auth.verifyToken, postGroup)
-router.get('/', auth.verifyToken, getGroups)
+router.get('/', getGroups)
 
 module.exports = router
