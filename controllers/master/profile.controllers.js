@@ -24,9 +24,16 @@ module.exports = {
   },
   updateProfile: async (req, res) => {
     try {
-      // Remove role from body to prevent unauthorized role change
-      delete req.body.role;
-      const attrsUserUpdate = await attrsUserUpdateData(req, req.body);
+      // Use Whitelisting to prevent Mass Assignment
+      const allowedUpdates = {};
+      if (req.body.fullname !== undefined) allowedUpdates.fullname = req.body.fullname;
+      if (req.body.phone_number !== undefined) allowedUpdates.phone_number = req.body.phone_number;
+
+      if (Object.keys(allowedUpdates).length === 0) {
+          return response.failed(res, "No valid fields provided for update");
+      }
+
+      const attrsUserUpdate = await attrsUserUpdateData(req, allowedUpdates);
       const result = await queryPUT(
         table.tb_m_users,
         attrsUserUpdate,

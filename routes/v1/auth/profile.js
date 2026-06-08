@@ -44,6 +44,6 @@ router.put("/", auth.verifyToken, updateProfile);
  *       200:
  *         description: Success
  */
-router.post("/upload", auth.verifyToken, upload.single("photo"), uploadPhoto);
+router.post("/upload", auth.verifyToken, (req, res, next) => { req.query.dest = 'profile_photos'; next(); }, upload.single("photo"), uploadPhoto);
 
 module.exports = router;
