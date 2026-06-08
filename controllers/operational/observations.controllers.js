@@ -254,18 +254,76 @@ module.exports = {
   getScheduleObservations: async (req, res) => {
     try {
       const { month, year, line, group_id } = req.query;
+
+      // =========================
+      // ✅ WHITELIST PARAM
+      // =========================
+      const allowedParams = ['month', 'year', 'line', 'group_id', 'limit', 'currentPage'];
+      for (const key in req.query) {
+        if (!allowedParams.includes(key)) {
+          return response.failed(res, `Invalid param: ${key}`);
+        }
+      }
+
+      // =========================
+      // ✅ HELPER VALIDASI STRICT
+      // =========================
+      const uuidRegex = /^[0-9a-fA-F-]{32,36}$/;
+      const numberRegex = /^[0-9]+$/;
+      const hasInjection = (val) => /('|--|;|\|\||\bOR\b|\bAND\b)/i.test(val);
+
+      // =========================
+      // ✅ VALIDASI MONTH & YEAR
+      // =========================
+      if (month && (!numberRegex.test(month) || +month < 1 || +month > 12)) {
+        return response.failed(res, "Invalid month");
+      }
+      if (year && (!numberRegex.test(year) || +year < 2000 || +year > 2100)) {
+        return response.failed(res, "Invalid year");
+      }
+
+      // =========================
+      // ✅ VALIDASI LINE (UUID)
+      // =========================
+      if (line && line !== "0" && line !== "-1" && String(line) !== "-1") {
+        if (!uuidRegex.test(line) || hasInjection(line)) {
+          return response.failed(res, "Invalid line");
+        }
+      }
+
+      // =========================
+      // ✅ VALIDASI GROUP_ID (UUID)
+      // =========================
+      if (group_id && group_id !== null) {
+        if (!uuidRegex.test(group_id) || hasInjection(group_id)) {
+          return response.failed(res, "Invalid group_id");
+        }
+      }
+
+      // =========================
+      // ✅ BUILD SAFE WHERE
+      // =========================
       let whereCond = ``;
-      // console.log(req.query);
-      if (month && year)
-        whereCond = `AND (EXTRACT(month from  tro.plan_check_dt), EXTRACT('year' from tro.plan_check_dt))=(${+month},${+year})`;
-      if (line != "0" && line && line != -1 && line != null)
-        whereCond += ` AND tmp.line_id = ${await uuidToId(
-          table.tb_m_lines,
-          "line_id",
-          line
-        )}`;
-      if (group_id && group_id != null)
-        whereCond += ` AND tmg.uuid = '${group_id}'`;
+
+      if (month && year) {
+        whereCond = `AND (EXTRACT(month from tro.plan_check_dt), EXTRACT('year' from tro.plan_check_dt))=(${+month},${+year})`;
+      }
+
+      if (line && line !== "0" && line !== "-1" && String(line) !== "-1") {
+        const convertedLineId = await uuidToId(table.tb_m_lines, "line_id", line);
+        if (!convertedLineId) {
+          return response.failed(res, "Line not found");
+        }
+        whereCond += ` AND tmp.line_id = ${convertedLineId}`;
+      }
+
+      if (group_id && group_id !== null) {
+        whereCond += ` AND tmg.uuid = '${group_id.replace(/'/g, "''")}'`;
+      }
+
+      // =========================
+      // ✅ OPTIMIZED SINGLE QUERY
+      // =========================
       let observations = await queryCustom(`
                 SELECT 
                     tro.uuid as observation_id,
@@ -291,7 +349,21 @@ module.exports = {
                     tro.is_new_form,
                     tro.parent_revision_id,
                     tro.reason_revision,
-                    (SELECT plan_check_dt FROM ${table.tb_r_observations} WHERE observation_id = tro.parent_revision_id) as date_revision
+                    (SELECT plan_check_dt FROM ${table.tb_r_observations} WHERE observation_id = tro.parent_revision_id) as date_revision,
+                    COALESCE(
+                      (SELECT json_agg(json_build_object('obs_checker_id', troc.uuid, 'checker_nm', troc.checker_nm))
+                       FROM ${table.tb_r_obs_checker} troc
+                       WHERE troc.observation_id = tro.observation_id),
+                      '[]'::json
+                    ) as checkers_data,
+                    EXISTS(
+                      SELECT 1 FROM ${table.v_finding_list} vfl
+                      WHERE vfl.observation_id = tro.uuid
+                      LIMIT 1
+                    ) as is_finding,
+                    (SELECT count(*)::int FROM ${table.tb_r_observations_comments} troc2
+                     WHERE troc2.observation_id = tro.observation_id
+                    ) as comment_count
                 FROM ${table.tb_r_observations} tro
                 LEFT JOIN ${table.tb_m_pos} tmp
                     ON tro.pos_id = tmp.pos_id
@@ -310,32 +382,24 @@ module.exports = {
                     ${whereCond}
                 ORDER BY tml.line_nm,tmp.pos_nm ASC
             `);
-      let mapObs = observations.rows.map(async (obser) => {
-        let obserId = `(select observation_id from tb_r_observations where uuid = '${obser.observation_id}')`
-        
-        // Execute inner queries in parallel using Promise.all
-        const [checkersData, findingData, commentsData] = await Promise.all([
-          queryGET(
-            table.tb_r_obs_checker,
-            `WHERE observation_id = ${obserId}`,
-            ["uuid as obs_checker_id", "checker_nm"]
-          ),
-          queryCustom(`SELECT 1 FROM ${table.v_finding_list} WHERE observation_id = '${obser.observation_id}' LIMIT 1`),
-          queryGET(
-            table.tb_r_observations_comments,
-            `WHERE observation_id = ${obserId}`,
-            ["id"]
-          )
-        ]);
 
-        obser.is_finding = findingData.rows.length > 0;
-        obser.checkers = checkersData.map((mp) => mp.checker_nm);
-        obser.comments = commentsData;
+      // =========================
+      // ✅ MAP RESULTS (no more N+1 queries)
+      // =========================
+      let waitDataObs = observations.rows.map((obser) => {
+        const checkersArr = obser.checkers_data || [];
+        obser.checkers = checkersArr.map((c) => c.checker_nm);
+        obser.comments = obser.comment_count > 0 ? Array(obser.comment_count).fill({ id: 1 }) : [];
         obser.is_wajik = obser.checkers.length > 1;
-
+        // Clean up temp fields
+        delete obser.checkers_data;
+        delete obser.comment_count;
         return obser;
       });
-      let waitDataObs = await Promise.all(mapObs);
+
+      // =========================
+      // ✅ GROUP BY POS (unchanged logic)
+      // =========================
       let containerGroup = [];
       for (let i = 0; i < waitDataObs.length; i++) {
         const item = waitDataObs[i];
@@ -351,7 +415,6 @@ module.exports = {
         for (let idxChecker = 0; idxChecker < item.checkers.length; idxChecker++) {
           const checkerChild = item.checkers[idxChecker];
           let isCheckerAvail = posAvail.checkers.find(checkerParent => checkerParent === checkerChild);
-          // console.log(posAvail)
           if (!isCheckerAvail) {
             posAvail.checkers.unshift(checkerChild);
             continue;
@@ -359,9 +422,8 @@ module.exports = {
         }
         posAvail.children.push(item);
       }
-      let resAwait = await Promise.all(containerGroup);
 
-      response.success(res, "Success to get schedule observation", resAwait);
+      response.success(res, "Success to get schedule observation", containerGroup);
     } catch (error) {
       console.log(error);
       response.failed(res, error);
