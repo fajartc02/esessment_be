@@ -350,7 +350,7 @@ const subScheduleRows = async (params) => {
                 tbrcs.main_schedule_id = ${whereMainSchedule}
                 and tbrcs.deleted_dt is null
               order by
-                tbrcs.freq_id, tbrcs.zone_id, tbrcs.kanban_id, tbrcs.pic_id nulls last
+                tbrcs.freq_id, tbrcs.zone_id, tbrcs.kanban_id, tbrcs.changed_dt desc nulls last
           ) a 
           where
             1 = 1
