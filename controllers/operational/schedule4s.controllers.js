@@ -328,7 +328,7 @@ const subScheduleRows = async (
               where
                 tbrcs.main_schedule_id = ${whereMainSchedule}
               order by
-                tbrcs.freq_id, tbrcs.zone_id, tbrcs.kanban_id, tbrcs.pic_id nulls last
+                tbrcs.freq_id, tbrcs.zone_id, tbrcs.kanban_id, tbrcs.changed_dt desc nulls last
           ) a 
           where
             1 = 1
@@ -1468,7 +1468,7 @@ module.exports = {
                 }
             })
 
-            cacheDelete(subScheduleCacheKey(schedulRow.main_schedule_uuid))
+            cacheDelete(schedulRow.main_schedule_uuid)
 
             response.success(res, "Success to edit 4s schedule plan", [])
         } catch (e) {
@@ -1636,7 +1636,7 @@ module.exports = {
                 return result
             });
 
-            cacheDelete(subScheduleCacheKey(subScheduleRow.main_schedule_uuid))
+            cacheDelete(subScheduleRow.main_schedule_uuid)
 
             response.success(res, 'success to delete 4s sub schedule', transaction)
         } catch (e) {
@@ -1682,6 +1682,13 @@ module.exports = {
                 AND DATE_PART('year', plan_time) = src.year_start
                 AND (s.pic_id IS NULL)
             `)
+            
+            const main_schedule_uuid_query = await queryGET(table.tb_r_4s_main_schedules, `WHERE main_schedule_id = '${main_schedule_id}' `, ['uuid']);
+            const main_schedule_uuid = main_schedule_uuid_query[0]?.uuid;
+            if (main_schedule_uuid) {
+                cacheDelete(main_schedule_uuid);
+            }
+
             response.success(res, 'Success to add plan pic 4s sub schedule', [])
         } catch (error) {
             console.log(error)
