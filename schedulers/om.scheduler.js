@@ -1,11 +1,10 @@
-const nodeEnvStr = (process.env.NODE_ENV || 'local').trim()
-const envFilePath = nodeEnvStr == 'production'
+const envFilePath = process.env.NODE_ENV?.trim() == 'production'
     ? './.env'
-    : (nodeEnvStr == 'dev' ? './dev.env' : './local.env')
+    : (process.env.NODE_ENV?.trim() == 'dev' ? './dev.env' : './local.env')
 require('dotenv').config({ path: envFilePath })
 
 const nodeEnv = process.env;
-const env = (nodeEnv.NODE_ENV || 'local').trim();
+const env = nodeEnv.NODE_ENV?.trim();
 const moment = require('moment')
 const { uuid } = require('uuidv4')
 const pg = require('pg')

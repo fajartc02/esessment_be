@@ -44,7 +44,7 @@ router.get('/', auth.verifyToken, getMaterialTrainings)
  *       200:
  *         description: A successful response
  */
-router.post('/', auth.verifyToken, upload.single('file'), postMaterialTraining)
+router.post('/', auth.verifyToken, (req, res, next) => { req.query.dest = 'material_training'; next(); }, upload.single('file'), postMaterialTraining)
 
 /**
  * @swagger
@@ -60,7 +60,7 @@ router.post('/', auth.verifyToken, upload.single('file'), postMaterialTraining)
  *       200:
  *         description: A successful response
  */
-router.put('/:id', auth.verifyToken, upload.single('file'), putMaterialTraining)
+router.put('/:id', auth.verifyToken, (req, res, next) => { req.query.dest = 'material_training'; next(); }, upload.single('file'), putMaterialTraining)
 
 /**
  * @swagger

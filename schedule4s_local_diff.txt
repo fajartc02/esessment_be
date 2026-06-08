@@ -1,0 +1,326 @@
+﻿diff --git a/controllers/operational/schedule4s.controllers.js b/controllers/operational/schedule4s.controllers.js
+index e7e5a35..25f8897 100644
+--- a/controllers/operational/schedule4s.controllers.js
++++ b/controllers/operational/schedule4s.controllers.js
+@@ -32,8 +32,6 @@ const fromSubScheduleSql = `
+     join ${table.tb_m_freqs} tmf on tbrcs.freq_id = tmf.freq_id
+     join ${table.tb_r_4s_main_schedules} trmsc on 
+       tbrcs.main_schedule_id = trmsc.main_schedule_id 
+-      and trmsc.month_num = date_part('month', tmsc.date)
+-      and trmsc.year_num = date_part('year', tmsc.date)
+     left join ${table.tb_m_users} tmu on tmu.user_id = tbrcs.pic_id
+     left join ${table.tb_m_users} tmu_actual on tmu_actual.user_id = tbrcs.actual_pic_id
+     join lateral (
+@@ -699,6 +697,20 @@ module.exports = {
+ 
+             subScheduleQuery = subScheduleQuery.rows[0]
+ 
++            if (!subScheduleQuery.plan_time) {
++                subScheduleQuery.item_check_kanbans = []
++                subScheduleQuery.main_schedule_id = subScheduleQuery.main_schedule_uuid
++
++                delete subScheduleQuery.freq_real_id
++                delete subScheduleQuery.zone_real_id
++                delete subScheduleQuery.kanban_real_id
++                delete subScheduleQuery.pic_real_id
++                delete subScheduleQuery.main_schedule_uuid
++
++                response.success(res, "Success to get detail 4s sub schedule", subScheduleQuery)
++                return
++            }
++
+             const sqlItemCheckKanbans = `select
+                                                   tmic.uuid as item_check_kanban_id,
+                                                   tmk.uuid as kanban_id,
+@@ -979,44 +991,11 @@ module.exports = {
+                         }
+                     }
+ 
+-                    const byScheduleIdPlanDateSql = `and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')`
+-                    const byScheduleIdPreviousDateSql = `and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.before_plan_date}')`
+-
+-                    const sqlUpdateNewPlanDate = (newMainScheduleSet = '') => {
+-                        const s = `
+-              update 
+-                ${table.tb_r_4s_sub_schedules} 
+-              set 
+-                plan_time = '${req.body.plan_date}'
+-                ${newMainScheduleSet} 
+-              where 
+-                ${updateCondition} 
+-                ${byScheduleIdPlanDateSql}   
+-            `
+-
+-                        console.log('sqlUpdateNewPlanDate', s);
+-                        return s
+-                    }
+-
+-                    const sqlUpdateOldPlanDate = () => {
+-                        const s = `
+-              update 
+-                ${table.tb_r_4s_sub_schedules} 
+-              set 
+-                plan_time = null
+-              where 
+-                ${updateCondition} 
+-                ${byScheduleIdPreviousDateSql}`
+-
+-                        console.log('sqlUpdateOldPlanDate', s);
+-                        return s
+-                    }
+-
+-                    // updating previous plan date
+-                    await db.query(sqlUpdateOldPlanDate())
++                    const byScheduleIdPlanDateSql = `and schedule_id IN (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')`
++                    const byScheduleIdPreviousDateSql = `and schedule_id IN (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.before_plan_date}')`
+ 
+                     if (newMainScheduleSet == '') {
+-                        //#region  update plan_date and previous plan_date
++                        //#region  update plan_date and previous plan_date (same month)
+                         const findNightShift = await db.query(`
+             select 
+               * 
+@@ -1024,15 +1003,90 @@ module.exports = {
+               ${table.tb_r_4s_sub_schedules} 
+             where 
+               ${updateCondition} 
+-              and schedule_id = (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')
++              and schedule_id IN (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')
+               and shift_type = 'night_shift'`)
+ 
+                         if (findNightShift.rowCount > 0) {
+                             throw "Can't edit schedule plan on night shift"
+                         }
+ 
+-                        // updating new plan date
+-                        await db.query(sqlUpdateNewPlanDate())
++                        // Find old sub_schedule (by previous date) to get its data BEFORE updating it to null
++                        const oldSubSchedule = await db.query(`
++                          select sub_schedule_id, pic_id, actual_pic_id, actual_time
++                          from ${table.tb_r_4s_sub_schedules}
++                          where ${updateCondition}
++                            ${byScheduleIdPreviousDateSql}
++                          limit 1
++                        `)
++
++                        // Find new sub_schedule (target date)
++                        const newSubSchedule = await db.query(`
++                          select sub_schedule_id
++                          from ${table.tb_r_4s_sub_schedules}
++                          where ${updateCondition}
++                            ${byScheduleIdPlanDateSql}
++                          limit 1
++                        `)
++
++                        // updating previous plan date (set plan_time to null)
++                        await db.query(`
++                          update 
++                            ${table.tb_r_4s_sub_schedules} 
++                          set 
++                            plan_time = null
++                          where 
++                            ${updateCondition} 
++                            ${byScheduleIdPreviousDateSql}`)
++
++                        if (oldSubSchedule.rowCount > 0 && newSubSchedule.rowCount > 0) {
++                            const oldRow = oldSubSchedule.rows[0]
++                            const newRow = newSubSchedule.rows[0]
++
++                            // Transfer data from old to new sub_schedule
++                            let transferSets = [`plan_time = '${req.body.plan_date}'`]
++                            if (oldRow.pic_id) transferSets.push(`pic_id = '${oldRow.pic_id}'`)
++                            if (oldRow.actual_pic_id) transferSets.push(`actual_pic_id = '${oldRow.actual_pic_id}'`)
++                            if (oldRow.actual_time) transferSets.push(`actual_time = '${oldRow.actual_time}'`)
++
++                            await db.query(`
++                              update ${table.tb_r_4s_sub_schedules}
++                              set ${transferSets.join(', ')}
++                              where sub_schedule_id = '${newRow.sub_schedule_id}'
++                            `)
++
++                            // Clear old sub_schedule data completely
++                            await db.query(`
++                              update ${table.tb_r_4s_sub_schedules}
++                              set plan_time = null,
++                                  actual_time = null,
++                                  actual_pic_id = null
++                              where sub_schedule_id = '${oldRow.sub_schedule_id}'
++                            `)
++
++                            // Move item check records from old to new sub_schedule and update checked_date to new plan_date
++                            await db.query(`
++                              update ${table.tb_r_4s_schedule_item_check_kanbans}
++                              set sub_schedule_id = '${newRow.sub_schedule_id}',
++                                  checked_date = '${req.body.plan_date}'
++                              where sub_schedule_id = '${oldRow.sub_schedule_id}'
++                            `)
++
++                            // Move findings from old to new sub_schedule and update finding_date to new plan_date
++                            await db.query(`
++                              update ${table.tb_r_4s_findings}
++                              set sub_schedule_id = '${newRow.sub_schedule_id}',
++                                  finding_date = '${req.body.plan_date}'
++                              where sub_schedule_id = '${oldRow.sub_schedule_id}'
++                            `)
++                        } else {
++                            // Fallback: just set plan_time on new date
++                            await db.query(`
++                              update ${table.tb_r_4s_sub_schedules}
++                              set plan_time = '${req.body.plan_date}'
++                              where ${updateCondition}
++                                ${byScheduleIdPlanDateSql}
++                            `)
++                        }
+ 
+                         //#endregion
+                     } else {
+@@ -1119,11 +1173,59 @@ module.exports = {
+                                 await db.query(sqlInSignChecker)
+                             }
+                         } else {
+-                            // updating previous plan date
+-                            await db.query(sqlUpdateOldPlanDate())
+-
+-                            // updating new plan date
+-                            await db.query(sqlUpdateNewPlanDate(newMainScheduleSet))
++                            const targetSubSchedule = await db.query(`
++                              select sub_schedule_id
++                              from ${table.tb_r_4s_sub_schedules}
++                              where ${updateCondition}
++                                ${byScheduleIdPlanDateSql}
++                              limit 1
++                            `)
++
++                            // updating previous plan date (cross-month, target month already has schedule rows)
++                            await db.query(`
++                              update ${table.tb_r_4s_sub_schedules}
++                              set plan_time = null, actual_time = null, actual_pic_id = null
++                              where sub_schedule_id = '${schedulRow.sub_schedule_id}'
++                            `)
++
++                            if (targetSubSchedule.rowCount > 0) {
++                                const targetRow = targetSubSchedule.rows[0]
++                                
++                                // Move item check records and findings to the new month's sub_schedule
++                                await db.query(`
++                                  update ${table.tb_r_4s_schedule_item_check_kanbans}
++                                  set sub_schedule_id = '${targetRow.sub_schedule_id}',
++                                      checked_date = '${req.body.plan_date}'
++                                  where sub_schedule_id = '${schedulRow.sub_schedule_id}'
++                                `)
++                                
++                                await db.query(`
++                                  update ${table.tb_r_4s_findings}
++                                  set sub_schedule_id = '${targetRow.sub_schedule_id}',
++                                      finding_date = '${req.body.plan_date}'
++                                  where sub_schedule_id = '${schedulRow.sub_schedule_id}'
++                                `)
++
++                                // Transfer other data
++                                let transferSets = [`plan_time = '${req.body.plan_date}'`]
++                                if (schedulRow.pic_id) transferSets.push(`pic_id = '${schedulRow.pic_id}'`)
++                                if (schedulRow.actual_pic_id) transferSets.push(`actual_pic_id = '${schedulRow.actual_pic_id}'`)
++                                if (schedulRow.actual_time) transferSets.push(`actual_time = '${schedulRow.actual_time}'`)
++
++                                await db.query(`
++                                  update ${table.tb_r_4s_sub_schedules}
++                                  set ${transferSets.join(', ')}
++                                  where sub_schedule_id = '${targetRow.sub_schedule_id}'
++                                `)
++                            } else {
++                                // updating new plan date fallback
++                                await db.query(`
++                                  update ${table.tb_r_4s_sub_schedules}
++                                  set plan_time = '${req.body.plan_date}' ${newMainScheduleSet}
++                                  where ${updateCondition}
++                                    ${byScheduleIdPlanDateSql}
++                                `)
++                            }
+                         }
+                     }
+                 }
+@@ -1373,7 +1475,9 @@ module.exports = {
+                 const year = moment(selectedDate).format('YYYY')
+                 console.log(req.body);
+                 const kanbanID = selectedKanban?.id
+-                if (!kanbanID) return response.failed(res, "Error to add sub schedule, can't find kanban data")
++                if (!kanbanID) {
++                    throw new Error("Data Kanban tidak ditemukan.")
++                }
+ 
+                 const payload = {
+                     group_id: `(select group_id from ${table.tb_m_groups} where uuid = '${selectedGroup}')`,
+@@ -1383,15 +1487,21 @@ module.exports = {
+                 }
+                 // db.query(`SET session_replication_role = 'replica'`)
+                 const mainScheduleQuery = await db.query(`select * from ${table.tb_r_4s_main_schedules} where group_id = ${payload.group_id} and line_id = ${payload.line_id} and month_num = ${payload.month_num} and year_num = ${payload.year_num} limit 1`)
++                if (mainScheduleQuery.rows.length === 0) {
++                    throw new Error("Jadwal Utama (Main Schedule) tidak ditemukan untuk Line dan Shift di bulan ini.")
++                }
+                 const mainSchedule = mainScheduleQuery.rows[0].main_schedule_id
++                const mainGroupId = mainScheduleQuery.rows[0].group_id
++                const mainLineId = mainScheduleQuery.rows[0].line_id
+                 console.log(mainSchedule, 'Main sche');
+-                if (!mainSchedule) return response.failed(res, "Error to add sub schedule, can't find main schedule data")
+ 
+                 // 2. get m schedule (is_holiday, schedule_id)
+                 const getScheduleId = await db.query(`select schedule_id, is_holiday from ${table.tb_m_schedules} where date between '${req.body.selectedDate}' and '${req.body.selectedDate}' limit 1`)
+                 // console.log(getScheduleId);
+                 console.log(getScheduleId, 'getScheduleId');
+-                if (!getScheduleId) return response.failed(res, "Error to add sub schedule, can't find schedule data")
++                if (getScheduleId.rows.length === 0) {
++                    throw new Error("Data Jadwal Harian (Schedule) tidak ditemukan.")
++                }
+                 const { schedule_id, is_holiday } = getScheduleId.rows[0]
+ 
+                 // 3. get m shifts (shift_type) : selectedDate
+@@ -1402,10 +1512,37 @@ module.exports = {
+ 
+ 
+                 // 4. get Kanban (kanban_id, zone_id, freq_id)
+-                const getKanban = await db.query(`select kanban_id, zone_id, freq_id from ${table.tb_m_kanbans} where uuid = '${kanbanID}' limit 1`)
++                const getKanban = await db.query(`
++                    select tmk.kanban_id, tmk.zone_id, tmk.freq_id, tmk.group_id, tmz.line_id 
++                    from ${table.tb_m_kanbans} tmk
++                    join ${table.tb_m_zones} tmz on tmk.zone_id = tmz.zone_id
++                    where tmk.uuid = '${kanbanID}' limit 1
++                `)
+                 console.log(getKanban, 'getKanban');
+-                if (!getKanban) return response.failed(res, "Error to add sub schedule, can't find kanban data")
+-                const { kanban_id, zone_id, freq_id } = getKanban.rows[0]
++                if (getKanban.rows.length === 0) {
++                    throw new Error("Data Kanban tidak ditemukan.")
++                }
++                const { kanban_id, zone_id, freq_id, group_id, line_id } = getKanban.rows[0]
++
++                // Validate Shift / Group
++                if (group_id !== mainGroupId) {
++                    throw new Error("Shift Kanban tidak sesuai dengan Shift jadwal yang dipilih.")
++                }
++
++                // Validate Line
++                if (line_id !== mainLineId) {
++                    throw new Error("Line Kanban tidak sesuai dengan Line jadwal yang dipilih.")
++                }
++
++                // Validate uniqueness of sub schedule (no duplicate kanban_id + schedule_id)
++                const getExistSub = await db.query(`
++                    select sub_schedule_id 
++                    from ${table.tb_r_4s_sub_schedules} 
++                    where kanban_id = $1 and schedule_id = $2 limit 1
++                `, [kanban_id, schedule_id])
++                if (getExistSub.rows.length > 0) {
++                    throw new Error("Jadwal untuk Kanban ini pada tanggal tersebut sudah terdaftar.")
++                }
+ 
+                 const insertPayload = {
+                     sub_schedule_id: `(select COALESCE(MAX(sub_schedule_id), 0) + 1 FROM ${table.tb_r_4s_sub_schedules})`,
+@@ -1495,7 +1632,7 @@ module.exports = {
+ 
+         } catch (error) {
+             console.log(error)
+-            response.failed(res, "Error to add sub schedule")
++            response.failed(res, error)
+         }
+     },
+ }

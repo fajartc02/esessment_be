@@ -1,7 +1,6 @@
-const nodeEnv = (process.env.NODE_ENV || 'local').trim()
-const envFilePath = nodeEnv == 'production'
+const envFilePath = process.env.NODE_ENV.trim() == 'production'
     ? './.env'
-    : (nodeEnv == 'dev' ? './dev.env' : './local.env')
+    : (process.env.NODE_ENV.trim() == 'dev' ? './dev.env' : './local.env')
 require('dotenv').config({ path: envFilePath })
 
 const pg = require('pg')

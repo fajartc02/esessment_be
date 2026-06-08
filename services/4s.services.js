@@ -376,21 +376,38 @@ const genWeeklySchedulePlan = async (
                 return !item.is_holiday
             })
 
-            let lastWeekNum = 0
+            if (morningShift.length > 0) {
+                let firstWeekNum = morningShift[0].week_num;
+                const firstWeekDays = morningShift.filter((item) => item.week_num == firstWeekNum);
+                
+                let firstDay = null;
+                if (firstWeekDays.length > 0) {
+                    firstDay = firstWeekDays[getRandomInt(0, firstWeekDays.length - 1)].date;
+                } else {
+                    firstDay = morningShift[0].date;
+                }
 
-            for (let i = 0; i < morningShift.length; i++) {
-                if (lastWeekNum != morningShift[i].week_num) {
-                    const plan = morningShift.filter((item) => {
-                        return item.week_num == morningShift[i].week_num
-                    })
+                let currentPlanDay = moment(firstDay);
+                let targetMonthEnd = moment(`${yearNum}-${padTwoDigits(monthNum)}-01`).endOf('month');
 
-                    if (plan.length > 0) {
-                        planTimeWeeklyArr.push(dateFormatted(plan[getRandomInt(0, plan.length - 1)].date))
+                while (currentPlanDay.isSameOrBefore(targetMonthEnd)) {
+                    let validDayStr = currentPlanDay.format('YYYY-MM-DD');
+                    let isValid = morningShift.some(m => dateFormatted(m.date) == validDayStr);
+                    
+                    if (isValid) {
+                        planTimeWeeklyArr.push(validDayStr);
                     } else {
-                        planTimeWeeklyArr.push(dateFormatted(morningShift[i].date))
+                        // find the closest valid day by scanning forward
+                        for (let offset = 1; offset <= 6; offset++) {
+                            let altDayStr = currentPlanDay.clone().add(offset, 'days').format('YYYY-MM-DD');
+                            if (morningShift.some(m => dateFormatted(m.date) == altDayStr)) {
+                                planTimeWeeklyArr.push(altDayStr);
+                                break;
+                            }
+                        }
                     }
-
-                    lastWeekNum = morningShift[i].week_num
+                    
+                    currentPlanDay.add(7, 'days');
                 }
             }
         }
@@ -482,7 +499,11 @@ const genMonthlySchedulePlan = async (
 
                 // Adjustments
                 if (kanbanRow.precition_val == 30 && calculatedPlanTime.day() != 6) {
+                    let originalMonth = calculatedPlanTime.month();
                     calculatedPlanTime = calculatedPlanTime.clone().weekday(6);
+                    if (calculatedPlanTime.month() != originalMonth) {
+                        calculatedPlanTime.subtract(7, 'days');
+                    }
                 } else if (kanbanRow.precition_val > 30 && (calculatedPlanTime.day() == 6 || calculatedPlanTime.day() == 0)) {
                     calculatedPlanTime = calculatedPlanTime.clone().weekday(getRandomInt(1, 5));
                 }

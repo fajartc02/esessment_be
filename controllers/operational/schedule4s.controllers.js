@@ -23,6 +23,7 @@ const { databasePool } = require('../../config/database');
 const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData");
 const query = require("../../helpers/query")
 const subScheduleService = require("../../services/schedule4s.services")
+const uuidToId = require("../../helpers/uuidToId");
 
 const fromSubScheduleSql = `
     ${table.tb_r_4s_sub_schedules} tbrcs
@@ -31,7 +32,7 @@ const fromSubScheduleSql = `
     join ${table.tb_m_zones} tmz on tbrcs.zone_id = tmz.zone_id
     join ${table.tb_m_freqs} tmf on tbrcs.freq_id = tmf.freq_id
     join ${table.tb_r_4s_main_schedules} trmsc on 
-      tbrcs.main_schedule_id = trmsc.main_schedule_id 
+      tbrcs.main_schedule_id = trmsc.main_schedule_id
     left join ${table.tb_m_users} tmu on tmu.user_id = tbrcs.pic_id
     left join ${table.tb_m_users} tmu_actual on tmu_actual.user_id = tbrcs.actual_pic_id
     join lateral (
@@ -374,27 +375,137 @@ const subScheduleRows = async (
 module.exports = {
     get4sMainSchedule: async (req, res) => {
         try {
-            const { line_id, group_id, month_year_num } = req.query
-            let { limit, current_page } = req.query
+            let { line_id, group_id, month_year_num } = req.query;
+            let { limit, current_page } = req.query;
 
-            current_page = parseInt(current_page ?? 1)
-            limit = parseInt(limit ?? 10)
+            // =========================
+            // ✅ WHITELIST PARAM
+            // =========================
+            const allowedParams = ['line_id','group_id','month_year_num','limit','current_page'];
 
+            for (const key in req.query) {
+                if (!allowedParams.includes(key)) {
+                    return response.failed(res, `Invalid param: ${key}`);
+                }
+            }
+
+            // =========================
+            // ✅ HELPER (FIXED)
+            // =========================
+            const sanitize = (val) =>
+                val ? val.replace(/['";\\]/g, "").trim() : val;
+
+            const isValidUUID = (val) =>
+                /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val);
+
+            const numberRegex = /^[0-9]+$/;
+
+            // =========================
+            // ✅ SANITIZE INPUT
+            // =========================
+            line_id = sanitize(line_id);
+            group_id = sanitize(group_id);
+            month_year_num = sanitize(month_year_num);
+            
+            // =========================
+            // ✅ VALIDASI UUID (STRICT)
+            // =========================
+            if (line_id && !isValidUUID(line_id)) {
+                return response.failed(res, "Invalid line_id");
+            }
+
+            if (group_id && !isValidUUID(group_id)) {
+                return response.failed(res, "Invalid group_id");
+            }
+
+            // =========================
+            // ✅ VALIDASI MONTH-YEAR
+            // =========================
+            let safeMonth = null;
+            let safeYear = null;
+
+            if (month_year_num) {
+                const split = month_year_num.split('-');
+
+                if (split.length !== 2) {
+                    return response.failed(res, "Format harus YYYY-MM");
+                }
+
+                if (!numberRegex.test(split[0]) || !numberRegex.test(split[1])) {
+                    return response.failed(res, "Invalid month_year_num");
+                }
+
+                safeYear = parseInt(split[0]);
+                safeMonth = parseInt(split[1]);
+
+                if (safeYear < 2000 || safeYear > 2100) {
+                    return response.failed(res, "Invalid year");
+                }
+
+                if (safeMonth < 1 || safeMonth > 12) {
+                    return response.failed(res, "Invalid month");
+                }
+            }
+
+            // =========================
+            // ✅ PAGINATION
+            // =========================
+            current_page = parseInt(current_page ?? 1);
+            limit = parseInt(limit ?? 10);
+
+            if (isNaN(limit) || limit < 1 || limit > 100) {
+                return response.failed(res, "Invalid limit");
+            }
+
+            if (isNaN(current_page) || current_page < 1) {
+                return response.failed(res, "Invalid current_page");
+            }
+
+            // =========================
+            // ✅ PRE-CONVERT UUID (ONCE ONLY)
+            // =========================
+            let convertedLineId = null;
+            let convertedGroupId = null;
+
+            if (line_id) {
+                convertedLineId = await uuidToId(
+                    table.tb_m_lines,
+                    "line_id",
+                    line_id
+                );
+
+                if (!convertedLineId) {
+                    return response.failed(res, "Line not found");
+                }
+            }
+
+            if (group_id) {
+                convertedGroupId = await uuidToId(
+                    table.tb_m_groups,
+                    "group_id",
+                    group_id
+                );
+
+                if (!convertedGroupId) {
+                    return response.failed(res, "Group not found");
+                }
+            }
+
+            // =========================
+            // ✅ FROM QUERY
+            // =========================
             const fromSql = `
-          ${table.tb_r_4s_main_schedules} trcp
-          join ${table.tb_m_lines} tml on trcp.line_id = tml.line_id
-          join ${table.tb_m_groups} tmg on trcp.group_id = tmg.group_id
-      `
+                ${table.tb_r_4s_main_schedules} trcp
+                join ${table.tb_m_lines} tml on trcp.line_id = tml.line_id
+                join ${table.tb_m_groups} tmg on trcp.group_id = tmg.group_id
+            `;
 
             let mainScheduleSql = `
-                select 
-                    row_number () over (
-                        order by
-                        trcp.created_dt
-                    )::integer as no,
+                SELECT 
+                    row_number () over (order by trcp.created_dt)::integer as no,
                     trcp.uuid as main_schedule_id,
                     tml.uuid as line_id,
-                    tmg.uuid  as group_id,
+                    tmg.uuid as group_id,
                     trcp.year_num,
                     trcp.month_num,
                     trcp.section_head_sign,
@@ -402,63 +513,82 @@ module.exports = {
                     trcp.team_leader_sign,
                     tml.line_nm,
                     tmg.group_nm
-                from
-                    ${fromSql}
-                where 
-                    1 = 1
-            `
+                FROM ${fromSql}
+                WHERE trcp.deleted_dt IS NULL
+            `;
 
-            let filterCondition = [
-                ' and trcp.deleted_dt is null '
-            ]
-
-            if (line_id && line_id != null && line_id != "") {
-                filterCondition.push(` trcp.line_id = (select line_id from ${table.tb_m_lines} where uuid = '${line_id}') `)
-            }
-            if (month_year_num && month_year_num != null && month_year_num != "") {
-                let MYFilterSplit = month_year_num.split('-')
-                if (MYFilterSplit.length == 1) {
-                    if (MYFilterSplit[0].length == 4) {
-                        filterCondition.push(` trcp.year_num = '${MYFilterSplit[0]}}' `)
-                    } else {
-                        filterCondition.push(` trcp.month_num = '${parseInt(MYFilterSplit[0])}}' `)
-                    }
-                } else {
-                    filterCondition.push(` trcp.year_num || '-' || trcp.month_num = '${MYFilterSplit[0]}-${parseInt(MYFilterSplit[1])}' `)
-                }
-            }
-            if (group_id && group_id != null && group_id != "") {
-                filterCondition.push(` trcp.group_id = (select group_id from ${table.tb_m_groups} where uuid = '${group_id}') `)
+            // =========================
+            // ✅ FILTER AMAN
+            // =========================
+            if (convertedLineId) {
+                mainScheduleSql += ` AND trcp.line_id = ${convertedLineId}`;
             }
 
-            const qOffset = (limit != -1 && limit) && current_page > 1 ? `OFFSET ${limit * (current_page - 1)}` : ``
-            const qLimit = (limit != -1 && limit) ? `LIMIT ${limit}` : ``
+            if (convertedGroupId) {
+                mainScheduleSql += ` AND trcp.group_id = ${convertedGroupId}`;
+            }
 
-            filterCondition = filterCondition.join(' and ')
-            mainScheduleSql = mainScheduleSql.concat(` ${filterCondition} `)
-            mainScheduleSql = mainScheduleSql.concat(` order by trcp.created_dt ${qLimit} ${qOffset} `)
+            if (safeMonth && safeYear) {
+                mainScheduleSql += ` 
+                    AND trcp.year_num = ${safeYear}
+                    AND trcp.month_num = ${safeMonth}
+                `;
+            }
 
-            const mainScheduleQuery = await queryCustom(mainScheduleSql)
-            let result = mainScheduleQuery.rows
+            const qOffset =
+                current_page > 1
+                    ? `OFFSET ${limit * (current_page - 1)}`
+                    : ``;
 
+            const qLimit = `LIMIT ${limit}`;
+
+            mainScheduleSql += ` ORDER BY trcp.created_dt ${qLimit} ${qOffset}`;
+
+            console.log("SAFE QUERY:", mainScheduleSql);
+
+            // =========================
+            // ✅ EXECUTE
+            // =========================
+            const mainScheduleQuery = await queryCustom(mainScheduleSql);
+            let result = mainScheduleQuery.rows;
+
+            // =========================
+            // ✅ COUNT
+            // =========================
             if (result.length > 0) {
-                const count = await queryCustom(`select count(trcp.main_schedule_id)::integer as count from ${fromSql} where 1 = 1 ${filterCondition}`)
-                const countRows = count.rows[0]
-                result = {
-                    current_page: current_page,
-                    total_page: +countRows.count > 0 ? Math.ceil(countRows.count / +limit) : 0,
-                    total_data: countRows.count,
-                    limit: limit,
-                    list: result,
+                let countSql = `
+                    SELECT count(trcp.main_schedule_id)::integer as count
+                    FROM ${fromSql}
+                    WHERE trcp.deleted_dt IS NULL
+                `;
+
+                if (convertedLineId) countSql += ` AND trcp.line_id = ${convertedLineId}`;
+                if (convertedGroupId) countSql += ` AND trcp.group_id = ${convertedGroupId}`;
+
+                if (safeMonth && safeYear) {
+                    countSql += ` 
+                        AND trcp.year_num = ${safeYear}
+                        AND trcp.month_num = ${safeMonth}
+                    `;
                 }
+
+                const count = await queryCustom(countSql);
+                const countRows = count.rows[0];
+
+                result = {
+                    current_page,
+                    total_page: Math.ceil(countRows.count / limit),
+                    total_data: countRows.count,
+                    limit,
+                    list: result,
+                };
             }
 
-            //const result = await Promise.all(mainScheduleQuery.rows)
+            response.success(res, "Success to get 4s main schedule", result);
 
-            response.success(res, "Success to get 4s main schedule", result)
         } catch (error) {
-            console.log(error)
-            response.failed(res, "Error to get 4s main schedule")
+            console.log(error);
+            response.failed(res, "Error to get 4s main schedule");
         }
     },
     getNew4sSubSchedule: async (req, res) => {
@@ -483,58 +613,88 @@ module.exports = {
                 month_year_num,
                 limit,
                 current_page
-            } = req.query
-            const cacheKey = subScheduleCacheKey(main_schedule_id, freq_id, zone_id, kanban_id, line_id, group_id, month_year_num, limit, current_page);
-            /*
-            const cachedSchedule = cacheGet(cacheKey)
+            } = req.query;
 
-            if (cachedSchedule)
-            {
-              console.log('get4sSubSchedule fetch from cached');
-              response.success(res, "Success to get 4s sub schedule", cachedSchedule)
-              return
-            } */
+            // ==========================================
+            // ✅ 1. VALIDASI RESOURCE LIMIT (ANTI-LAKE)
+            // ==========================================
+            const numericRegex = /^[0-9]+$/;
 
-            console.log('get4sSubSchedule fetch from query');
-
-            if (
-                !main_schedule_id ||
-                main_schedule_id == "" ||
-                main_schedule_id == null ||
-                main_schedule_id == "0"
-            ) {
-                response.failed(res, "Error to get 4s main schedule id not provide")
-                return
+            // Pastikan limit adalah angka murni
+            if (limit && !numericRegex.test(limit)) {
+                return response.failed(res, "Invalid limit format");
             }
 
+            let safeLimit;
+
+            if (limit === undefined || limit === null || limit === "") {
+                safeLimit = 10; // Default jika tidak ada input
+            } else if (!numericRegex.test(limit)) {
+                return response.failed(res, "Invalid limit format"); // Reject jika ada karakter aneh (; COPY dll)
+            } else {
+                safeLimit = parseInt(limit);
+            }
+            const safePage = parseInt(current_page) || 1;
+
+            // LOCK LIMIT: Jangan biarkan user meminta lebih dari 100 data
+            // Ini mencegah penyerang menguras RAM server dengan limit=25000
+            if (safeLimit > 100) {
+                return response.failed(res, "Request too large. Maximum limit is 100.");
+            }
+
+            if (safeLimit < 1) {
+                return response.failed(res, "Invalid limit");
+            }
+
+            // ==========================================
+            // ✅ 2. CACHING & VALIDASI DASAR
+            // ==========================================
+            const cacheKey = subScheduleCacheKey(main_schedule_id, freq_id, zone_id, kanban_id, line_id, group_id, month_year_num, safeLimit, safePage);
+            
+            // Aktifkan cache kembali untuk menghemat resource database (Rate Limiting Support)
+            const cachedSchedule = cacheGet(cacheKey);
+            if (cachedSchedule) {
+                return response.success(res, "Success to get 4s sub schedule (cached)", cachedSchedule);
+            }
+
+            if (!main_schedule_id || main_schedule_id === "0" || main_schedule_id === "") {
+                return response.failed(res, "Error: main_schedule_id is required");
+            }
+
+            // ==========================================
+            // ✅ 3. EXECUTION WITH POOL CLIENT
+            // ==========================================
             let result = {
                 schedule: [],
                 sign_checker_gl: [],
                 sign_checker_sh: []
-            }
+            };
 
-
-            //console.log('scheduleSql', scheduleSql)
-            //logger(scheduleSql, 'schedule')
             client = await databasePool.connect();
-            let scheduleQuery = await subScheduleRows(client, req.query)
+
+            // Kirim safeLimit yang sudah diproteksi ke fungsi query
+            let scheduleQuery = await subScheduleRows(client, { 
+                ...req.query, 
+                limit: safeLimit, 
+                current_page: safePage 
+            });
 
             if (scheduleQuery) {
-                let mainScheduleRealId = null
-                let scheduleFinalResult = null;
-                if (typeof scheduleQuery === 'object') {
-                    scheduleFinalResult = scheduleQuery.list;
-                } else {
-                    scheduleFinalResult = scheduleQuery;
+                let scheduleFinalResult = Array.isArray(scheduleQuery) ? scheduleQuery : (scheduleQuery.list || []);
+
+                // Proteksi tambahan: Jika hasil query dari database tetap terlalu besar
+                if (scheduleFinalResult.length > 200) {
+                    scheduleFinalResult = scheduleFinalResult.slice(0, 100);
                 }
 
-                const scheduleRows = scheduleFinalResult.map(async (item, index) => {
-                    mainScheduleRealId = item.main_schedule_id
+                const scheduleRows = scheduleFinalResult.map(async (item) => {
+                    const mainScheduleRealId = item.main_schedule_id;
 
-                    item.row_span_pic = 1
-                    item.row_span_freq = 1
-                    item.row_span_zone = 1
+                    item.row_span_pic = 1;
+                    item.row_span_freq = 1;
+                    item.row_span_zone = 1;
 
+                    // Pastikan fungsi childrenSubSchedule juga menggunakan limit jika diperlukan
                     item.children = await childrenSubSchedule(
                         client,
                         mainScheduleRealId,
@@ -542,104 +702,189 @@ module.exports = {
                         item.zone_real_id,
                         item.kanban_real_id,
                         item.pic_real_id
-                    )
+                    );
 
-                    item.main_schedule_id = item.main_schedule_uuid
+                    item.main_schedule_id = item.main_schedule_uuid;
 
-                    delete item.freq_real_id
-                    delete item.zone_real_id
-                    delete item.kanban_real_id
-                    delete item.pic_real_id
-                    delete item.main_schedule_uuid
-                    delete item.year_num
-                    delete item.month_num
+                    // Cleanup data sensitif/tidak perlu
+                    const { 
+                        freq_real_id, zone_real_id, kanban_real_id, pic_real_id, 
+                        main_schedule_uuid, year_num, month_num, ...cleanItem 
+                    } = item;
+                    
+                    return cleanItem;
+                });
 
-                    return item
-                })
-
-                //const signGl = mainScheduleRealId != null ? (await signCheckerQuery('gl')).rows : []
-                //const signSh = mainScheduleRealId != null ? (await signCheckerQuery('sh')).rows : []
-
-                result.schedule = await Promise.all(scheduleRows)
-                //result.sign_checker_gl = mainScheduleRealId != null ? signGl : [];
-                //result.sign_checker_sh = mainScheduleRealId != null ? signSh : [];
-                result.limit = scheduleQuery?.limit ? parseInt(scheduleQuery.limit) : 0;
-                result.current_page = scheduleQuery?.current_page ? parseInt(scheduleQuery.current_page) : 0;
+                result.schedule = await Promise.all(scheduleRows);
+                result.limit = safeLimit;
+                result.current_page = safePage;
                 result.total_data = scheduleQuery?.total_data ? parseInt(scheduleQuery.total_data) : 0;
 
-                cacheAdd(cacheKey, result)
+                // Simpan ke cache agar jika dipanggil berulang (Rate Limit Bypass), server tidak terbebani
+                cacheAdd(cacheKey, result);
             }
 
-            response.success(res, "Success to get 4s sub schedule", result)
+            response.success(res, "Success to get 4s sub schedule", result);
+
         } catch (error) {
-            console.log(error)
-            response.failed(res, "Error to get 4s sub schedule")
+            console.error(error);
+            response.failed(res, "Error to get 4s sub schedule");
         } finally {
-            if (client) {
-                client.release();
-            }
+            if (client) client.release();
         }
     },
     get4sSubScheduleTodayPlan: async (req, res) => {
         try {
-            const { date, line_id, group_id } = req.query
+            let { date, line_id, group_id } = req.query;
 
-            let filterCondition = []
+            // =========================
+            // ✅ HELPER VALIDASI
+            // =========================
+            const uuidRegex = /^[0-9a-fA-F-]{36}$/;
+            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+            const forbidden = /('|--|;|\|\||\bOR\b|\bAND\b|=)/i;
+
+            const validate = (val, type) => {
+                if (!val) return val;
+
+                val = String(val).trim();
+
+                // blok SQL injection pattern
+                if (forbidden.test(val)) {
+                    throw new Error(`Invalid ${type} (SQL Injection detected)`);
+                }
+
+                // validasi tipe
+                if (type === "uuid" && !uuidRegex.test(val)) {
+                    throw new Error(`Invalid ${type}`);
+                }
+
+                if (type === "date" && !dateRegex.test(val)) {
+                    throw new Error(`Invalid ${type}`);
+                }
+
+                // optional limit panjang
+                if (val.length > 50) {
+                    throw new Error(`${type} too long`);
+                }
+
+                return val;
+            };
+
+            // =========================
+            // ✅ VALIDASI INPUT
+            // =========================
+            try {
+                line_id = validate(line_id, "uuid");
+                group_id = validate(group_id, "uuid");
+                date = validate(date, "date");
+            } catch (err) {
+                return response.failed(res, err.message);
+            }
+
+            // =========================
+            // ✅ BUILD QUERY AMAN
+            // =========================
+            let filterCondition = [];
+
             let scheduleSql = `
-          select * from (
-            select
-              ${selectSubScheduleSql}  
-              , date(tbrcs.plan_time) as plan_check_dt
-              , date(tbrcs.actual_time) as actual_check_dt
-              , EXTRACT('day' from  tbrcs.plan_time)::real as idxDate
-            from
-              ${fromSubScheduleSql}
-            order by tml.line_nm
-          ) a
-        `
+                SELECT * FROM (
+                    SELECT
+                        ${selectSubScheduleSql},
+                        date(tbrcs.plan_time) as plan_check_dt,
+                        date(tbrcs.actual_time) as actual_check_dt,
+                        EXTRACT('day' from tbrcs.plan_time)::real as idxDate
+                    FROM ${fromSubScheduleSql}
+                    WHERE tbrcs.deleted_dt IS NULL AND trmsc.deleted_dt IS NULL
+                    ORDER BY tml.line_nm
+                ) a
+            `;
 
-            if (line_id && line_id != null && line_id != "") {
-                filterCondition.push(` line_id = '${line_id}' `)
+            if (line_id) {
+                filterCondition.push(`line_id = '${line_id}'`);
             }
-            if (group_id && group_id != null && group_id != "") {
-                filterCondition.push(` line_id = '${group_id}' `)
+
+            // ⚠️ FIX BUG kamu tadi (ini salah sebelumnya)
+            if (group_id) {
+                filterCondition.push(`group_id = '${group_id}'`);
             }
-            if (date && date != null && date != "") {
-                filterCondition.push(` plan_check_dt = '${date}' `)
+
+            if (date) {
+                filterCondition.push(`plan_check_dt = '${date}'`);
             }
 
             if (filterCondition.length > 0) {
-                filterCondition = filterCondition.join(' and ')
-                scheduleSql = scheduleSql.concat(` where ${filterCondition} `)
+                scheduleSql += ` WHERE ${filterCondition.join(" AND ")}`;
             }
 
+            // =========================
+            // ✅ EXECUTE
+            // =========================
+            const result = (await queryCustom(scheduleSql, false)).rows;
 
-            const result = (await queryCustom(scheduleSql, false)).rows
             result.map((item) => {
-                item.main_schedule_id = item.main_schedule_uuid
+                item.main_schedule_id = item.main_schedule_uuid;
 
-                delete item.freq_real_id
-                delete item.zone_real_id
-                delete item.kanban_real_id
-                delete item.pic_real_id
-                delete item.main_schedule_uuid
+                delete item.freq_real_id;
+                delete item.zone_real_id;
+                delete item.kanban_real_id;
+                delete item.pic_real_id;
+                delete item.main_schedule_uuid;
 
-                return item
-            })
+                return item;
+            });
 
-            response.success(res, "Success to get today activities 4s sub schedule", result)
+            response.success(
+                res,
+                "Success to get today activities 4s sub schedule",
+                result
+            );
+
         } catch (e) {
-            console.log(e)
-            response.failed(res, "Error to get today activities 4s sub schedule")
+            console.log(e);
+            response.failed(res, e.message || "Error to get today activities 4s sub schedule");
         }
     },
     get4sSignCheckerBySignCheckerId: async (req, res) => {
         try {
-            const signCheckerUuid = req.params.sign_checker_id
+            let signCheckerUuid = req.params.sign_checker_id;
+
+            // =========================
+            // ✅ SANITIZE
+            // =========================
+            signCheckerUuid = signCheckerUuid?.trim();
+
+            // =========================
+            // ✅ VALIDATION
+            // =========================
+
+            // UUID v4 strict
+            const uuidRegex =
+                /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+            // block karakter berbahaya
+            const hasInjection = (val) =>
+                /('|--|;|\|\||\bOR\b|\bAND\b)/i.test(val);
+
+            const hasInvalidChar = (val) =>
+                /[^0-9a-fA-F-]/.test(val);
+
+            if (
+                !signCheckerUuid ||
+                !uuidRegex.test(signCheckerUuid) ||
+                hasInjection(signCheckerUuid) ||
+                hasInvalidChar(signCheckerUuid)
+            ) {
+                return response.failed(res, "Invalid sign_checker_id");
+            }
+
+            // =========================
+            // ✅ QUERY
+            // =========================
 
             const signCheckerRows = await queryGET(
                 table.tb_r_4s_schedule_sign_checkers,
-                `where uuid = '${signCheckerUuid}'`,
+                `WHERE uuid = '${signCheckerUuid}'`,
                 [
                     'uuid as sign_checker_id',
                     'sign',
@@ -648,32 +893,23 @@ module.exports = {
                     'is_gl',
                     'is_sh',
                 ]
-            )
+            );
 
-            let result = {}
-            if (signCheckerRows) {
-                result = signCheckerRows[0] ?? {}
-                if (result) {
-                    if (!result.is_tl_1) {
-                        delete result.is_tl_1
-                    }
-                    if (!result.is_tl_2) {
-                        delete result.is_tl_2
-                    }
-                    if (!result.is_gl) {
-                        delete result.is_gl
-                    }
-                    if (!result.is_sh) {
-                        delete result.is_sh
-                    }
+            let result = {};
+            if (signCheckerRows?.length > 0) {
+                result = signCheckerRows[0];
 
-                }
+                if (!result.is_tl_1) delete result.is_tl_1;
+                if (!result.is_tl_2) delete result.is_tl_2;
+                if (!result.is_gl) delete result.is_gl;
+                if (!result.is_sh) delete result.is_sh;
             }
 
-            response.success(res, "Success to get 4s sign checker", result)
+            response.success(res, "Success to get 4s sign checker", result);
+
         } catch (error) {
-            console.log(error)
-            response.failed(res, "Error to get 4s sign checker")
+            console.log(error);
+            response.failed(res, "Error to get 4s sign checker");
         }
     },
     getDetail4sSubSchedule: async (req, res) => {
@@ -1087,6 +1323,7 @@ module.exports = {
                                 ${byScheduleIdPlanDateSql}
                             `)
                         }
+
 
                         //#endregion
                     } else {

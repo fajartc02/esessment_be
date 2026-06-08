@@ -116,49 +116,92 @@ module.exports = {
     },
     updateObservationCheck: async (req, res) => {
         try {
-            const obs_result_id = req.params.obs_result_id
-            req.body.observation_id = await uuidToId(
-                table.tb_r_observations,
-                "observation_id",
-                req.body.observation_id
-            );
-            req.body.uuid = req.uuid();
-            // const lastIdResCheck =
-            //     (await getLastIdData(table.tb_r_obs_results, "obs_result_id")) + 1;
-            req.body.obs_result_id = obs_result_id;
-            req.body.category_id = await uuidToId(
-                table.tb_m_categories,
-                "category_id",
-                req.body.category_id
-            );
-            console.log(req.body);
-            req.body.judgment_id = await uuidToId(
-                table.tb_m_judgments,
-                "judgment_id",
-                req.body.judgment_id
+            const obs_result_id = req.params.obs_result_id;
+            
+            // ==========================================
+            // ✅ 1. VALIDASI PARAMETER ID (ANTI-BYPASS)
+            // ==========================================
+            if (!/^[0-9]+$/.test(obs_result_id)) {
+                return response.failed(res, "Invalid Result ID format");
+            }
+
+            // ==========================================
+            // ✅ 2. ANTI MASS ASSIGNMENT (PICK ALLOWED FIELDS)
+            // ==========================================
+            // Ambil hanya field yang boleh diisi oleh user
+            const { observation_id, category_id, judgment_id } = req.body;
+            
+            // Buat objek payload bersih, jangan pakai req.body langsung
+            let cleanPayload = {
+                observation_id,
+                category_id,
+                judgment_id
+            };
+
+            // ==========================================
+            // ✅ 3. VALIDASI EKSISTENSI & OWNERSHIP
+            // ==========================================
+            // Cek apakah obs_result_id ini benar-benar ada di database
+            const existingCheck = await queryGET(
+                table.tb_r_obs_results, 
+                `WHERE obs_result_id = '${obs_result_id}'`
             );
 
-            const judgmentData = await queryGET(table.tb_m_judgments, `WHERE judgment_id = '${req.body.judgment_id}'`);
-            // console.log(judgmentData, 'judgmentsData');
-            if (!judgmentData[0].is_abnormal) {
+            if (!existingCheck || existingCheck.length === 0) {
+                return response.failed(res, "Data not found or you don't have access to this ID");
+            }
+
+            // ==========================================
+            // ✅ 4. KONVERSI UUID KE ID (DENGAN VALIDASI)
+            // ==========================================
+            const dbObsId = await uuidToId(table.tb_r_observations, "observation_id", cleanPayload.observation_id);
+            const dbCatId = await uuidToId(table.tb_m_categories, "category_id", cleanPayload.category_id);
+            const dbJudId = await uuidToId(table.tb_m_judgments, "judgment_id", cleanPayload.judgment_id);
+
+            if (!dbObsId || !dbCatId || !dbJudId) {
+                return response.failed(res, "Invalid reference IDs (Observation/Category/Judgment)");
+            }
+
+            // Update payload dengan ID asli database
+            cleanPayload.observation_id = dbObsId;
+            cleanPayload.category_id = dbCatId;
+            cleanPayload.judgment_id = dbJudId;
+            cleanPayload.uuid = req.uuid();
+            cleanPayload.obs_result_id = obs_result_id;
+
+            // ==========================================
+            // ✅ 5. LOGIKA BISNIS JUDGMENT (ABNORMALITY)
+            // ==========================================
+            const judgmentData = await queryGET(table.tb_m_judgments, `WHERE judgment_id = '${dbJudId}'`);
+            
+            if (judgmentData.length > 0 && !judgmentData[0].is_abnormal) {
                 const resultFindingData = await queryGET(table.tb_r_result_findings, `WHERE obs_result_id = '${obs_result_id}'`);
-                const isFindingDataBeforeAvail = resultFindingData.length > 0;
-                if (isFindingDataBeforeAvail) {
-                    // console.log(resultFindingData)
-                    resultFindingData.forEach(async (resultFinding) => {
+                
+                if (resultFindingData.length > 0) {
+                    for (const resultFinding of resultFindingData) {
                         await queryDELETE(table.tb_r_findings, `WHERE finding_obs_id = '${resultFinding.result_finding_id}'`);
-                    });
-                    // const findingData = await queryGET(table.tb_r_findings, `WHERE finding_obs_id = '${resultFindingData[0].finding_id}'`);
+                    }
                     await queryDELETE(table.tb_r_result_findings, `WHERE obs_result_id = '${obs_result_id}'`);
                 }
             }
-            const updateUserDataChanged = await attrsUserUpdateData(req, req.body);
-            console.log(updateUserDataChanged, 'updateUserDataChanged');
-            await queryPUT(table.tb_r_obs_results, updateUserDataChanged, `WHERE obs_result_id = '${obs_result_id}'`);
-            response.success(res, "success to add check observation");
+
+            // ==========================================
+            // ✅ 6. EXECUTE UPDATE (DATA CLEAN)
+            // ==========================================
+            const updateUserDataChanged = await attrsUserUpdateData(req, cleanPayload);
+            
+            // Pastikan tidak ada field ilegal yang lolos ke query PUT
+            await queryPUT(
+                table.tb_r_obs_results, 
+                updateUserDataChanged, 
+                `WHERE obs_result_id = '${obs_result_id}'`
+            );
+
+            response.success(res, "Success to update observation check");
+
         } catch (error) {
             console.log(error);
-            response.failed(res, "Error to add check observation");
+            response.failed(res, "Error to process observation check");
         }
     },
     addFindingObsCheck: async (req, res) => {

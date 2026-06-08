@@ -19,38 +19,132 @@ const condDataNotDeleted = `WHERE deleted_dt IS NULL AND `;
 module.exports = {
   getFindingCm: async (req, res) => {
     try {
-      let { start_date, end_date, line_id, limit, currentPage, status_finding } = req.query;
-      let qLimit = ``;
-      let qOffset =
-        limit != -1 && limit && currentPage > 1
-          ? `OFFSET ${limit * (currentPage - 1)}`
-          : ``;
-      if (limit != -1 && limit) qLimit = `LIMIT ${limit}`;
-      let conditions = queryCondExacOpAnd(req.query, "finding_date");
+      let {
+        start_date,
+        end_date,
+        line_id,
+        limit,
+        currentPage,
+        status_finding,
+        source_category
+      } = req.query;
+
+      // ==========================================
+      // 1. WHITELIST PARAMETER
+      // ==========================================
+      const allowedParams = [
+        'start_date', 'end_date', 'line_id', 'limit', 
+        'currentPage', 'status_finding', 'source_category'
+      ];
+
+      for (const key in req.query) {
+        if (!allowedParams.includes(key)) {
+          return response.failed(res, `Invalid query parameter: ${key}`);
+        }
+      }
+
+      // ==========================================
+      // 2. VALIDASI STRICT (ANTI-BYPASS)
+      // ==========================================
+      
+      // Validasi Date & UUID
+      const isValidDate = (d) => !isNaN(Date.parse(d));
+      const uuidRegex = /^[0-9a-fA-F-]{32,36}$/;
+
+      if (start_date && !isValidDate(start_date)) return response.failed(res, "Invalid start_date");
+      if (end_date && !isValidDate(end_date)) return response.failed(res, "Invalid end_date");
+      
+      if (line_id && !uuidRegex.test(line_id)) {
+        return response.failed(res, "Invalid line_id");
+      }
+
+      // REGEX: Hanya boleh angka saja (0-9). Tidak boleh ada karakter lain.
+      const numericRegex = /^[0-9]+$/;
+
+      // Validasi Limit: Jika ada isinya tapi bukan murni angka, langsung return failed
+      if (limit && !numericRegex.test(limit)) {
+        return response.failed(res, "Invalid limit");
+      }
+
+      // Validasi CurrentPage: Sama seperti limit
+      if (currentPage && !numericRegex.test(currentPage)) {
+        return response.failed(res, "Invalid currentPage");
+      }
+
+      // Setelah lolos regex, baru aman untuk di-parse
+      const safeLimit = parseInt(limit) || 10;
+      const safePage = parseInt(currentPage) || 1;
+
+      if (safeLimit < 1 || safeLimit > 100) {
+        return response.failed(res, "Invalid limit range");
+      }
+
+      // ==========================================
+      // 3. SANITASI STRING
+      // ==========================================
+      const cleanStr = (val) => (val ? String(val).replace(/'/g, "''") : val);
+
+      const allowedStatus = ['problem', 'closed', 'remain'];
+      if (status_finding && !allowedStatus.includes(status_finding)) {
+        return response.failed(res, "Invalid status_finding");
+      }
+
+      if (source_category && !/^[a-zA-Z0-9\s-_]+$/.test(source_category)) {
+        return response.failed(res, "Invalid source_category");
+      }
+
+      // ==========================================
+      // 4. BUILD CONDITIONS
+      // ==========================================
+      let conditionsArr = [`deleted_dt IS NULL`];
+
+      if (start_date && end_date) {
+        conditionsArr.push(`finding_date BETWEEN '${cleanStr(start_date)}' AND '${cleanStr(end_date)}'`);
+      }
+
+      if (line_id) {
+        conditionsArr.push(`line_id = '${cleanStr(line_id)}'`);
+      }
+
+      if (status_finding) {
+        conditionsArr.push(`status_finding = '${cleanStr(status_finding)}'`);
+      }
+
+      if (source_category) {
+        conditionsArr.push(`source_category = '${cleanStr(source_category)}'`);
+      }
+
+      let conditions = `WHERE ${conditionsArr.join(' AND ')}`;
+      let qLimit = `LIMIT ${safeLimit}`;
+      let qOffset = `OFFSET ${safeLimit * (safePage - 1)}`;
+
+      // ==========================================
+      // 5. EXECUTION
+      // ==========================================
+      
       let findingCmData = await queryGET(
         table.v_finding_list,
-        `${condDataNotDeleted} ${conditions} ORDER BY finding_date DESC  ${qLimit} ${qOffset}`
+        `${conditions} ORDER BY finding_date DESC ${qLimit} ${qOffset}`
       );
-      // current_page
-      // total_page
-      // total_data
-      // limit
-      let qCountTotal = `SELECT 
-            count(finding_id) as total_page
+
+      let qCountTotal = `
+        SELECT count(finding_id) as total_page
         FROM ${table.v_finding_list}
-        ${condDataNotDeleted}
-        ${conditions}`;
-      let total_page = await queryCustom(qCountTotal);
-      let totalPage = await total_page.rows[0].total_page;
+        ${conditions}
+      `;
+
+      let total_page_res = await queryCustom(qCountTotal);
+      let totalData = total_page_res.rows[0].total_page;
+
       if (findingCmData.length > 0) {
-        findingCmData[0].total_page =
-          +totalPage > 0 ? Math.ceil(totalPage / +limit) : 1;
-        findingCmData[0].limit = +limit;
-        findingCmData[0].total_data = +totalPage;
-        findingCmData[0].current_page = +currentPage > 0 ? +currentPage : 1;
+        findingCmData[0].total_page = +totalData > 0 ? Math.ceil(totalData / safeLimit) : 1;
+        findingCmData[0].limit = safeLimit;
+        findingCmData[0].total_data = +totalData;
+        findingCmData[0].current_page = safePage;
       }
 
       response.success(res, "Success to get findingCm list", findingCmData);
+
     } catch (error) {
       console.log(error);
       response.failed(res, "Error to get findingCm list");

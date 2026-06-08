@@ -20,6 +20,9 @@ module.exports = {
             let { category } = req.query
             let containerQuery = ''
             if (category && category !== 'All') {
+                if (!ALLOWED_CATEGORIES.includes(category)) {
+                    return response.failed(res, `Kategori tidak valid`)
+                }
                 containerQuery += ` AND category = '${category}'`
             }
 

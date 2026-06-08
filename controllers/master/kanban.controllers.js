@@ -23,7 +23,50 @@ const uploadDest = (dest = '', fileName = null) => {
 module.exports = {
     getKanbans: async (req, res) => {
         try {
-            let { id, line_id, freq_id, zone_id, limit, current_page } = req.query
+            let { id, line_id, freq_id, zone_id, limit, current_page } = req.query;
+
+            // =========================
+            // ✅ HELPER VALIDATION
+            // =========================
+            const uuidRegex =
+                /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+            const hasInjection = (val) =>
+                /('|--|;|\|\||\bOR\b|\bAND\b)/i.test(val);
+
+            const isValidUUID = (val) =>
+                val && uuidRegex.test(val) && !hasInjection(val);
+
+            // =========================
+            // ✅ VALIDASI INPUT
+            // =========================
+            if (id && !isValidUUID(id)) {
+                return response.failed(res, "Invalid id");
+            }
+
+            if (line_id && !isValidUUID(line_id)) {
+                return response.failed(res, "Invalid line_id");
+            }
+
+            if (zone_id && !isValidUUID(zone_id)) {
+                return response.failed(res, "Invalid zone_id");
+            }
+
+            if (freq_id && !isValidUUID(freq_id)) {
+                return response.failed(res, "Invalid freq_id");
+            }
+
+            // pagination
+            current_page = parseInt(current_page ?? 1);
+            limit = parseInt(limit ?? 10);
+
+            if (isNaN(limit) || (limit < 1 && limit !== -1) || limit > 2000) {
+                return response.failed(res, "Invalid limit");
+            }
+
+            // =========================
+            // ✅ FROM QUERY
+            // =========================
             const fromCondition = `  
                 ${table.tb_m_kanbans} tmk 
                 join ${table.tb_m_zones} tmz on tmk.zone_id = tmz.zone_id 
@@ -32,108 +75,125 @@ module.exports = {
                 ) tml on tml.line_id = tmz.line_id 
                 join ${table.tb_m_freqs} tmf on tmk.freq_id = tmf.freq_id
                 join ${table.tb_m_groups} tmg on tmk.group_id = tmg.group_id
-            `
+            `;
 
-            current_page = parseInt(current_page ?? 1)
-            limit = parseInt(limit ?? 10)
-
-            let filterCondition = [
-                'tmk.deleted_dt is null '
-            ];
+            let conditions = [`tmk.deleted_dt IS NULL`];
 
             let kanbanSql = `
-                    select
-                        row_number () over (
-                            order by
-                            tmf.precition_val
-                        )::integer as no,
-                        tml.uuid as line_id,
-                        tmz.uuid as zone_id,
-                        tmk.uuid as kanban_id,
-                        tmf.uuid as freq_id,
-                        tmg.uuid as group_id,
-                        tml.line_nm,
-                        tmf.freq_nm,
-                        tmz.zone_nm,
-                        tmk.kanban_no,
-                        tmk.area_nm,
-                        tmk.kanban_imgs,
-                        tmg.group_nm,
-                       tmf.color,
-                        case 
-                            when tmk.sop_file is not null and tmk.sop_file != '' then 
-                                '${process.env.APP_HOST}' || '/file?path=' || tmk.sop_file
-                        end as sop_file,
-                        (
-                            select count(*) from ${table.tb_m_kanban_revision} where kanban_id = tmk.kanban_id
-                        ) as total_revision,
-                        tmz.created_by,
-                        tmz.created_dt
-                    from
-                       ${fromCondition}
-                    where
-                        1 = 1
-                `
-            //#region filter
+                SELECT
+                    row_number () over (order by tmf.precition_val)::integer as no,
+                    tml.uuid as line_id,
+                    tmz.uuid as zone_id,
+                    tmk.uuid as kanban_id,
+                    tmf.uuid as freq_id,
+                    tmg.uuid as group_id,
+                    tml.line_nm,
+                    tmf.freq_nm,
+                    tmz.zone_nm,
+                    tmk.kanban_no,
+                    tmk.area_nm,
+                    tmk.kanban_imgs,
+                    tmg.group_nm,
+                    tmf.color,
+                    CASE 
+                        WHEN tmk.sop_file IS NOT NULL AND tmk.sop_file != '' THEN 
+                            '${process.env.APP_HOST}' || '/file?path=' || tmk.sop_file
+                    END as sop_file,
+                    (
+                        SELECT count(*) FROM ${table.tb_m_kanban_revision} 
+                        WHERE kanban_id = tmk.kanban_id
+                    ) as total_revision,
+                    tmz.created_by,
+                    tmz.created_dt
+                FROM ${fromCondition}
+                WHERE 1=1
+            `;
+
+            // =========================
+            // ✅ FILTER AMAN
+            // =========================
             if (id) {
-                filterCondition.push(` tmk.uuid = '${id}' `)
+                conditions.push(`tmk.uuid = '${id}'`);
             }
+
             if (line_id) {
-                filterCondition.push(` tml.uuid = '${line_id}' `)
+                conditions.push(`tml.uuid = '${line_id}'`);
             }
+
             if (zone_id) {
-                filterCondition.push(` tmz.uuid = '${zone_id}' `)
+                conditions.push(`tmz.uuid = '${zone_id}'`);
             }
+
             if (freq_id) {
-                filterCondition.push(` tmf.uuid = '${freq_id}' `)
+                conditions.push(`tmf.uuid = '${freq_id}'`);
             }
 
-            const qOffset = (limit != -1 && limit) && current_page > 1 ? `OFFSET ${limit * (current_page - 1)}` : ``
-            const qLimit = (limit != -1 && limit) ? `LIMIT ${limit}` : ``
-
-            if (filterCondition.length > 0) {
-                filterCondition = filterCondition.join(' and ')
-                kanbanSql = kanbanSql.concat(` and ${filterCondition} `)
+            if (conditions.length > 0) {
+                kanbanSql += ` AND ${conditions.join(" AND ")}`;
             }
 
-            kanbanSql = kanbanSql.concat(` order by tmf.precition_val ${qLimit} ${qOffset} `)
-            //#endregion
+            const qOffset =
+                limit != -1 && current_page > 1
+                    ? `OFFSET ${limit * (current_page - 1)}`
+                    : ``;
 
-            let kanbanQuery = await queryCustom(kanbanSql)
-            const nullId = id == null || id == -1 || id == ''
-            let result = kanbanQuery.rows
+            const qLimit = limit != -1 ? `LIMIT ${limit}` : ``;
 
-            if (kanbanQuery.rows.length > 0) {
-                kanbanQuery.rows.map((item) => {
+            kanbanSql += ` ORDER BY tmf.precition_val ${qLimit} ${qOffset}`;
+
+            console.log("SAFE QUERY:", kanbanSql);
+
+            // =========================
+            // ✅ EXECUTE
+            // =========================
+            let kanbanQuery = await queryCustom(kanbanSql);
+            let result = kanbanQuery.rows;
+
+            const nullId = id == null || id == -1 || id == "";
+
+            if (result.length > 0) {
+                result.map((item) => {
                     if (item.kanban_imgs) {
-                        item.kanban_imgs = item.kanban_imgs.split('; ').map((img, index) => ({
-                            index: index,
-                            img: `${process.env.IMAGE_URL}${img}`
-                        }))
+                        item.kanban_imgs = item.kanban_imgs
+                            .split("; ")
+                            .map((img, index) => ({
+                                index,
+                                img: `${process.env.IMAGE_URL}${img}`,
+                            }));
                     }
-
-                    return item
-                })
+                    return item;
+                });
 
                 if (nullId) {
-                    const count = await queryCustom(`select count(tmk.kanban_id)::integer as count from ${fromCondition} where ${filterCondition}`)
-                    const countRows = count.rows[0]
+                    let countSql = `
+                        SELECT count(tmk.kanban_id)::integer as count
+                        FROM ${fromCondition}
+                        WHERE ${conditions.join(" AND ")}
+                    `;
+
+                    const count = await queryCustom(countSql);
+                    const countRows = count.rows[0];
+
                     result = {
-                        current_page: current_page,
-                        total_page: +countRows.count > 0 ? Math.ceil(countRows.count / +limit) : 0,
+                        current_page,
+                        total_page:
+                            +countRows.count > 0
+                                ? Math.ceil(countRows.count / limit)
+                                : 0,
                         total_data: countRows.count,
-                        limit: limit,
-                        list: kanbanQuery.rows,
-                    }
+                        limit,
+                        list: result,
+                    };
                 } else {
-                    result = result[0]
+                    result = result[0];
                 }
             }
 
-            response.success(res, "Success to get kanbans", result)
+            response.success(res, "Success to get kanbans", result);
+
         } catch (error) {
-            console.log(error)
-            response.failed(res, "Error to get kanbans")
+            console.log(error);
+            response.failed(res, "Error to get kanbans");
         }
     },
     postKanbans: async (req, res) => {
