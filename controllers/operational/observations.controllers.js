@@ -498,18 +498,6 @@ module.exports = {
         AND tro.uuid = '${id}'
       `);
 
-      // =========================
-      // ✅ FORMAT DATE
-      // =========================
-      obser.rows.map((itm) => {
-        itm.plan_check_dt = moment(itm.plan_check_dt).format("YYYY-MM-DD");
-        itm.actual_check_dt = moment(itm.actual_check_dt).format("YYYY-MM-DD");
-        return itm;
-      });
-
-      // =========================
-      // ✅ UUID TO ID (AMAN)
-      // =========================
       const obsId = await uuidToId(
         table.tb_r_observations,
         "observation_id",
@@ -519,6 +507,22 @@ module.exports = {
       if (!obsId) {
         return response.failed(res, "Observation not found");
       }
+
+      let checkers = await queryGET(
+        table.tb_r_obs_checker,
+        `WHERE observation_id = ${obsId}`,
+        ["checker_nm"]
+      );
+
+      // =========================
+      // ✅ FORMAT DATE & ADD CHECKERS
+      // =========================
+      obser.rows.map((itm) => {
+        itm.plan_check_dt = moment(itm.plan_check_dt).format("YYYY-MM-DD");
+        itm.actual_check_dt = moment(itm.actual_check_dt).format("YYYY-MM-DD");
+        itm.checkers = checkers.map((mp) => mp.checker_nm);
+        return itm;
+      });
 
       // =========================
       // ✅ QUERY RESULT CHECK (AMAN)
