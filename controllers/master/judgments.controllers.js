@@ -13,7 +13,7 @@ const moment = require('moment')
 module.exports = {
     getJudgmentsOpts: async(req, res) => {
         try {
-            const judgments = await queryGET(table.tb_m_judgments, `WHERE ${condDataNotDeleted}`, ['uuid as id', 'judgment_nm as text', 'is_abnormal'])
+            const judgments = await queryGET(table.tb_m_judgments, `WHERE ${condDataNotDeleted} AND judgment_nm IS NOT NULL AND judgment_nm != ''`, ['uuid as id', 'judgment_nm as text', 'is_abnormal'])
             response.success(res, 'Success to get judgments', judgments)
         } catch (error) {
             console.log(error);
