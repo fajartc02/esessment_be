@@ -116,10 +116,10 @@ app.use(cors({
     maxAge: 86400
 }));
 
-// 3. Rate Limiting - max 1000 requests per 15 minutes per IP
+// 3. Rate Limiting - max 10000 requests per 15 minutes per IP
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 1000,
+    max: 10000,
     standardHeaders: true,
     legacyHeaders: false,
     message: {
