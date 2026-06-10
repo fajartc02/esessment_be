@@ -306,6 +306,28 @@ module.exports = {
                                         item_check_kanban_id = '${queryFindMasterItemCheck.item_check_kanban_id}'`);
                 }
 
+                if (req.body.sub_schedule_id) {
+                    const checkNg = await db.query(
+                        `select count(*)::integer as ng_count from ${table.tb_r_4s_schedule_item_check_kanbans} rsick
+                         join ${table.tb_m_judgments} tj on rsick.judgment_id = tj.judgment_id
+                         where rsick.sub_schedule_id = (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}')
+                           and lower(tj.judgment_nm) = 'ng'
+                           and rsick.deleted_dt is null`
+                    );
+                    if (checkNg.rows[0].ng_count === 0) {
+                        await db.query(
+                            `delete from ${table.tb_r_4s_comments}
+                             where sub_schedule_id = (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}')`
+                        );
+                        await db.query(
+                            `update ${table.tb_r_4s_findings}
+                             set deleted_dt = '${moment().format().split("+")[0].split("T").join(" ")}',
+                                 deleted_by = '${req.user.fullname}'
+                             where sub_schedule_id = (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}')`
+                        );
+                    }
+                }
+
                 return result;
             });
 
@@ -363,6 +385,35 @@ module.exports = {
                     }]);
 
                     await queryPostTransaction(db, table.tb_r_history_4s_item_check_kanbans, attrInsertHistory);
+                }
+
+                const checkNg = await db.query(
+                    `select count(*)::integer as ng_count from ${table.tb_r_4s_schedule_item_check_kanbans} rsick
+                     join ${table.tb_m_judgments} tj on rsick.judgment_id = tj.judgment_id
+                     where rsick.sub_schedule_id = (
+                         select sub_schedule_id from ${table.tb_r_4s_schedule_item_check_kanbans}
+                         where uuid = '${scheduleItemCheckKanbanUuid}'
+                     )
+                       and lower(tj.judgment_nm) = 'ng'
+                       and rsick.deleted_dt is null`
+                );
+                if (checkNg.rows[0].ng_count === 0) {
+                    await db.query(
+                        `delete from ${table.tb_r_4s_comments}
+                         where sub_schedule_id = (
+                             select sub_schedule_id from ${table.tb_r_4s_schedule_item_check_kanbans}
+                             where uuid = '${scheduleItemCheckKanbanUuid}'
+                         )`
+                    );
+                    await db.query(
+                        `update ${table.tb_r_4s_findings}
+                         set deleted_dt = '${moment().format().split("+")[0].split("T").join(" ")}',
+                             deleted_by = '${req.user.fullname}'
+                         where sub_schedule_id = (
+                             select sub_schedule_id from ${table.tb_r_4s_schedule_item_check_kanbans}
+                             where uuid = '${scheduleItemCheckKanbanUuid}'
+                         )`
+                    );
                 }
 
                 return result;
