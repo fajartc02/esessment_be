@@ -38,8 +38,8 @@ module.exports = {
       // ✅ WHITELIST PARAM
       // =========================
       const allowedParams = [
-        'id','line_id','freq_id','group_id','zone_id','kanban_id',
-        'status_finding','limit','current_page','start_date','end_date'
+        'id', 'line_id', 'freq_id', 'group_id', 'zone_id', 'kanban_id',
+        'status_finding', 'limit', 'current_page', 'start_date', 'end_date'
       ];
 
       for (const key in req.query) {
@@ -89,7 +89,7 @@ module.exports = {
       // =========================
       // ✅ VALIDASI STATUS
       // =========================
-      const allowedStatus = ['problem','closed','remain'];
+      const allowedStatus = ['problem', 'closed', 'remain'];
 
       if (status_finding && !allowedStatus.includes(status_finding)) {
         return response.failed(res, "Invalid status_finding");
@@ -101,7 +101,7 @@ module.exports = {
       current_page = parseInt(current_page ?? 1);
       limit = parseInt(limit ?? 10);
 
-      if (isNaN(limit) || isNaN(current_page) || limit < 1 || limit > 100) {
+      if (isNaN(limit) || isNaN(current_page) || limit < 1 || limit > 100000) {
         return response.failed(res, "Invalid pagination");
       }
 

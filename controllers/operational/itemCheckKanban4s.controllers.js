@@ -15,6 +15,7 @@ const attrsUserInsertData = require("../../helpers/addAttrsUserInsertData")
 const attrsUserUpdateData = require("../../helpers/addAttrsUserUpdateData")
 const {uuid} = require("uuidv4")
 const moment = require("moment/moment");
+const { cacheDelete } = require('../../helpers/cacheHelper');
 
 module.exports = {
     getItemCheckKanban4s: async (req, res) => {
@@ -312,6 +313,7 @@ module.exports = {
                 schedule_item_check_kanban_id: transaction.uuid
             }
 
+            if (req.body.main_schedule_id) cacheDelete(req.body.main_schedule_id);
             response.success(res, "Success to add 4s schedule item check kanban", result);
         } catch (e) {
             console.log(e)
@@ -370,6 +372,18 @@ module.exports = {
                 schedule_item_check_kanban_id: transaction.rows[0].uuid
             }
 
+            
+            const sqlFindItemCheck = `
+                select tms.uuid as main_schedule_uuid 
+                from ${table.tb_r_4s_schedule_item_check_kanbans} tsic
+                join ${table.tb_r_4s_main_schedules} tms on tsic.main_schedule_id = tms.main_schedule_id
+                where tsic.uuid = '${scheduleItemCheckKanbanUuid}'
+            `;
+            const mainSchedQuery = await queryCustom(sqlFindItemCheck);
+            if (mainSchedQuery.rows.length) {
+                cacheDelete(mainSchedQuery.rows[0].main_schedule_uuid);
+            }
+
             response.success(res, "Success to edit 4s schedule item check kanban", result)
         } catch (error) {
             console.log(error)
@@ -389,6 +403,18 @@ module.exports = {
                 attrsUserUpdate,
                 `WHERE uuid = '${req.params.id}'`
             )
+            
+            const sqlFindItemCheck = `
+                select tms.uuid as main_schedule_uuid 
+                from ${table.tb_r_4s_schedule_item_check_kanbans} tsic
+                join ${table.tb_r_4s_main_schedules} tms on tsic.main_schedule_id = tms.main_schedule_id
+                where tsic.uuid = '${req.params.id}'
+            `;
+            const mainSchedQuery = await queryCustom(sqlFindItemCheck);
+            if (mainSchedQuery.rows.length) {
+                cacheDelete(mainSchedQuery.rows[0].main_schedule_uuid);
+            }
+
             response.success(res, "Success to soft delete 4s schedule item check kanban", result)
         } catch (error) {
             console.log(error)

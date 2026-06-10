@@ -102,9 +102,12 @@ const getAllChildrenSubSchedulesOptimized2 = async (
         item_checks_agg AS (
             SELECT 
                 rsick.sub_schedule_id,
-                COUNT(*) as total_checked
+                COUNT(*) as total_checked,
+                COUNT(CASE WHEN lower(tj.judgment_nm) = 'ng' THEN 1 END) as total_ng_checked
             FROM ${table.tb_r_4s_schedule_item_check_kanbans} rsick
-            WHERE EXISTS (
+            LEFT JOIN ${table.tb_m_judgments} tj ON rsick.judgment_id = tj.judgment_id
+            WHERE rsick.deleted_dt IS NULL
+                AND EXISTS (
                 SELECT 1 FROM ${table.tb_r_4s_sub_schedules} tbrcs2
                 WHERE tbrcs2.sub_schedule_id = rsick.sub_schedule_id
                     AND tbrcs2.main_schedule_id = ${mainScheduleRealId}
@@ -151,7 +154,7 @@ const getAllChildrenSubSchedulesOptimized2 = async (
             COALESCE(tmsc.is_holiday, tbrcs.is_holiday, false) as is_holiday,
             true::boolean as can_sign,
             CASE
-                WHEN ica.total_checked > 0 AND lf.finding_id IS NOT NULL THEN 'PROBLEM'
+                WHEN ica.total_ng_checked > 0 THEN 'PROBLEM'
                 WHEN ica.total_checked > 0 AND tbrcs.plan_time IS NOT NULL THEN 'ACTUAL'
                 WHEN tbrcs.shift_type = 'night_shift' AND tbrcs.plan_time IS NULL THEN 'NIGHT_SHIFT'
                 WHEN tbrcs.plan_time IS NOT NULL THEN 'PLANNING'
