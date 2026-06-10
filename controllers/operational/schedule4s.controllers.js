@@ -118,7 +118,7 @@ const childrenSubSchedule = async (
                     EXTRACT('Day' FROM tmsc.date)::INTEGER as date_num,
                     tmsc.is_holiday or tbrcs.is_holiday as is_holiday, -- null of shift_type was set as holiday from monthly scheduler 
                     case
-                      when item_check.total_checked > 0 and finding.finding_id is not null then
+                      when item_check.total_ng_checked > 0 then
                         'PROBLEM'
                       when item_check.total_checked > 0 and tbrcs.plan_time is not null then
                         'ACTUAL'
@@ -721,7 +721,7 @@ module.exports = {
                 result.total_data = scheduleQuery?.total_data ? parseInt(scheduleQuery.total_data) : 0;
 
                 // Simpan ke cache agar jika dipanggil berulang (Rate Limit Bypass), server tidak terbebani
-                cacheAdd(cacheKey, result);
+                // cacheAdd(cacheKey, result);
             }
 
             response.success(res, "Success to get 4s sub schedule", result);
