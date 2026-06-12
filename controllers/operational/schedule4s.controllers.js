@@ -15,6 +15,7 @@ const { arrayOrderBy, objToString } = require("../../helpers/formatting")
 const moment = require('moment')
 const logger = require('../../helpers/logger')
 const { cacheGet, cacheAdd, cacheDelete } = require('../../helpers/cacheHelper')
+const { database } = require('../../config/database')
 
 const { shiftByGroupId } = require('../../services/shift.services')
 const { genSingleMonthlySubScheduleSchema, genSingleSignCheckerSqlFromSchema } = require('../../services/4s.services')
@@ -1111,7 +1112,6 @@ module.exports = {
             } else {
                 result = {}
             }
-
             response.success(res, 'Success to count total summary 4s', result)
         } catch (error) {
             console.log(error)
@@ -1120,360 +1120,175 @@ module.exports = {
     },
     edi4sSubSchedule: async (req, res) => {
         try {
-            let schedulRow = await queryCustom(
-                `
-          select 
-            tr4ss.*,
-            tr4sm.uuid as main_schedule_uuid,
-            tr4sm.group_id,
-            tr4sm.line_id,
-            tr4sm.year_num ||'-'|| trim(to_char(tr4sm.month_num, '00')) as month_year_num
-          from 
-            ${table.tb_r_4s_sub_schedules} tr4ss
-            join ${table.tb_r_4s_main_schedules} tr4sm on tr4ss.main_schedule_id = tr4sm.main_schedule_id
-          where 
-            sub_schedule_id = (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.params.id}' limit 1)
-        `
-            )
-
-            if (schedulRow.rows.length == 0) {
-                response.failed(
-                    res,
-                    "Error to edit 4s planning schedule, can't find schedule data"
-                )
+            // Get sub_schedule info via UUID (for kanban/zone/freq/main context)
+            const checkSql = `
+              select s.sub_schedule_id, s.main_schedule_id, s.kanban_id, s.zone_id, s.freq_id, 
+                     s.schedule_id, s.actual_time, s.plan_time, s.pic_id, s.actual_pic_id,
+                     ms.line_id, ms.group_id, m.date as schedule_date
+              from ${table.tb_r_4s_sub_schedules} s
+              join ${table.tb_r_4s_main_schedules} ms on s.main_schedule_id = ms.main_schedule_id
+              left join ${table.tb_m_schedules} m on s.schedule_id = m.schedule_id
+              where s.uuid = '${req.params.id}' limit 1
+            `
+            let schedulRow = await queryCustom(checkSql, false)
+            if (!schedulRow || schedulRow.rows.length == 0) {
+                response.failed(res, "Error to edit 4s planning schedule, can't find schedule data")
                 return
             }
-
             schedulRow = schedulRow.rows[0]
 
             const body = {}
-            if (req.body.pic_id) {
-                body.pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.pic_id}') `
-            }
-
-            if (req.body.actual_pic_id) {
-                body.actual_pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.actual_pic_id}') `
-            }
-
-            if (req.body.actual_date) {
-                body.actual_time = req.body.actual_date
-            }
+            if (req.body.pic_id) body.pic_id = `(select user_id from ${table.tb_m_users} where uuid = '${req.body.pic_id}')`
+            if (req.body.actual_pic_id) body.actual_pic_id = `(select user_id from ${table.tb_m_users} where uuid = '${req.body.actual_pic_id}')`
+            if (req.body.actual_date) body.actual_time = req.body.actual_date
 
             await queryTransaction(async (db) => {
                 const attrsUpdate = await attrsUserUpdateData(req, body)
-                let updateCondition = `
-            main_schedule_id = '${schedulRow.main_schedule_id}' 
-            and freq_id = '${schedulRow.freq_id}' 
-            and zone_id = '${schedulRow.zone_id}' 
-            and kanban_id = '${schedulRow.kanban_id}'
-          `
 
-                await queryPutTransaction(
-                    db,
-                    table.tb_r_4s_sub_schedules,
-                    attrsUpdate,
-                    `WHERE sub_schedule_id = (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.params.id}' limit 1)`
-                );
+                if (req.body.plan_date) {
+                    // before_plan_date = the COLUMN DATE user clicked in calendar (reliable source of truth)
+                    const sourceDateStr = req.body.before_plan_date
+                    if (!sourceDateStr) throw "before_plan_date is required"
 
-                if (req.body.plan_date && req.body.before_plan_date) {
-                    //#region update plan_date validation
                     const planDateUpdate = moment(req.body.plan_date, 'YYYY-MM-DD')
-                    const previousDate = moment(req.body.before_plan_date, 'YYYY-MM-DD')
+                    const previousDate = moment(sourceDateStr, 'YYYY-MM-DD')
+                    
+                    if (!planDateUpdate.isValid()) throw "Format plan_date tidak valid"
+                    if (!previousDate.isValid()) throw "Format before_plan_date tidak valid"
+                    
+                    req.body.plan_date = planDateUpdate.format('YYYY-MM-DD')
+                    const sourceDateStrParsed = previousDate.format('YYYY-MM-DD')
 
-                    if (planDateUpdate.month() < previousDate.month() || planDateUpdate.year() < previousDate.year()) {
-                        throw "Can't edit schedule plan on previous date"
-                    }
-                    //#endregion
+                    if (planDateUpdate.isBefore(previousDate, 'month')) throw "Can't edit schedule plan to a previous month"
+                    if (planDateUpdate.format('YYYY-MM-DD') === previousDate.format('YYYY-MM-DD')) throw "Tanggal tujuan tidak boleh sama dengan tanggal asal"
 
-                    let newMainScheduleSet = ''
-                    let newMainScheduleRealId = null
-                    if (planDateUpdate.month() > previousDate.month()) {
-                        const checkHeaderNextMonth = await db.query(`
-              select 
-                * 
-              from 
-                ${table.tb_r_4s_main_schedules} 
-              where 
-                year_num = '${planDateUpdate.year()}' 
-                and month_num = '${planDateUpdate.month() + 1}'
-                and line_id = '${schedulRow.line_id}'
-                and group_id = '${schedulRow.group_id}'
-              `)
+                    // Find the ACTUAL source row: the row with plan_time on the clicked date
+                    // This handles UUID desync where the UUID points to a wrong row
+                    const actualSourceRow = await db.query(`
+                        SELECT s.sub_schedule_id, s.actual_time, s.pic_id, s.actual_pic_id, s.main_schedule_id
+                        FROM ${table.tb_r_4s_sub_schedules} s
+                        JOIN ${table.tb_m_schedules} m ON s.schedule_id = m.schedule_id
+                        WHERE s.kanban_id = $1
+                          AND s.zone_id = $2
+                          AND s.freq_id = $3
+                          AND m.date = $4
+                          AND s.plan_time IS NOT NULL
+                        ORDER BY s.changed_dt DESC NULLS LAST
+                        LIMIT 1
+                    `, [schedulRow.kanban_id, schedulRow.zone_id, schedulRow.freq_id, sourceDateStrParsed])
 
-                        if (checkHeaderNextMonth.rowCount == 0) {
-                            const newMainSchedule = await db.query(`
-                insert into ${table.tb_r_4s_main_schedules}
-                (uuid, line_id, group_id, year_num, month_num, created_by, created_dt, changed_by, changed_dt)
-                values
-                (
-                  '${uuid()}', 
-                  '${schedulRow.line_id}', 
-                  '${schedulRow.group_id}', 
-                  '${planDateUpdate.year()}', 
-                  '${planDateUpdate.month() + 1}',
-                  '${req.user.fullname}', 
-                  '${moment().format('YYYY-MM-DD HH:mm:ss')}', 
-                  '${req.user.fullname}', 
-                  '${moment().format('YYYY-MM-DD HH:mm:ss')}'
-                )
-                returning *
-              `);
-
-                            newMainScheduleSet = `, main_schedule_id = '${newMainSchedule.rows[0].main_schedule_id}'`
-                            newMainScheduleRealId = newMainSchedule.rows[0].main_schedule_id
-                        } else {
-                            newMainScheduleSet = `, main_schedule_id = '${checkHeaderNextMonth.rows[0].main_schedule_id}'`
-                            newMainScheduleRealId = checkHeaderNextMonth.rows[0].main_schedule_id
-                        }
-                    }
-
-                    const byScheduleIdPlanDateSql = `and schedule_id IN (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')`
-                    const byScheduleIdPreviousDateSql = `and schedule_id IN (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.before_plan_date}')`
-
-                    if (newMainScheduleSet == '') {
-                        //#region  update plan_date and previous plan_date (same month)
-                        const findNightShift = await db.query(`
-            select 
-              * 
-            from 
-              ${table.tb_r_4s_sub_schedules} 
-            where 
-              ${updateCondition} 
-              and schedule_id IN (select schedule_id from ${table.tb_m_schedules} where "date" = '${req.body.plan_date}')
-              and shift_type = 'night_shift'`)
-
-                        if (findNightShift.rowCount > 0) {
-                            throw "Can't edit schedule plan on night shift"
-                        }
-
-                        // Find old sub_schedule (by previous date) to get its data BEFORE updating it to null
-                        const oldSubSchedule = await db.query(`
-                          select sub_schedule_id, pic_id, actual_pic_id, actual_time
-                          from ${table.tb_r_4s_sub_schedules}
-                          where ${updateCondition}
-                            ${byScheduleIdPreviousDateSql}
-                          limit 1
-                        `)
-
-                        // Find new sub_schedule (target date)
-                        const newSubSchedule = await db.query(`
-                          select sub_schedule_id
-                          from ${table.tb_r_4s_sub_schedules}
-                          where ${updateCondition}
-                            ${byScheduleIdPlanDateSql}
-                          limit 1
-                        `)
-
-                        // updating previous plan date (set plan_time to null)
-                        await db.query(`
-                          update 
-                            ${table.tb_r_4s_sub_schedules} 
-                          set 
-                            plan_time = null
-                          where 
-                            ${updateCondition} 
-                            ${byScheduleIdPreviousDateSql}`)
-
-                        if (oldSubSchedule.rowCount > 0 && newSubSchedule.rowCount > 0) {
-                            const oldRow = oldSubSchedule.rows[0]
-                            const newRow = newSubSchedule.rows[0]
-
-                            // Transfer data from old to new sub_schedule
-                            let transferSets = [`plan_time = '${req.body.plan_date}'`]
-                            if (oldRow.pic_id) transferSets.push(`pic_id = '${oldRow.pic_id}'`)
-                            if (oldRow.actual_pic_id) transferSets.push(`actual_pic_id = '${oldRow.actual_pic_id}'`)
-                            if (oldRow.actual_time) transferSets.push(`actual_time = '${oldRow.actual_time}'`)
-
-                            await db.query(`
-                              update ${table.tb_r_4s_sub_schedules}
-                              set ${transferSets.join(', ')}
-                              where sub_schedule_id = '${newRow.sub_schedule_id}'
-                            `)
-
-                            // Clear old sub_schedule data completely
-                            await db.query(`
-                              update ${table.tb_r_4s_sub_schedules}
-                              set plan_time = null,
-                                  actual_time = null,
-                                  actual_pic_id = null
-                              where sub_schedule_id = '${oldRow.sub_schedule_id}'
-                            `)
-
-                            // Move item check records from old to new sub_schedule and update checked_date to new plan_date
-                            await db.query(`
-                              update ${table.tb_r_4s_schedule_item_check_kanbans}
-                              set sub_schedule_id = '${newRow.sub_schedule_id}',
-                                  checked_date = '${req.body.plan_date}'
-                              where sub_schedule_id = '${oldRow.sub_schedule_id}'
-                            `)
-
-                            // Move findings from old to new sub_schedule and update finding_date to new plan_date
-                            await db.query(`
-                              update ${table.tb_r_4s_findings}
-                              set sub_schedule_id = '${newRow.sub_schedule_id}',
-                                  finding_date = '${req.body.plan_date}'
-                              where sub_schedule_id = '${oldRow.sub_schedule_id}'
-                            `)
-                        } else {
-                            // Fallback: just set plan_time on new date
-                            await db.query(`
-                              update ${table.tb_r_4s_sub_schedules}
-                              set plan_time = '${req.body.plan_date}'
-                              where ${updateCondition}
-                                ${byScheduleIdPlanDateSql}
-                            `)
-                        }
-
-
-                        //#endregion
+                    let srcSubScheduleId, srcActualTime, srcPicId, srcActualPicId, srcMainScheduleId
+                    if (actualSourceRow.rowCount > 0) {
+                        const s = actualSourceRow.rows[0]
+                        srcSubScheduleId = s.sub_schedule_id
+                        srcActualTime = s.actual_time
+                        srcPicId = s.pic_id
+                        srcActualPicId = s.actual_pic_id
+                        srcMainScheduleId = s.main_schedule_id
                     } else {
-                        //find previous 1 month schedule, used previous updatecondition value before reinit
-                        const findAvailPlanTimeSql = `select 
-                                            * 
-                                          from 
-                                            ${table.tb_r_4s_sub_schedules} 
-                                          where 
-                                            ${updateCondition}
-                                            and plan_time is not null`
-                        console.log('findAvailPlanTimeSql', findAvailPlanTimeSql);
-                        const findAvailPlanTimeQuery = await db.query(findAvailPlanTimeSql)
-                        console.log('findAvailPlanTime lenght', findAvailPlanTimeQuery.rowCount);
-                        if (findAvailPlanTimeQuery.rowCount == 0) {
-                            //delete if plan time null
-                            await db.query(`delete from ${table.tb_r_4s_sub_schedules} where ${updateCondition}`)
-                        }
+                        throw `Tidak ada schedule yang terjadwal pada tanggal ${sourceDateStrParsed}`
+                    }
 
-                        updateCondition = `main_schedule_id = '${newMainScheduleRealId}' 
-                and freq_id = '${schedulRow.freq_id}' 
-                and zone_id = '${schedulRow.zone_id}' 
-                and kanban_id = '${schedulRow.kanban_id}'`
+                    // Get target schedule_id
+                    const targetScheduleDate = await db.query(`select schedule_id from ${table.tb_m_schedules} where "date" = $1 limit 1`, [req.body.plan_date])
+                    if (targetScheduleDate.rowCount === 0) throw "Target date is not a valid schedule date in the system"
 
-                        //#region check month and year updated plan_date by mandatory id
-                        const monthlyPlanSql = `
-              select 
-                * 
-              from 
-                ${table.tb_r_4s_sub_schedules} 
-              where 
-                ${updateCondition} 
-                and schedule_id in (
-                    select 
-                      schedule_id 
-                    from 
-                      ${table.tb_m_schedules} 
-                    where 
-                      date_part('year', date) = '${planDateUpdate.year()}' 
-                      and date_part('month', date) = '${planDateUpdate.month() + 1}'
-                )
-              `
-                        const monthlyPlanQuery = await db.query(monthlyPlanSql)
-                        //#endregion
-
-                        if (monthlyPlanQuery.rowCount == 0) {
-                            const currentMonthDays = await shiftByGroupId(db, planDateUpdate.year(), planDateUpdate.month() + 1, schedulRow.line_id, schedulRow.group_id)
-                            const singleKanbanSchedule = await genSingleMonthlySubScheduleSchema(
-                                {
-                                    kanban_id: schedulRow.kanban_id,
-                                    zone_id: schedulRow.zone_id,
-                                    freq_id: schedulRow.freq_id,
-                                    main_schedule_id: newMainScheduleRealId
-                                },
-                                {
-                                    line_id: schedulRow.line_id,
-                                    group_id: schedulRow.group_id,
-                                },
-                                currentMonthDays,
-                                moment(planDateUpdate).format('YYYY-MM-DD')
-                            )
-
-                            const signCheckerScheduleSchema = await genSingleSignCheckerSqlFromSchema(
-                                db,
-                                planDateUpdate.year(),
-                                planDateUpdate.month() + 1,
-                                {
-                                    line_id: schedulRow.line_id,
-                                    group_id: schedulRow.group_id,
-                                },
-                                currentMonthDays,
-                                newMainScheduleRealId
-                            )
-
-                            if (singleKanbanSchedule.columns.length > 0) {
-                                const sqlInSubSchedule = `insert into ${table.tb_r_4s_sub_schedules} (${singleKanbanSchedule.columns}) values ${singleKanbanSchedule.values}`
-                                console.log('sqlInSubSchedule', sqlInSubSchedule);
-                                await db.query(sqlInSubSchedule)
-                            }
-
-                            if (signCheckerScheduleSchema.columns.length > 0) {
-                                const sqlInSignChecker = `insert into ${table.tb_r_4s_schedule_sign_checkers} (${signCheckerScheduleSchema.columns}) values ${signCheckerScheduleSchema.values}`
-                                console.log('sqlInSignChecker', sqlInSignChecker);
-                                await db.query(sqlInSignChecker)
-                            }
+                    // Handle cross-month
+                    let targetMainScheduleId = srcMainScheduleId
+                    if (planDateUpdate.month() > previousDate.month() || planDateUpdate.year() > previousDate.year()) {
+                        const checkHeader = await db.query(`
+                            select main_schedule_id from ${table.tb_r_4s_main_schedules} 
+                            where year_num = $1 and month_num = $2
+                            and line_id = $3 and group_id = $4 limit 1
+                        `, [planDateUpdate.year(), planDateUpdate.month() + 1, schedulRow.line_id, schedulRow.group_id])
+                        if (checkHeader.rowCount > 0) {
+                            targetMainScheduleId = checkHeader.rows[0].main_schedule_id
                         } else {
-                            const targetSubSchedule = await db.query(`
-                              select sub_schedule_id
-                              from ${table.tb_r_4s_sub_schedules}
-                              where ${updateCondition}
-                                ${byScheduleIdPlanDateSql}
-                              limit 1
-                            `)
-
-                            // updating previous plan date (cross-month, target month already has schedule rows)
-                            await db.query(`
-                              update ${table.tb_r_4s_sub_schedules}
-                              set plan_time = null, actual_time = null, actual_pic_id = null
-                              where sub_schedule_id = '${schedulRow.sub_schedule_id}'
-                            `)
-
-                            if (targetSubSchedule.rowCount > 0) {
-                                const targetRow = targetSubSchedule.rows[0]
-                                
-                                // Move item check records and findings to the new month's sub_schedule
-                                await db.query(`
-                                  update ${table.tb_r_4s_schedule_item_check_kanbans}
-                                  set sub_schedule_id = '${targetRow.sub_schedule_id}',
-                                      checked_date = '${req.body.plan_date}'
-                                  where sub_schedule_id = '${schedulRow.sub_schedule_id}'
-                                `)
-                                
-                                await db.query(`
-                                  update ${table.tb_r_4s_findings}
-                                  set sub_schedule_id = '${targetRow.sub_schedule_id}',
-                                      finding_date = '${req.body.plan_date}'
-                                  where sub_schedule_id = '${schedulRow.sub_schedule_id}'
-                                `)
-
-                                // Transfer other data
-                                let transferSets = [`plan_time = '${req.body.plan_date}'`]
-                                if (schedulRow.pic_id) transferSets.push(`pic_id = '${schedulRow.pic_id}'`)
-                                if (schedulRow.actual_pic_id) transferSets.push(`actual_pic_id = '${schedulRow.actual_pic_id}'`)
-                                if (schedulRow.actual_time) transferSets.push(`actual_time = '${schedulRow.actual_time}'`)
-
-                                await db.query(`
-                                  update ${table.tb_r_4s_sub_schedules}
-                                  set ${transferSets.join(', ')}
-                                  where sub_schedule_id = '${targetRow.sub_schedule_id}'
-                                `)
-                            } else {
-                                // updating new plan date fallback
-                                await db.query(`
-                                  update ${table.tb_r_4s_sub_schedules}
-                                  set plan_time = '${req.body.plan_date}' ${newMainScheduleSet}
-                                  where ${updateCondition}
-                                    ${byScheduleIdPlanDateSql}
-                                `)
-                            }
+                            const newHeader = await db.query(`
+                                insert into ${table.tb_r_4s_main_schedules}
+                                (uuid, line_id, group_id, year_num, month_num, created_by, created_dt, changed_by, changed_dt)
+                                values ($1, $2, $3, $4, $5, $6, NOW(), $6, NOW())
+                                returning main_schedule_id
+                            `, [req.uuid(), schedulRow.line_id, schedulRow.group_id, planDateUpdate.year(), planDateUpdate.month() + 1, req.user.fullname])
+                            targetMainScheduleId = newHeader.rows[0].main_schedule_id
                         }
                     }
+
+                    // Check if there is already a planned schedule on the target date
+                    const checkPlannedSlotRes = await db.query(`
+                        select sub_schedule_id from ${table.tb_r_4s_sub_schedules}
+                        where main_schedule_id = $1
+                          and freq_id = $2
+                          and zone_id = $3
+                          and kanban_id = $4
+                          and schedule_id = $5
+                          and plan_time is not null
+                        limit 1
+                    `, [targetMainScheduleId, schedulRow.freq_id, schedulRow.zone_id, schedulRow.kanban_id, targetScheduleDate.rows[0].schedule_id])
+                    
+                    if (checkPlannedSlotRes.rowCount > 0) {
+                        throw "Jadwal untuk Kanban ini pada tanggal tujuan sudah terdaftar."
+                    }
+
+                    // Find target slot (empty slot for target date)
+                    const targetSlotRes = await db.query(`
+                        select sub_schedule_id from ${table.tb_r_4s_sub_schedules}
+                        where main_schedule_id = $1
+                          and freq_id = $2
+                          and zone_id = $3
+                          and kanban_id = $4
+                          and schedule_id = $5
+                          and plan_time is null
+                        limit 1
+                    `, [targetMainScheduleId, schedulRow.freq_id, schedulRow.zone_id, schedulRow.kanban_id, targetScheduleDate.rows[0].schedule_id])
+
+                    let targetSubScheduleId
+                    if (targetSlotRes.rowCount > 0) {
+                        targetSubScheduleId = targetSlotRes.rows[0].sub_schedule_id
+                    } else {
+                        // Insert new slot if doesn't exist
+                        const ins = await db.query(`
+                            INSERT INTO ${table.tb_r_4s_sub_schedules}
+                            (uuid, main_schedule_id, kanban_id, zone_id, freq_id, schedule_id, created_by, created_dt)
+                            VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+                            RETURNING sub_schedule_id
+                        `, [req.uuid(), targetMainScheduleId, schedulRow.kanban_id, schedulRow.zone_id, schedulRow.freq_id, targetScheduleDate.rows[0].schedule_id, req.user.fullname])
+                        targetSubScheduleId = ins.rows[0].sub_schedule_id
+                    }
+
+                    const actualTimeStr = srcActualTime ? `'${moment(srcActualTime).format('YYYY-MM-DD HH:mm:ss')}'` : 'null'
+                    const picIdStr = srcPicId ? `'${srcPicId}'` : 'null'
+                    const actualPicIdStr = srcActualPicId ? `'${srcActualPicId}'` : 'null'
+
+                    // Set target slot with plan_time + copied data
+                    await db.query(`
+                        UPDATE ${table.tb_r_4s_sub_schedules}
+                        SET plan_time = '${req.body.plan_date}', actual_time = ${actualTimeStr}, pic_id = ${picIdStr}, actual_pic_id = ${actualPicIdStr},
+                            changed_by = '${req.user.fullname}', changed_dt = NOW()
+                        WHERE sub_schedule_id = '${targetSubScheduleId}'
+                    `)
+
+                    // Clear source slot
+                    await db.query(`
+                        UPDATE ${table.tb_r_4s_sub_schedules}
+                        SET plan_time = null, actual_time = null, actual_pic_id = null,
+                            changed_by = '${req.user.fullname}', changed_dt = NOW()
+                        WHERE sub_schedule_id = '${srcSubScheduleId}'
+                    `)
+
+                    // Move related records
+                    await db.query(`UPDATE ${table.tb_r_4s_schedule_item_check_kanbans} SET sub_schedule_id = '${targetSubScheduleId}', checked_date = '${req.body.plan_date}' WHERE sub_schedule_id = '${srcSubScheduleId}'`)
+                    await db.query(`UPDATE ${table.tb_r_4s_findings} SET sub_schedule_id = '${targetSubScheduleId}', finding_date = '${req.body.plan_date}' WHERE sub_schedule_id = '${srcSubScheduleId}'`)
+
+                } else {
+                    await queryPutTransaction(db, table.tb_r_4s_sub_schedules, attrsUpdate, `WHERE sub_schedule_id = '${schedulRow.sub_schedule_id}'`)
                 }
             })
 
-            cacheDelete(schedulRow.main_schedule_uuid)
-
-            response.success(res, "Success to edit 4s schedule plan", [])
-        } catch (e) {
-            console.log(e)
-            response.failed(res, e)
+            response.success(res, "Success to edit 4s schedule plan")
+        } catch (error) {
+            console.log("Error in edi4sSubSchedule:", error)
+            response.failed(res, error || "Error to edit 4s sub schedule")
         }
     },
     sign4sSchedule: async (req, res) => {
@@ -1548,12 +1363,12 @@ module.exports = {
     },
     delete4sMainSchedule: async (req, res) => {
         try {
-            let obj = {
-                deleted_dt: "CURRENT_TIMESTAMP",
-                deleted_by: req.user.fullname
-            }
-
-            await queryPUT(table.tb_r_4s_main_schedules, obj, `WHERE uuid = '${req.params.id}'`)
+            await database.query(`
+                UPDATE ${table.tb_r_4s_main_schedules}
+                SET deleted_dt = CURRENT_TIMESTAMP,
+                    deleted_by = $1
+                WHERE uuid = $2
+            `, [req.user.fullname, req.params.id])
             response.success(res, 'success to delete 4s main schedule', [])
         } catch (e) {
             console.log(e)
@@ -1562,7 +1377,7 @@ module.exports = {
     },
     delete4sSubSchedule: async (req, res) => {
         try {
-            let subScheduleRow = await queryCustom(
+            let subScheduleRow = await database.query(
                 `
           select 
             tr4ss.*,
@@ -1574,11 +1389,11 @@ module.exports = {
             ${table.tb_r_4s_sub_schedules} tr4ss
             join ${table.tb_r_4s_main_schedules} tr4sm on tr4ss.main_schedule_id = tr4sm.main_schedule_id
           where 
-            tr4ss.uuid = '${req.params.id}'
-        `
+            tr4ss.uuid = $1
+        `, [req.params.id]
             )
 
-            if (!subScheduleRow) {
+            if (!subScheduleRow || subScheduleRow.rowCount === 0) {
                 response.failed(
                     res,
                     "Error to delete 4s sub schedule, can't find schedule data"
@@ -1589,12 +1404,6 @@ module.exports = {
             subScheduleRow = subScheduleRow.rows[0]
 
             const transaction = await queryTransaction(async (db) => {
-                const updateCondition = `main_schedule_id = '${subScheduleRow.main_schedule_id}' 
-            and freq_id = '${subScheduleRow.freq_id}' 
-            and zone_id = '${subScheduleRow.zone_id}' 
-            and kanban_id = '${subScheduleRow.kanban_id}'
-            and schedule_id = '${subScheduleRow.schedule_id}'`
-
                 const updateSql = `update ${table.tb_r_4s_sub_schedules}
                             set 
                               plan_time = null,
@@ -1603,7 +1412,7 @@ module.exports = {
                               changed_by = '${req.user.fullname}',
                               changed_dt = '${moment().format('YYYY-MM-DD HH:mm:ss')}'
                             where
-                              ${updateCondition}
+                              sub_schedule_id = '${subScheduleRow.sub_schedule_id}'
                             returning *`;
                 let result = await db.query(updateSql);
                 if (result.rowCount) {
@@ -1648,17 +1457,18 @@ module.exports = {
         try {
             let sub_schedule_id = req.params.id
 
-            const main_schedule_raw = await queryGET(table.tb_r_4s_sub_schedules, `WHERE uuid = '${sub_schedule_id}' `, ['main_schedule_id', 'kanban_id'])
+            const main_schedule_raw = await database.query(`SELECT main_schedule_id, kanban_id FROM ${table.tb_r_4s_sub_schedules} WHERE uuid = $1`, [sub_schedule_id])
             console.log(main_schedule_raw);
-            if (main_schedule_raw.length === 0) return response.failed(res, "Error to add 4s sub schedule, can't find main schedule data")
+            if (main_schedule_raw.rowCount === 0) return response.failed(res, "Error to add 4s sub schedule, can't find main schedule data")
 
-            const { main_schedule_id, kanban_id } = main_schedule_raw[0]
-            console.log(main_schedule_id, kanban_id);
-            const result = await queryPUT(table.tb_r_4s_sub_schedules, {
-                pic_id: `(select user_id from ${table.tb_m_users} where uuid = '${req.body.pic_id}')`,
-                changed_by: req.user.fullname,
-                changed_dt: moment().format('YYYY-MM-DD HH:mm:ss')
-            }, `where main_schedule_id = '${main_schedule_id}' and kanban_id = '${kanban_id}' and actual_pic_id is null`)
+            const { main_schedule_id, kanban_id } = main_schedule_raw.rows[0]
+            const result = await database.query(`
+                UPDATE ${table.tb_r_4s_sub_schedules}
+                SET pic_id = (select user_id from ${table.tb_m_users} where uuid = $1),
+                    changed_by = $2,
+                    changed_dt = $3
+                WHERE main_schedule_id = $4 and kanban_id = $5 and actual_pic_id is null RETURNING *
+            `, [req.body.pic_id, req.user.fullname, moment().format('YYYY-MM-DD HH:mm:ss'), main_schedule_id, kanban_id])
             // console.log(result.rows[0]);
 
             const { created_dt } = result.rows[0]
@@ -1730,7 +1540,7 @@ module.exports = {
                     year_num: year
                 }
                 // db.query(`SET session_replication_role = 'replica'`)
-                const mainScheduleQuery = await db.query(`select * from ${table.tb_r_4s_main_schedules} where group_id = ${payload.group_id} and line_id = ${payload.line_id} and month_num = ${payload.month_num} and year_num = ${payload.year_num} limit 1`)
+                const mainScheduleQuery = await db.query(`select * from ${table.tb_r_4s_main_schedules} where group_id = (select group_id from ${table.tb_m_groups} where uuid = $1) and line_id = (select line_id from ${table.tb_m_lines} where uuid = $2) and month_num = $3 and year_num = $4 limit 1`, [selectedGroup, selectedLine, payload.month_num, payload.year_num])
                 if (mainScheduleQuery.rows.length === 0) {
                     throw new Error("Jadwal Utama (Main Schedule) tidak ditemukan untuk Line dan Shift di bulan ini.")
                 }
@@ -1740,7 +1550,7 @@ module.exports = {
                 console.log(mainSchedule, 'Main sche');
 
                 // 2. get m schedule (is_holiday, schedule_id)
-                const getScheduleId = await db.query(`select schedule_id, is_holiday from ${table.tb_m_schedules} where date between '${req.body.selectedDate}' and '${req.body.selectedDate}' limit 1`)
+                const getScheduleId = await db.query(`select schedule_id, is_holiday from ${table.tb_m_schedules} where date between $1 and $1 limit 1`, [req.body.selectedDate])
                 // console.log(getScheduleId);
                 console.log(getScheduleId, 'getScheduleId');
                 if (getScheduleId.rows.length === 0) {
@@ -1749,7 +1559,7 @@ module.exports = {
                 const { schedule_id, is_holiday } = getScheduleId.rows[0]
 
                 // 3. get m shifts (shift_type) : selectedDate
-                const getShiftType = await db.query(`select shift_type from ${table.tb_m_shifts} where start_date <= '${req.body.selectedDate}' and end_date >= '${req.body.selectedDate}' and group_id = (select group_id from ${table.tb_m_groups} where uuid = '${selectedGroup}') limit 1`)
+                const getShiftType = await db.query(`select shift_type from ${table.tb_m_shifts} where start_date <= $1 and end_date >= $1 and group_id = (select group_id from ${table.tb_m_groups} where uuid = $2) limit 1`, [req.body.selectedDate, selectedGroup])
                 console.log(getShiftType, 'getShiftType');
 
                 const shiftType = getShiftType.rows[0]?.shift_type
@@ -1760,8 +1570,8 @@ module.exports = {
                     select tmk.kanban_id, tmk.zone_id, tmk.freq_id, tmk.group_id, tmz.line_id 
                     from ${table.tb_m_kanbans} tmk
                     join ${table.tb_m_zones} tmz on tmk.zone_id = tmz.zone_id
-                    where tmk.uuid = '${kanbanID}' limit 1
-                `)
+                    where tmk.uuid = $1 limit 1
+                `, [kanbanID])
                 console.log(getKanban, 'getKanban');
                 if (getKanban.rows.length === 0) {
                     throw new Error("Data Kanban tidak ditemukan.")
