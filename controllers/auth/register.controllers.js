@@ -6,9 +6,19 @@ const getLastIdData = require('../../helpers/getLastIdData')
 const { v4 } = require('uuid');
 const uuidToId = require('../../helpers/uuidToId')
 
+const { database } = require('../../config/database');
 
 const register = async(req, res) => {
     try {
+        if (!req.body.noreg) {
+            return response.failed(res, "Noreg is required")
+        }
+
+        const checkNoreg = await database.query(`SELECT user_id FROM ${tb_m_users} WHERE noreg = $1 AND deleted_dt IS NULL`, [req.body.noreg])
+        if (checkNoreg.rowCount > 0) {
+            return response.failed(res, "Noreg sudah terdaftar")
+        }
+
         let idLast = await getLastIdData(tb_m_users, 'user_id') + 1
         req.body.user_id = idLast
         let unreadPassword = await security.encryptPassword(req.body.password)

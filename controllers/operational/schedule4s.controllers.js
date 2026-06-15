@@ -1689,4 +1689,249 @@ module.exports = {
             response.failed(res, error)
         }
     },
+    getMonthlyPicConfig: async (req, res) => {
+        try {
+            const startTime = Date.now();
+            const { line_uuid, group_uuid, month, year } = req.query;
+            
+            const uuidRegex = /^[0-9a-fA-F-]{32,36}$/;
+            if (!line_uuid || !uuidRegex.test(line_uuid) || !group_uuid || !uuidRegex.test(group_uuid)) {
+                return response.failed(res, "Invalid line_uuid or group_uuid format");
+            }
+            
+            const parsedMonth = parseInt(month);
+            const parsedYear = parseInt(year);
+            if (isNaN(parsedMonth) || parsedMonth < 1 || parsedMonth > 12 || isNaN(parsedYear) || parsedYear < 2000 || parsedYear > 2100) {
+                return response.failed(res, "Invalid month or year");
+            }
+
+            // Step 1: Resolve UUIDs to IDs once and get main_schedule_id + sub_schedule count in a SINGLE query
+            const t1 = Date.now();
+            const initQuery = await database.query(`
+                select 
+                    tml.line_id,
+                    tmg.group_id,
+                    tms.main_schedule_id,
+                    (
+                        select count(*)::integer 
+                        from ${table.tb_r_4s_sub_schedules} 
+                        where main_schedule_id = tms.main_schedule_id
+                    ) as sub_count
+                from ${table.tb_m_lines} tml
+                cross join ${table.tb_m_groups} tmg
+                left join ${table.tb_r_4s_main_schedules} tms 
+                    on tms.line_id = tml.line_id 
+                    and tms.group_id = tmg.group_id
+                    and tms.month_num = $3
+                    and tms.year_num = $4
+                where tml.uuid = $1 and tmg.uuid = $2
+                limit 1
+            `, [line_uuid, group_uuid, parsedMonth, parsedYear]);
+            console.log(`[PIC Config] Step 1 (init query): ${Date.now() - t1}ms`);
+
+            if (initQuery.rowCount === 0) {
+                return response.failed(res, "Invalid line or group");
+            }
+
+            let { line_id, group_id, main_schedule_id, sub_count } = initQuery.rows[0];
+
+            // Step 2: Generate schedule on-the-fly if no sub-schedules exist
+            if (!main_schedule_id || sub_count === 0) {
+                try {
+                    const t2 = Date.now();
+                    const generateSchedule = require('../../schedulers/4s.scheduler');
+                    await generateSchedule(parsedYear, parsedMonth, line_id, group_id);
+                    console.log(`[PIC Config] Step 2 (generate schedule): ${Date.now() - t2}ms`);
+
+                    // Re-fetch main_schedule_id after generation
+                    const reQuery = await database.query(`
+                        select main_schedule_id from ${table.tb_r_4s_main_schedules}
+                        where line_id = $1 and group_id = $2 and month_num = $3 and year_num = $4
+                        limit 1
+                    `, [line_id, group_id, parsedMonth, parsedYear]);
+                    
+                    if (reQuery.rowCount === 0) {
+                        return response.success(res, "No main schedule found", { list: [] });
+                    }
+                    main_schedule_id = reQuery.rows[0].main_schedule_id;
+                } catch (genErr) {
+                    console.log('Error generating schedule on-the-fly:', genErr);
+                    return response.success(res, "No main schedule found", { list: [] });
+                }
+            }
+
+            // Step 3: Fetch kanbans - optimized without LATERAL join
+            const t3 = Date.now();
+            const kanbans = await database.query(`
+                select 
+                    tmk.uuid as kanban_id,
+                    tmk.kanban_no,
+                    tmz.zone_nm,
+                    tmk.area_nm,
+                    tmf.freq_nm,
+                    tmu.uuid as pic_id,
+                    tmu.fullname as pic_nm,
+                    tmk.kanban_id as kanban_id_int
+                from (
+                    select distinct on (tbrcs.kanban_id)
+                        tbrcs.kanban_id,
+                        tbrcs.zone_id,
+                        tbrcs.freq_id,
+                        tbrcs.pic_id
+                    from ${table.tb_r_4s_sub_schedules} tbrcs
+                    where tbrcs.main_schedule_id = $1
+                    order by
+                        tbrcs.kanban_id,
+                        tbrcs.pic_id desc nulls last,
+                        tbrcs.changed_dt desc
+                ) sub
+                join ${table.tb_m_kanbans} tmk on sub.kanban_id = tmk.kanban_id
+                join ${table.tb_m_zones} tmz on sub.zone_id = tmz.zone_id
+                join ${table.tb_m_freqs} tmf on sub.freq_id = tmf.freq_id
+                left join ${table.tb_m_users} tmu on tmu.user_id = sub.pic_id
+            `, [main_schedule_id]);
+            console.log(`[PIC Config] Step 3 (fetch kanbans): ${Date.now() - t3}ms, rows: ${kanbans.rowCount}`);
+
+            // Step 4: Batch fetch standart_time for all kanban_ids at once
+            const t4 = Date.now();
+            const kanbanIds = kanbans.rows.map(r => r.kanban_id_int);
+            let standartTimeMap = {};
+            
+            if (kanbanIds.length > 0) {
+                const stQuery = await database.query(`
+                    select kanban_id, sum(standart_time)::real as standart_time
+                    from ${table.tb_m_4s_item_check_kanbans}
+                    where kanban_id = ANY($1)
+                    group by kanban_id
+                `, [kanbanIds]);
+                
+                stQuery.rows.forEach(r => {
+                    standartTimeMap[r.kanban_id] = r.standart_time;
+                });
+            }
+            console.log(`[PIC Config] Step 4 (standart_time batch): ${Date.now() - t4}ms`);
+
+            // Merge standart_time into result and remove internal kanban_id_int
+            const result = kanbans.rows.map(r => {
+                const { kanban_id_int, ...rest } = r;
+                return {
+                    ...rest,
+                    standart_time: standartTimeMap[kanban_id_int] || null
+                };
+            });
+
+            console.log(`[PIC Config] Total: ${Date.now() - startTime}ms`);
+            response.success(res, 'Success to fetch monthly PIC config', { list: result })
+        } catch (error) {
+            console.log(error)
+            response.failed(res, "Error to get monthly PIC config")
+        }
+    },
+    updateMonthlyPicConfig: async (req, res) => {
+        try {
+            const { line_uuid, group_uuid, month, year } = req.query;
+            const { mappings } = req.body;
+            
+            const uuidRegex = /^[0-9a-fA-F-]{32,36}$/;
+            if (!line_uuid || !uuidRegex.test(line_uuid) || !group_uuid || !uuidRegex.test(group_uuid)) {
+                return response.failed(res, "Invalid line_uuid or group_uuid format");
+            }
+            
+            const parsedMonth = parseInt(month);
+            const parsedYear = parseInt(year);
+            if (isNaN(parsedMonth) || parsedMonth < 1 || parsedMonth > 12 || isNaN(parsedYear) || parsedYear < 2000 || parsedYear > 2100) {
+                return response.failed(res, "Invalid month or year");
+            }
+
+            if (!Array.isArray(mappings)) {
+                return response.failed(res, "Mappings must be an array");
+            }
+
+            const checkSubSchedules = await database.query(`
+                select count(*)::integer as count 
+                from ${table.tb_r_4s_sub_schedules} tbrcs
+                where tbrcs.main_schedule_id = (
+                    select main_schedule_id from ${table.tb_r_4s_main_schedules} 
+                    where line_id = (select line_id from ${table.tb_m_lines} where uuid = $1)
+                      and group_id = (select group_id from ${table.tb_m_groups} where uuid = $2)
+                      and month_num = $3
+                      and year_num = $4
+                    limit 1
+                )
+                  and tbrcs.deleted_dt is null
+            `, [line_uuid, group_uuid, parsedMonth, parsedYear]);
+            const subSchedulesCount = checkSubSchedules.rows[0]?.count || 0;
+            
+            if (subSchedulesCount === 0) {
+                try {
+                    const idsQuery = await database.query(`
+                        select 
+                            (select line_id from ${table.tb_m_lines} where uuid = $1) as line_id,
+                            (select group_id from ${table.tb_m_groups} where uuid = $2) as group_id
+                    `, [line_uuid, group_uuid]);
+                    const { line_id, group_id } = idsQuery.rows[0];
+
+                    const generateSchedule = require('../../schedulers/4s.scheduler');
+                    await generateSchedule(parsedYear, parsedMonth, line_id, group_id);
+                } catch (genErr) {
+                    console.log('Error generating schedule on-the-fly during save:', genErr);
+                    return response.failed(res, "Main schedule not found and failed to generate");
+                }
+            }
+
+            const queryRes = await database.query(`
+                select main_schedule_id, uuid from ${table.tb_r_4s_main_schedules} 
+                where line_id = (select line_id from ${table.tb_m_lines} where uuid = $1)
+                  and group_id = (select group_id from ${table.tb_m_groups} where uuid = $2)
+                  and month_num = $3
+                  and year_num = $4
+                limit 1
+            `, [line_uuid, group_uuid, parsedMonth, parsedYear])
+            
+            if (queryRes.rowCount === 0) {
+                return response.failed(res, "Main schedule not found")
+            }
+            const { main_schedule_id, uuid: main_schedule_uuid } = queryRes.rows[0];
+
+            await queryTransaction(async (db) => {
+                for (const mapping of mappings) {
+                    const { kanban_id, pic_id } = mapping;
+                    if (!kanban_id || !uuidRegex.test(kanban_id)) {
+                        continue;
+                    }
+
+                    if (pic_id && uuidRegex.test(pic_id)) {
+                        await db.query(`
+                            update ${table.tb_r_4s_sub_schedules}
+                            set pic_id = (select user_id from ${table.tb_m_users} where uuid = $1),
+                                changed_by = $2,
+                                changed_dt = NOW()
+                            where main_schedule_id = $3
+                              and kanban_id = (select kanban_id from ${table.tb_m_kanbans} where uuid = $4)
+                              and actual_pic_id is null
+                        `, [pic_id, req.user.fullname, main_schedule_id, kanban_id]);
+                    } else {
+                        await db.query(`
+                            update ${table.tb_r_4s_sub_schedules}
+                            set pic_id = null,
+                                changed_by = $1,
+                                changed_dt = NOW()
+                            where main_schedule_id = $2
+                              and kanban_id = (select kanban_id from ${table.tb_m_kanbans} where uuid = $3)
+                              and actual_pic_id is null
+                        `, [req.user.fullname, main_schedule_id, kanban_id]);
+                    }
+                }
+            });
+
+            if (main_schedule_uuid) {
+                cacheDelete(main_schedule_uuid);
+            }
+
+            response.success(res, 'Success to update monthly PIC configuration')
+        } catch (error) {
+            console.log(error)
+            response.failed(res, "Error to update monthly PIC configuration")
+        }
+    },
 }

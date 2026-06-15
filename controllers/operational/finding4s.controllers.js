@@ -187,6 +187,12 @@ module.exports = {
   },
   post4sFinding: async (req, res) => {
     try {
+      if (req.body.evaluation_nm === 'Finish') {
+        if (!req.body.actual_cm_date) {
+          throw "Actual Countermeasure Date must be filled to finish evaluation";
+        }
+        req.body.cm_judg = true;
+      }
       // add column identify for is_need_improvement flag & is_change_sop flag
       const rawSubScheduleId = ` (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}') `;
       const rawScheduleItemCheckKanbanId = ` (select schedule_item_check_kanban_id from ${table.tb_r_4s_schedule_item_check_kanbans} where uuid = '${req.body.schedule_item_check_kanban_id}') `;
@@ -292,6 +298,13 @@ module.exports = {
         throw "finding id not provided";
       }
       console.log(req.body, " :req.body");
+
+      if (req.body.evaluation_nm === 'Finish') {
+        if (!req.body.actual_cm_date) {
+          throw "Actual Countermeasure Date must be filled to finish evaluation";
+        }
+        req.body.cm_judg = true;
+      }
 
       const exists = await queryCustom(
         `select * from ${table.tb_r_4s_findings} where uuid = '${req.params.id}'`
