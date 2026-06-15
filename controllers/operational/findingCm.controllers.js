@@ -75,7 +75,7 @@ module.exports = {
       const safeLimit = parseInt(limit) || 10;
       const safePage = parseInt(currentPage) || 1;
 
-      if (safeLimit < 1 || safeLimit > 100) {
+      if (safeLimit < 1 || safeLimit > 100000) {
         return response.failed(res, "Invalid limit range");
       }
 

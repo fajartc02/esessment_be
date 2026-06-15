@@ -23,7 +23,7 @@ const {
 } = require('../services/4s.services')
 
 //#region scheduler main
-const main = async (yearParam, monthParam) => {
+const main = async (yearParam, monthParam, lineIdParam = null, groupIdParam = null) => {
     console.log('4S Schedule Date Scheduler Running...')
     const currentDate = moment()
     let currentYear = yearParam || parseInt(currentDate.format('YYYY'));
@@ -60,7 +60,10 @@ const main = async (yearParam, monthParam) => {
         console.log("db connection", db);
         
         //#region schedulers parent
-        const lineGroups = await lineGroupRows(db, currentYear, currentMonth, false)
+        let lineGroups = await lineGroupRows(db, currentYear, currentMonth, false)
+        if (lineIdParam && groupIdParam) {
+            lineGroups = lineGroups.filter(lg => lg.line_id == lineIdParam && lg.group_id == groupIdParam)
+        }
 
         let mainScheduleBulkSchema = []
         let subScheduleBulkSchema = []
