@@ -73,7 +73,7 @@ const getAllChildrenSubSchedulesOptimized2 = async (
     }
 
     // Build filter for freq_id, zone_id, kanban_id ONLY (not pic_id)
-    const filterValues = scheduleFilters.map((filter) => 
+    const filterValues = scheduleFilters.map((filter) =>
         `(${filter.freq_real_id}, ${filter.zone_real_id}, ${filter.kanban_real_id})`
     ).join(',');
 
@@ -187,7 +187,7 @@ const getAllChildrenSubSchedulesOptimized2 = async (
             AND tbrcs.main_schedule_id = ${mainScheduleRealId}
         ORDER BY tbrcs.freq_id, tbrcs.zone_id, tbrcs.kanban_id, date_num
     `;
-console.log("childrensql", childrenSql);
+    console.log("childrensql", childrenSql);
     const startTime = Date.now();
     const result = await poolQuery(childrenSql);
     const timeTaken = Date.now() - startTime;
@@ -201,15 +201,15 @@ console.log("childrensql", childrenSql);
  */
 const groupChildrenByParent2 = (children) => {
     const grouped = {};
-    
+
     children.forEach(child => {
         // Key is based on freq, zone, kanban ONLY - not pic_id
         const key = `${child.freq_real_id}_${child.zone_real_id}_${child.kanban_real_id}`;
-        
+
         if (!grouped[key]) {
             grouped[key] = [];
         }
-        
+
         // Keep only the fields needed by frontend
         const cleanChild = {
             sub_schedule_id: child.sub_schedule_id,
@@ -226,10 +226,10 @@ const groupChildrenByParent2 = (children) => {
             has_sh_sign: child.has_sh_sign,
             total_comment: child.total_comment
         };
-        
+
         grouped[key].push(cleanChild);
     });
-    
+
     return grouped;
 };
 
@@ -259,7 +259,7 @@ const attachChildrenToSchedules2 = async (scheduleFinalResult, mainScheduleRealI
 
     const scheduleFilters = Array.from(uniqueFilters.values());
     const allChildren = await getAllChildrenSubSchedulesOptimized2(
-        mainScheduleRealId, 
+        mainScheduleRealId,
         scheduleFilters
     );
 
@@ -270,7 +270,7 @@ const attachChildrenToSchedules2 = async (scheduleFinalResult, mainScheduleRealI
     const scheduleRows = scheduleFinalResult.map(item => {
         // Match using freq + zone + kanban ONLY
         const key = `${item.freq_real_id}_${item.zone_real_id}_${item.kanban_real_id}`;
-        
+
         return {
             no: item.no,
             line_id: item.line_id,

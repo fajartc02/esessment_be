@@ -2,6 +2,8 @@
 dist/
 node_modules/
 tests/e2e/reports/
+assets/
+scratch/
 
 # local env files
 .env.local

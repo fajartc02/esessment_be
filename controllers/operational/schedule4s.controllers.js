@@ -197,11 +197,13 @@ const childrenSubSchedule = async (
                       ) finding on true
                       left join lateral (
                         select 
-                          count(*) as total_checked
+                          count(*) as total_checked,
+                          count(case when lower(tj.judgment_nm) = 'ng' then 1 end) as total_ng_checked
                         from 
-                          ${table.tb_r_4s_schedule_item_check_kanbans}
+                          ${table.tb_r_4s_schedule_item_check_kanbans} rsick
+                          left join ${table.tb_m_judgments} tj on rsick.judgment_id = tj.judgment_id
                         where
-                          item_check_kanban_id in (
+                          rsick.item_check_kanban_id in (
                                                     select 
                                                       item_check_kanban_id 
                                                     from 
@@ -209,11 +211,10 @@ const childrenSubSchedule = async (
                                                     where 
                                                       kanban_id = '${kanbanRealId}'
                                                       )
-                                                      and sub_schedule_id = tbrcs.sub_schedule_id
-                                                      /* and main_schedule_id = tbrcs.main_schedule_id
-                                                      and checked_date::date = tbrcs.plan_time::date */
+                                                      and rsick.sub_schedule_id = tbrcs.sub_schedule_id
+                                                      and rsick.deleted_dt is null
                       ) item_check on true
-                     left join lateral (
+                      left join lateral (
                          select count(*)::real as total_comment from ${table.tb_r_4s_comments} where sub_schedule_id = tbrcs.sub_schedule_id
                       ) comment on true
                   where
@@ -382,7 +383,7 @@ module.exports = {
             // =========================
             // ✅ WHITELIST PARAM
             // =========================
-            const allowedParams = ['line_id','group_id','month_year_num','limit','current_page'];
+            const allowedParams = ['line_id', 'group_id', 'month_year_num', 'limit', 'current_page'];
 
             for (const key in req.query) {
                 if (!allowedParams.includes(key)) {
@@ -407,7 +408,7 @@ module.exports = {
             line_id = sanitize(line_id);
             group_id = sanitize(group_id);
             month_year_num = sanitize(month_year_num);
-            
+
             // =========================
             // ✅ VALIDASI UUID (STRICT)
             // =========================
@@ -651,7 +652,7 @@ module.exports = {
             // ✅ 2. CACHING & VALIDASI DASAR
             // ==========================================
             const cacheKey = subScheduleCacheKey(main_schedule_id, freq_id, zone_id, kanban_id, line_id, group_id, month_year_num, safeLimit, safePage);
-            
+
             // Aktifkan cache kembali untuk menghemat resource database (Rate Limiting Support)
             const cachedSchedule = cacheGet(cacheKey);
             if (cachedSchedule) {
@@ -674,10 +675,10 @@ module.exports = {
             client = await databasePool.connect();
 
             // Kirim safeLimit yang sudah diproteksi ke fungsi query
-            let scheduleQuery = await subScheduleRows(client, { 
-                ...req.query, 
-                limit: safeLimit, 
-                current_page: safePage 
+            let scheduleQuery = await subScheduleRows(client, {
+                ...req.query,
+                limit: safeLimit,
+                current_page: safePage
             });
 
             if (scheduleQuery) {
@@ -708,11 +709,11 @@ module.exports = {
                     item.main_schedule_id = item.main_schedule_uuid;
 
                     // Cleanup data sensitif/tidak perlu
-                    const { 
-                        freq_real_id, zone_real_id, kanban_real_id, pic_real_id, 
-                        main_schedule_uuid, year_num, month_num, ...cleanItem 
+                    const {
+                        freq_real_id, zone_real_id, kanban_real_id, pic_real_id,
+                        main_schedule_uuid, year_num, month_num, ...cleanItem
                     } = item;
-                    
+
                     return cleanItem;
                 });
 
@@ -1152,10 +1153,10 @@ module.exports = {
 
                     const planDateUpdate = moment(req.body.plan_date, 'YYYY-MM-DD')
                     const previousDate = moment(sourceDateStr, 'YYYY-MM-DD')
-                    
+
                     if (!planDateUpdate.isValid()) throw "Format plan_date tidak valid"
                     if (!previousDate.isValid()) throw "Format before_plan_date tidak valid"
-                    
+
                     req.body.plan_date = planDateUpdate.format('YYYY-MM-DD')
                     const sourceDateStrParsed = previousDate.format('YYYY-MM-DD')
 
@@ -1225,7 +1226,7 @@ module.exports = {
                           and plan_time is not null
                         limit 1
                     `, [targetMainScheduleId, schedulRow.freq_id, schedulRow.zone_id, schedulRow.kanban_id, targetScheduleDate.rows[0].schedule_id])
-                    
+
                     if (checkPlannedSlotRes.rowCount > 0) {
                         throw "Jadwal untuk Kanban ini pada tanggal tujuan sudah terdaftar."
                     }
@@ -1492,7 +1493,7 @@ module.exports = {
                 AND DATE_PART('year', plan_time) = src.year_start
                 AND (s.pic_id IS NULL)
             `)
-            
+
             const main_schedule_uuid_query = await queryGET(table.tb_r_4s_main_schedules, `WHERE main_schedule_id = '${main_schedule_id}' `, ['uuid']);
             const main_schedule_uuid = main_schedule_uuid_query[0]?.uuid;
             if (main_schedule_uuid) {
@@ -1693,12 +1694,12 @@ module.exports = {
         try {
             const startTime = Date.now();
             const { line_uuid, group_uuid, month, year } = req.query;
-            
+
             const uuidRegex = /^[0-9a-fA-F-]{32,36}$/;
             if (!line_uuid || !uuidRegex.test(line_uuid) || !group_uuid || !uuidRegex.test(group_uuid)) {
                 return response.failed(res, "Invalid line_uuid or group_uuid format");
             }
-            
+
             const parsedMonth = parseInt(month);
             const parsedYear = parseInt(year);
             if (isNaN(parsedMonth) || parsedMonth < 1 || parsedMonth > 12 || isNaN(parsedYear) || parsedYear < 2000 || parsedYear > 2100) {
@@ -1749,7 +1750,7 @@ module.exports = {
                         where line_id = $1 and group_id = $2 and month_num = $3 and year_num = $4
                         limit 1
                     `, [line_id, group_id, parsedMonth, parsedYear]);
-                    
+
                     if (reQuery.rowCount === 0) {
                         return response.success(res, "No main schedule found", { list: [] });
                     }
@@ -1796,7 +1797,7 @@ module.exports = {
             const t4 = Date.now();
             const kanbanIds = kanbans.rows.map(r => r.kanban_id_int);
             let standartTimeMap = {};
-            
+
             if (kanbanIds.length > 0) {
                 const stQuery = await database.query(`
                     select kanban_id, sum(standart_time)::real as standart_time
@@ -1804,7 +1805,7 @@ module.exports = {
                     where kanban_id = ANY($1)
                     group by kanban_id
                 `, [kanbanIds]);
-                
+
                 stQuery.rows.forEach(r => {
                     standartTimeMap[r.kanban_id] = r.standart_time;
                 });
@@ -1831,12 +1832,12 @@ module.exports = {
         try {
             const { line_uuid, group_uuid, month, year } = req.query;
             const { mappings } = req.body;
-            
+
             const uuidRegex = /^[0-9a-fA-F-]{32,36}$/;
             if (!line_uuid || !uuidRegex.test(line_uuid) || !group_uuid || !uuidRegex.test(group_uuid)) {
                 return response.failed(res, "Invalid line_uuid or group_uuid format");
             }
-            
+
             const parsedMonth = parseInt(month);
             const parsedYear = parseInt(year);
             if (isNaN(parsedMonth) || parsedMonth < 1 || parsedMonth > 12 || isNaN(parsedYear) || parsedYear < 2000 || parsedYear > 2100) {
@@ -1861,7 +1862,7 @@ module.exports = {
                   and tbrcs.deleted_dt is null
             `, [line_uuid, group_uuid, parsedMonth, parsedYear]);
             const subSchedulesCount = checkSubSchedules.rows[0]?.count || 0;
-            
+
             if (subSchedulesCount === 0) {
                 try {
                     const idsQuery = await database.query(`
@@ -1887,7 +1888,7 @@ module.exports = {
                   and year_num = $4
                 limit 1
             `, [line_uuid, group_uuid, parsedMonth, parsedYear])
-            
+
             if (queryRes.rowCount === 0) {
                 return response.failed(res, "Main schedule not found")
             }
@@ -1934,4 +1935,714 @@ module.exports = {
             response.failed(res, "Error to update monthly PIC configuration")
         }
     },
+
+    getMemberRotations: async (req, res) => {
+        try {
+            const { line_uuid, group_uuid, year } = req.query;
+            const uuidRegex = /^[0-9a-fA-F-]{32,36}$/;
+            if (!line_uuid || !uuidRegex.test(line_uuid) || !group_uuid || !uuidRegex.test(group_uuid)) {
+                return response.failed(res, "Invalid line_uuid or group_uuid format");
+            }
+            const parsedYear = parseInt(year);
+            if (isNaN(parsedYear) || parsedYear < 2000 || parsedYear > 2100) {
+                return response.failed(res, "Invalid year");
+            }
+
+            const queryResult = await database.query(`
+                WITH resolved_ids AS (
+                    SELECT 
+                        (SELECT line_id FROM ${table.tb_m_lines} WHERE uuid = $2) as line_id,
+                        (SELECT group_id FROM ${table.tb_m_groups} WHERE uuid = $3) as group_id
+                ),
+                year_schedules AS (
+                    SELECT ms.main_schedule_id, ms.month_num
+                    FROM ${table.tb_r_4s_main_schedules} ms
+                    JOIN resolved_ids ri ON ms.line_id = ri.line_id AND ms.group_id = ri.group_id
+                    WHERE ms.year_num = $1
+                ),
+                pic_per_month AS (
+                    SELECT DISTINCT ON (ys.month_num, ss.kanban_id)
+                        ys.month_num,
+                        ss.kanban_id,
+                        ss.pic_id
+                    FROM year_schedules ys
+                    JOIN ${table.tb_r_4s_sub_schedules} ss 
+                        ON ss.main_schedule_id = ys.main_schedule_id
+                    WHERE ss.deleted_dt IS NULL
+                    ORDER BY ys.month_num, ss.kanban_id, ss.changed_dt DESC
+                )
+                SELECT 
+                    tmk.uuid as kanban_id,
+                    tmk.kanban_no,
+                    tmz.zone_nm,
+                    tmk.area_nm,
+                    tmf.freq_nm,
+                    tmf.color,
+                    MAX(CASE WHEN ppm.month_num = 1 THEN tmu.fullname END) as month_1_pic,
+                    MAX(CASE WHEN ppm.month_num = 1 THEN tmu.uuid END)::text as month_1_pic_id,
+                    MAX(CASE WHEN ppm.month_num = 2 THEN tmu.fullname END) as month_2_pic,
+                    MAX(CASE WHEN ppm.month_num = 2 THEN tmu.uuid END)::text as month_2_pic_id,
+                    MAX(CASE WHEN ppm.month_num = 3 THEN tmu.fullname END) as month_3_pic,
+                    MAX(CASE WHEN ppm.month_num = 3 THEN tmu.uuid END)::text as month_3_pic_id,
+                    MAX(CASE WHEN ppm.month_num = 4 THEN tmu.fullname END) as month_4_pic,
+                    MAX(CASE WHEN ppm.month_num = 4 THEN tmu.uuid END)::text as month_4_pic_id,
+                    MAX(CASE WHEN ppm.month_num = 5 THEN tmu.fullname END) as month_5_pic,
+                    MAX(CASE WHEN ppm.month_num = 5 THEN tmu.uuid END)::text as month_5_pic_id,
+                    MAX(CASE WHEN ppm.month_num = 6 THEN tmu.fullname END) as month_6_pic,
+                    MAX(CASE WHEN ppm.month_num = 6 THEN tmu.uuid END)::text as month_6_pic_id,
+                    MAX(CASE WHEN ppm.month_num = 7 THEN tmu.fullname END) as month_7_pic,
+                    MAX(CASE WHEN ppm.month_num = 7 THEN tmu.uuid END)::text as month_7_pic_id,
+                    MAX(CASE WHEN ppm.month_num = 8 THEN tmu.fullname END) as month_8_pic,
+                    MAX(CASE WHEN ppm.month_num = 8 THEN tmu.uuid END)::text as month_8_pic_id,
+                    MAX(CASE WHEN ppm.month_num = 9 THEN tmu.fullname END) as month_9_pic,
+                    MAX(CASE WHEN ppm.month_num = 9 THEN tmu.uuid END)::text as month_9_pic_id,
+                    MAX(CASE WHEN ppm.month_num = 10 THEN tmu.fullname END) as month_10_pic,
+                    MAX(CASE WHEN ppm.month_num = 10 THEN tmu.uuid END)::text as month_10_pic_id,
+                    MAX(CASE WHEN ppm.month_num = 11 THEN tmu.fullname END) as month_11_pic,
+                    MAX(CASE WHEN ppm.month_num = 11 THEN tmu.uuid END)::text as month_11_pic_id,
+                    MAX(CASE WHEN ppm.month_num = 12 THEN tmu.fullname END) as month_12_pic,
+                    MAX(CASE WHEN ppm.month_num = 12 THEN tmu.uuid END)::text as month_12_pic_id
+                FROM ${table.tb_m_kanbans} tmk
+                JOIN ${table.tb_m_zones} tmz ON tmk.zone_id = tmz.zone_id
+                JOIN ${table.tb_m_freqs} tmf ON tmk.freq_id = tmf.freq_id
+                CROSS JOIN resolved_ids ri
+                LEFT JOIN pic_per_month ppm ON ppm.kanban_id = tmk.kanban_id
+                LEFT JOIN ${table.tb_m_users} tmu ON tmu.user_id = ppm.pic_id
+                WHERE tmz.line_id = ri.line_id
+                  AND tmk.group_id = ri.group_id
+                  AND tmk.deleted_dt IS NULL
+                  AND tmz.zone_nm <> 'OTHERS'
+                GROUP BY tmk.kanban_id, tmk.kanban_no, tmz.zone_nm, tmk.area_nm, tmf.freq_nm, tmf.color
+                ORDER BY tmk.kanban_no ASC
+            `, [parsedYear, line_uuid, group_uuid]);
+
+            response.success(res, "Success to fetch member rotations", { list: queryResult.rows });
+        } catch (error) {
+            console.error(error);
+            response.failed(res, "Error to fetch member rotations");
+        }
+    },
+
+    updateMemberRotations: async (req, res) => {
+        try {
+            const { line_uuid, group_uuid, year } = req.query;
+            const { rotations } = req.body; // array of { kanban_id, month_1_pic_id, month_2_pic_id, ... }
+            const uuidRegex = /^[0-9a-fA-F-]{32,36}$/;
+
+            if (!line_uuid || !uuidRegex.test(line_uuid) || !group_uuid || !uuidRegex.test(group_uuid)) {
+                return response.failed(res, "Invalid line_uuid or group_uuid format");
+            }
+            const parsedYear = parseInt(year);
+            if (isNaN(parsedYear) || parsedYear < 2000 || parsedYear > 2100) {
+                return response.failed(res, "Invalid year");
+            }
+            if (!Array.isArray(rotations)) {
+                return response.failed(res, "Rotations must be an array");
+            }
+
+            // Resolve Line and Group ids
+            const idsQuery = await database.query(`
+                select 
+                    (select line_id from ${table.tb_m_lines} where uuid = $1) as line_id,
+                    (select group_id from ${table.tb_m_groups} where uuid = $2) as group_id
+            `, [line_uuid, group_uuid]);
+            const { line_id, group_id } = idsQuery.rows[0];
+
+            if (!line_id || !group_id) {
+                return response.failed(res, "Invalid line or group");
+            }
+
+            // We will loop through each month 1 to 12
+            for (let monthNum = 1; monthNum <= 12; monthNum++) {
+                // Check if main schedule exists for this year and month. If not, generate on-the-fly.
+                const checkSubSchedules = await database.query(`
+                    select count(*)::integer as count 
+                    from ${table.tb_r_4s_sub_schedules} tbrcs
+                    where tbrcs.main_schedule_id = (
+                        select main_schedule_id from ${table.tb_r_4s_main_schedules} 
+                        where line_id = $1 and group_id = $2 and month_num = $3 and year_num = $4
+                        limit 1
+                    )
+                      and tbrcs.deleted_dt is null
+                `, [line_id, group_id, monthNum, parsedYear]);
+                const subSchedulesCount = checkSubSchedules.rows[0]?.count || 0;
+
+                if (subSchedulesCount === 0) {
+                    try {
+                        const generateSchedule = require('../../schedulers/4s.scheduler');
+                        await generateSchedule(parsedYear, monthNum, line_id, group_id);
+                    } catch (genErr) {
+                        console.log(`[Rotation Save] Failed to generate schedule for month ${monthNum}:`, genErr);
+                    }
+                }
+
+                // Get main_schedule_id and main_schedule_uuid
+                const mainSchedQuery = await database.query(`
+                    select main_schedule_id, uuid from ${table.tb_r_4s_main_schedules} 
+                    where line_id = $1 and group_id = $2 and month_num = $3 and year_num = $4
+                    limit 1
+                `, [line_id, group_id, monthNum, parsedYear]);
+
+                if (mainSchedQuery.rowCount > 0) {
+                    const { main_schedule_id, uuid: main_schedule_uuid } = mainSchedQuery.rows[0];
+
+                    await queryTransaction(async (db) => {
+                        for (const rotation of rotations) {
+                            const { kanban_id } = rotation;
+                            const pic_uuid = rotation[`month_${monthNum}_pic_id`];
+
+                            if (!kanban_id || !uuidRegex.test(kanban_id)) {
+                                continue;
+                            }
+
+                            if (pic_uuid && uuidRegex.test(pic_uuid)) {
+                                await db.query(`
+                                    update ${table.tb_r_4s_sub_schedules}
+                                    set pic_id = (select user_id from ${table.tb_m_users} where uuid = $1),
+                                        changed_by = $2,
+                                        changed_dt = NOW()
+                                    where main_schedule_id = $3
+                                      and kanban_id = (select kanban_id from ${table.tb_m_kanbans} where uuid = $4)
+                                      and actual_pic_id is null
+                                `, [pic_uuid, req.user.fullname, main_schedule_id, kanban_id]);
+                            } else {
+                                await db.query(`
+                                    update ${table.tb_r_4s_sub_schedules}
+                                    set pic_id = null,
+                                        changed_by = $1,
+                                        changed_dt = NOW()
+                                    where main_schedule_id = $2
+                                      and kanban_id = (select kanban_id from ${table.tb_m_kanbans} where uuid = $3)
+                                      and actual_pic_id is null
+                                `, [req.user.fullname, main_schedule_id, kanban_id]);
+                            }
+                        }
+                    });
+
+                    if (main_schedule_uuid) {
+                        cacheDelete(main_schedule_uuid);
+                    }
+                }
+            }
+
+            response.success(res, 'Success to update member rotations');
+        } catch (error) {
+            console.error(error);
+            response.failed(res, "Error to update member rotations");
+        }
+    },
+
+    exportMemberRotationsToExcel: async (req, res) => {
+        try {
+            const { line_uuid, group_uuid, year } = req.query;
+            const uuidRegex = /^[0-9a-fA-F-]{32,36}$/;
+            if (!line_uuid || !uuidRegex.test(line_uuid) || !group_uuid || !uuidRegex.test(group_uuid)) {
+                return response.failed(res, "Invalid line_uuid or group_uuid format");
+            }
+            const parsedYear = parseInt(year);
+            if (isNaN(parsedYear) || parsedYear < 2000 || parsedYear > 2100) {
+                return response.failed(res, "Invalid year");
+            }
+
+            // Resolve Line and Group
+            const lineGroupQuery = await database.query(`
+                select 
+                    (select line_nm from ${table.tb_m_lines} where uuid = $1) as line_nm,
+                    (select group_nm from ${table.tb_m_groups} where uuid = $2) as group_nm
+            `, [line_uuid, group_uuid]);
+
+            if (lineGroupQuery.rowCount === 0) {
+                return response.failed(res, "Line or Group not found");
+            }
+
+            const { line_nm, group_nm } = lineGroupQuery.rows[0];
+
+            // Fetch rotation data
+            const queryResult = await database.query(`
+                WITH resolved_ids AS (
+                    SELECT 
+                        (SELECT line_id FROM ${table.tb_m_lines} WHERE uuid = $2) as line_id,
+                        (SELECT group_id FROM ${table.tb_m_groups} WHERE uuid = $3) as group_id
+                ),
+                year_schedules AS (
+                    SELECT ms.main_schedule_id, ms.month_num
+                    FROM ${table.tb_r_4s_main_schedules} ms
+                    JOIN resolved_ids ri ON ms.line_id = ri.line_id AND ms.group_id = ri.group_id
+                    WHERE ms.year_num = $1
+                ),
+                pic_per_month AS (
+                    SELECT DISTINCT ON (ys.month_num, ss.kanban_id)
+                        ys.month_num,
+                        ss.kanban_id,
+                        ss.pic_id
+                    FROM year_schedules ys
+                    JOIN ${table.tb_r_4s_sub_schedules} ss 
+                        ON ss.main_schedule_id = ys.main_schedule_id
+                    WHERE ss.deleted_dt IS NULL
+                    ORDER BY ys.month_num, ss.kanban_id, ss.changed_dt DESC
+                )
+                SELECT 
+                    tmk.kanban_no,
+                    tmz.zone_nm,
+                    tmk.area_nm,
+                    tmf.freq_nm,
+                    tmf.color,
+                    MAX(CASE WHEN ppm.month_num = 1 THEN tmu.fullname END) as month_1_pic,
+                    MAX(CASE WHEN ppm.month_num = 2 THEN tmu.fullname END) as month_2_pic,
+                    MAX(CASE WHEN ppm.month_num = 3 THEN tmu.fullname END) as month_3_pic,
+                    MAX(CASE WHEN ppm.month_num = 4 THEN tmu.fullname END) as month_4_pic,
+                    MAX(CASE WHEN ppm.month_num = 5 THEN tmu.fullname END) as month_5_pic,
+                    MAX(CASE WHEN ppm.month_num = 6 THEN tmu.fullname END) as month_6_pic,
+                    MAX(CASE WHEN ppm.month_num = 7 THEN tmu.fullname END) as month_7_pic,
+                    MAX(CASE WHEN ppm.month_num = 8 THEN tmu.fullname END) as month_8_pic,
+                    MAX(CASE WHEN ppm.month_num = 9 THEN tmu.fullname END) as month_9_pic,
+                    MAX(CASE WHEN ppm.month_num = 10 THEN tmu.fullname END) as month_10_pic,
+                    MAX(CASE WHEN ppm.month_num = 11 THEN tmu.fullname END) as month_11_pic,
+                    MAX(CASE WHEN ppm.month_num = 12 THEN tmu.fullname END) as month_12_pic
+                FROM ${table.tb_m_kanbans} tmk
+                JOIN ${table.tb_m_zones} tmz ON tmk.zone_id = tmz.zone_id
+                JOIN ${table.tb_m_freqs} tmf ON tmk.freq_id = tmf.freq_id
+                CROSS JOIN resolved_ids ri
+                LEFT JOIN pic_per_month ppm ON ppm.kanban_id = tmk.kanban_id
+                LEFT JOIN ${table.tb_m_users} tmu ON tmu.user_id = ppm.pic_id
+                WHERE tmz.line_id = ri.line_id
+                  AND tmk.group_id = ri.group_id
+                  AND tmk.deleted_dt IS NULL
+                  AND tmz.zone_nm <> 'OTHERS'
+                GROUP BY tmk.kanban_id, tmk.kanban_no, tmz.zone_nm, tmk.area_nm, tmf.freq_nm, tmf.color
+                ORDER BY tmk.kanban_no ASC
+            `, [parsedYear, line_uuid, group_uuid]);
+
+            const ExcelJS = require('exceljs');
+            const path = require('path');
+            const workbook = new ExcelJS.Workbook();
+            const templatePath = path.join(__dirname, '..', '..', 'assets', 'rotasi.xlsx');
+            await workbook.xlsx.readFile(templatePath);
+
+            const groupLower = (group_nm || "").toLowerCase();
+            let activeSheet = null;
+            let otherSheet = null;
+            if (groupLower.includes("red")) {
+                activeSheet = workbook.getWorksheet("Red - DC#1") || workbook.worksheets[0];
+                otherSheet = workbook.getWorksheet("White - DC#2") || workbook.worksheets[1];
+            } else {
+                activeSheet = workbook.getWorksheet("White - DC#2") || workbook.worksheets[1];
+                otherSheet = workbook.getWorksheet("Red - DC#1") || workbook.worksheets[0];
+            }
+
+            if (otherSheet) {
+                workbook.removeWorksheet(otherSheet.id);
+            }
+
+            if (!activeSheet) {
+                return response.failed(res, "Worksheet not found in template");
+            }
+
+            // Set Title text (A1:M3 merged) with dynamic Line and Year
+            activeSheet.getCell('A1').value = `Schedule Rotasi PIC 4S "${(line_nm || "Line").toUpperCase()}" - Tahun ${parsedYear}`;
+
+            // Set Shift cell (N1:Q3 merged) with dynamic Group name
+            activeSheet.getCell('N1').value = `${(group_nm || "Shift").toUpperCase()} - Shift`;
+
+            // Separate items by frequency type to match the template order and styling
+            const dailyItems = queryResult.rows.filter(s => (s.freq_nm || "").toLowerCase().includes("day"));
+            const weeklyItems = queryResult.rows.filter(s => (s.freq_nm || "").toLowerCase().includes("week"));
+            const monthlyItems = queryResult.rows.filter(s => {
+                const fn = (s.freq_nm || "").toLowerCase();
+                return !fn.includes("day") && !fn.includes("week");
+            });
+
+            // Adjust column widths for month columns (Columns F to Q, i.e., 6 to 17) to make sure PIC names are not cut off
+            for (let colNum = 6; colNum <= 17; colNum++) {
+                const col = activeSheet.getColumn(colNum);
+                col.width = 18;
+            }
+
+            let offset = 0;
+            let runningNo = 1;
+
+            const processSection = (items, startRow, defaultSize) => {
+                const actualSize = Math.max(defaultSize, items.length);
+                const neededRows = actualSize - defaultSize;
+                const sectionStart = startRow + offset;
+
+                // Insert rows if needed
+                if (neededRows > 0) {
+                    for (let k = 0; k < neededRows; k++) {
+                        const insertPos = sectionStart + defaultSize + k;
+                        const copyFrom = sectionStart; // copy style from first row of section
+
+                        activeSheet.insertRow(insertPos, []);
+                        const sourceRow = activeSheet.getRow(copyFrom);
+                        const destRow = activeSheet.getRow(insertPos);
+                        destRow.height = sourceRow.height;
+                        for (let col = 1; col <= 17; col++) {
+                            destRow.getCell(col).style = JSON.parse(JSON.stringify(sourceRow.getCell(col).style || {}));
+                        }
+                    }
+                    offset += neededRows;
+                }
+
+                // Fill items
+                for (let i = 0; i < actualSize; i++) {
+                    const rowIndex = sectionStart + i;
+                    const row = activeSheet.getRow(rowIndex);
+                    const item = items[i];
+
+                    if (item) {
+                        row.getCell(1).value = runningNo++;
+                        row.getCell(2).value = item.zone_nm;
+                        row.getCell(3).value = item.kanban_no;
+                        row.getCell(4).value = item.area_nm;
+                        row.getCell(5).value = item.freq_nm;
+
+                        // Month columns
+                        for (let m = 1; m <= 12; m++) {
+                            row.getCell(5 + m).value = item[`month_${m}_pic`] || "";
+                        }
+                    } else {
+                        // Empty row placeholders
+                        row.getCell(1).value = "";
+                        row.getCell(2).value = "";
+                        row.getCell(3).value = "";
+                        row.getCell(4).value = "";
+                        row.getCell(5).value = "";
+                        for (let m = 1; m <= 12; m++) {
+                            row.getCell(5 + m).value = "";
+                        }
+                    }
+                }
+            };
+
+            // Predefined row layouts in template:
+            // Daily: starts at row 6, default size 5
+            // Weekly: starts at row 11, default size 10
+            // Monthly: starts at row 21, default size 7
+            processSection(dailyItems, 6, 5);
+            processSection(weeklyItems, 11, 10);
+            processSection(monthlyItems, 21, 7);
+
+            // Write response
+            res.setHeader(
+                "Content-Type",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            );
+            res.setHeader(
+                "Content-Disposition",
+                `attachment; filename=Schedule_Rotasi_PIC_4S_${(line_nm || "Line").replace(/\s+/g, "_")}_${parsedYear}.xlsx`
+            );
+
+            await workbook.xlsx.write(res);
+            res.end();
+
+        } catch (error) {
+            console.error(error);
+            response.failed(res, "Error to export member rotations to Excel");
+        }
+    },
+
+    export4sScheduleToExcel: async (req, res) => {
+        let client = null;
+        try {
+            const { main_schedule_id } = req.query;
+            if (!main_schedule_id) {
+                return response.failed(res, "main_schedule_id is required");
+            }
+
+            client = await databasePool.connect();
+
+            // Fetch the main schedule details to get Line, Group, and Month/Year
+            const mainScheduleRes = await client.query(
+                `SELECT ms.uuid, ms.main_schedule_id, ms.year_num, ms.month_num, l.line_nm, g.group_nm 
+                 FROM tb_r_4s_main_schedules ms
+                 JOIN tb_m_lines l ON ms.line_id = l.line_id
+                 JOIN tb_m_groups g ON ms.group_id = g.group_id
+                 WHERE ms.uuid = $1`,
+                [main_schedule_id]
+            );
+
+            if (mainScheduleRes.rows.length === 0) {
+                return response.failed(res, "Main schedule not found");
+            }
+
+            const mainScheduleInfo = mainScheduleRes.rows[0];
+            const { line_nm, group_nm, year_num, month_num, main_schedule_id: mainScheduleRealId } = mainScheduleInfo;
+
+            // Fetch all sub schedules optimized with their children populated in a single query
+            const subSchedules = await subScheduleService.subScheduleRows({
+                main_schedule_id: main_schedule_id,
+            });
+
+            // Load Excel template
+            const ExcelJS = require('exceljs');
+            const path = require('path');
+            const workbook = new ExcelJS.Workbook();
+            const templatePath = path.join(__dirname, '..', '..', 'assets', 'template.xlsx');
+            await workbook.xlsx.readFile(templatePath);
+
+            // Determine sheet based on group_nm
+            const groupLower = (group_nm || "").toLowerCase();
+            let activeSheet = null;
+            let otherSheet = null;
+            if (groupLower.includes("red")) {
+                activeSheet = workbook.getWorksheet("RED") || workbook.worksheets[1];
+                otherSheet = workbook.getWorksheet("WHITE") || workbook.worksheets[0];
+            } else {
+                activeSheet = workbook.getWorksheet("WHITE") || workbook.worksheets[0];
+                otherSheet = workbook.getWorksheet("RED") || workbook.worksheets[1];
+            }
+
+            // Delete the other sheet so the downloaded file only contains the relevant one
+            if (otherSheet) {
+                workbook.removeWorksheet(otherSheet.id);
+            }
+
+            if (!activeSheet) {
+                return response.failed(res, "Worksheet template not found");
+            }
+
+            // Set Header metadata
+            activeSheet.getCell('A4').value = "LINE : " + (line_nm || "").toUpperCase();
+
+            const monthNames = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
+            const monthStr = monthNames[parseInt(month_num) - 1] || "";
+            activeSheet.getCell('I4').value = "BULAN : " + monthStr + " " + year_num;
+
+            // === WIPE ALL MERGES IN DATA ROWS (8+) ===
+            // ExcelJS shifts merges when insertRow is called, causing "Cannot merge already merged cells" errors.
+            // Solution: remove ALL merges in data area upfront, then re-apply only what we need after processing.
+            if (activeSheet.model && activeSheet.model.merges) {
+                const headerMerges = []; // Keep merges in rows 1-7
+                activeSheet.model.merges.forEach(rangeStr => {
+                    const match = rangeStr.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
+                    if (match) {
+                        const startRow = parseInt(match[2]);
+                        const endRow = parseInt(match[4]);
+                        // Keep only merges that are entirely within header rows (1-7)
+                        if (endRow <= 7) {
+                            headerMerges.push(rangeStr);
+                        }
+                    }
+                });
+                // Wipe all merges and restore only header merges
+                activeSheet.model.merges = headerMerges;
+                // Also clear the internal _merges map for rows 8+
+                if (activeSheet._merges) {
+                    const keysToDelete = [];
+                    for (const key of Object.keys(activeSheet._merges)) {
+                        const merge = activeSheet._merges[key];
+                        if (merge && merge.model) {
+                            const topRow = merge.model.top || 0;
+                            if (topRow >= 8) {
+                                keysToDelete.push(key);
+                            }
+                        }
+                    }
+                    keysToDelete.forEach(key => delete activeSheet._merges[key]);
+                }
+            }
+
+            // Group sub schedules by frequency (daily, weekly, monthly)
+            // freq_nm values: "1 Day", "2 Day", "1 Week", "2 Week", "6 Week", "1 Month", "2 Month", etc.
+            const dailyItems = subSchedules.filter(s => (s.freq_nm || "").toLowerCase().includes("day"));
+            const weeklyItems = subSchedules.filter(s => (s.freq_nm || "").toLowerCase().includes("week"));
+            const monthlyItems = subSchedules.filter(s => {
+                const fn = (s.freq_nm || "").toLowerCase();
+                return !fn.includes("day") && !fn.includes("week");
+            });
+
+            let offset = 0;
+            let runningNo = 0; // Continuous numbering across all sections
+
+            const processSection = (items, startRow, defaultSize, freqLabel) => {
+                const actualSize = Math.max(defaultSize, items.length);
+                const neededRows = actualSize - defaultSize;
+                const sectionStart = startRow + offset;
+
+                // Insert rows if needed
+                if (neededRows > 0) {
+                    for (let k = 0; k < neededRows; k++) {
+                        const insertPos = sectionStart + defaultSize + k;
+                        const copyFrom = sectionStart; // always copy style from first row of section
+
+                        activeSheet.insertRow(insertPos, []);
+                        const sourceRow = activeSheet.getRow(copyFrom);
+                        const destRow = activeSheet.getRow(insertPos);
+                        destRow.height = sourceRow.height;
+                        for (let col = 1; col <= 45; col++) {
+                            destRow.getCell(col).style = JSON.parse(JSON.stringify(sourceRow.getCell(col).style || {}));
+                        }
+                    }
+                    offset += neededRows;
+                }
+
+                // Fill items
+                for (let i = 0; i < actualSize; i++) {
+                    const rowIndex = sectionStart + i;
+                    const row = activeSheet.getRow(rowIndex);
+                    const item = items[i];
+
+                    if (item) {
+                        runningNo++;
+                        row.getCell(1).value = runningNo;
+                        row.getCell(2).value = item.zone_nm || "";
+                        row.getCell(3).value = item.kanban_no || "";
+                        row.getCell(4).value = item.area_nm || "";
+                        row.getCell(5).value = item.pic_nm || "";
+
+                        // Fill dates
+                        if (item.children && item.children.length > 0) {
+                            item.children.forEach(child => {
+                                const dayNum = child.date_num;
+                                if (dayNum >= 1 && dayNum <= 31) {
+                                    const colIndex = 8 + dayNum - 1;
+                                    const cell = row.getCell(colIndex);
+
+                                    // Match system UI icons:
+                                    // PLANNING = empty circle (dark), ACTUAL = check circle (green)
+                                    // LEVEL_UP = X circle (orange), PROBLEM = X circle (red), DELAY = empty circle (red)
+                                    let symbol = "";
+                                    let colorHex = "3C4B64";
+                                    if (child.status === "PLANNING") {
+                                        symbol = "○";  // empty circle
+                                        colorHex = "8A93A2"; // grey
+                                    } else if (child.status === "ACTUAL") {
+                                        symbol = "✔";  // checkmark
+                                        colorHex = "2EB85C"; // green
+                                    } else if (child.status === "LEVEL_UP") {
+                                        symbol = "⊗";  // circled times (circle with X)
+                                        colorHex = "F97316"; // orange
+                                    } else if (child.status === "PROBLEM") {
+                                        symbol = "⊗";  // circled times (circle with X)
+                                        colorHex = "E55353"; // red
+                                    } else if (child.status === "DELAY") {
+                                        symbol = "○";  // empty circle
+                                        colorHex = "E55353"; // red
+                                    }
+
+                                    cell.value = symbol;
+                                    cell.style = {
+                                        ...cell.style,
+                                        alignment: { horizontal: 'center', vertical: 'middle' },
+                                        font: {
+                                            name: 'Arial',
+                                            size: 12,
+                                            bold: true,
+                                            color: { argb: "FF" + colorHex }
+                                        }
+                                    };
+                                }
+                            });
+                        }
+                    } else {
+                        // Clear row
+                        row.getCell(1).value = "";
+                        row.getCell(2).value = "";
+                        row.getCell(3).value = "";
+                        row.getCell(4).value = "";
+                        row.getCell(5).value = "";
+                        for (let col = 8; col <= 38; col++) {
+                            row.getCell(col).value = "";
+                        }
+                    }
+                }
+
+                // Apply E-F merges for ALL rows in this section (not just inserted ones)
+                for (let i = 0; i < actualSize; i++) {
+                    const rowIndex = sectionStart + i;
+                    try {
+                        activeSheet.mergeCells(rowIndex, 5, rowIndex, 6);
+                    } catch (e) {
+                        // Ignore if already merged (shouldn't happen after wipe)
+                    }
+                }
+
+                // Merge frequency column G for the entire section
+                try {
+                    activeSheet.mergeCells(sectionStart, 7, sectionStart + actualSize - 1, 7);
+                    activeSheet.getRow(sectionStart).getCell(7).value = freqLabel;
+                    activeSheet.getRow(sectionStart).getCell(7).alignment = { horizontal: 'center', vertical: 'middle', textRotation: 90 };
+                } catch (e) {
+                    console.error("Frequency merge failed:", e);
+                }
+            };
+
+            processSection(dailyItems, 8, 6, "Daily");
+            processSection(weeklyItems, 14, 9, "Weekly");
+            processSection(monthlyItems, 23, 8, "Monthly");
+
+            // Re-apply bottom section merges (shifted by offset)
+            // Original template: F31:G31 (TL Check), F32:G32 (GL Check), F33:G33 (SH Check)
+            const bottomMerges = [
+                { startRow: 31, endRow: 31, startCol: 6, endCol: 7 }, // F-G: TL. Check
+                { startRow: 32, endRow: 32, startCol: 6, endCol: 7 }, // F-G: GL check
+                { startRow: 33, endRow: 33, startCol: 6, endCol: 7 }, // F-G: SH Check
+                { startRow: 35, endRow: 42, startCol: 6, endCol: 6 }, // F: signature area
+                { startRow: 43, endRow: 47, startCol: 6, endCol: 6 }, // F: signature area
+                { startRow: 48, endRow: 53, startCol: 6, endCol: 6 }, // F: signature area
+                { startRow: 54, endRow: 63, startCol: 6, endCol: 6 }, // F: signature area
+                { startRow: 64, endRow: 71, startCol: 6, endCol: 6 }, // F: signature area
+                { startRow: 72, endRow: 78, startCol: 6, endCol: 6 }, // F: signature area
+            ];
+            for (const m of bottomMerges) {
+                try {
+                    activeSheet.mergeCells(
+                        m.startRow + offset, m.startCol,
+                        m.endRow + offset, m.endCol
+                    );
+                } catch (e) {
+                    // Ignore if merge fails (e.g., rows don't exist)
+                }
+            }
+
+            // Clear and shade invalid day columns (e.g., day 29, 30, 31 in Feb)
+            const maxDays = new Date(year_num, month_num, 0).getDate();
+            if (maxDays < 31) {
+                const startCol = 8 + maxDays;
+                for (let col = startCol; col <= 38; col++) {
+                    // Clear header cell in Row 6 (since 6 and 7 are merged)
+                    activeSheet.getRow(6).getCell(col).value = "";
+
+                    // Style for shaded columns
+                    const shadeFill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FFEAEAEA' } // light grey
+                    };
+
+                    // Apply shading to header rows 6 & 7
+                    activeSheet.getRow(6).getCell(col).fill = shadeFill;
+                    activeSheet.getRow(7).getCell(col).fill = shadeFill;
+
+                    // Apply shading and clear values for data rows (8 to last data row + offset)
+                    const lastDataRow = 30 + offset; // original last data row is 30
+                    for (let r = 8; r <= lastDataRow; r++) {
+                        const cell = activeSheet.getRow(r).getCell(col);
+                        cell.value = "";
+                        cell.fill = shadeFill;
+                    }
+                }
+            }
+
+            // Write to response stream
+            res.setHeader(
+                "Content-Type",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            );
+            res.setHeader(
+                "Content-Disposition",
+                `attachment; filename=4S_Schedule_${(line_nm || "Line").replace(/\s+/g, "_")}_${monthStr}_${year_num}.xlsx`
+            );
+
+            await workbook.xlsx.write(res);
+            res.end();
+
+        } catch (error) {
+            console.error("export4sScheduleToExcel error:", error);
+            response.failed(res, "Error exporting schedule to Excel");
+        } finally {
+            if (client) client.release();
+        }
+    }
 }
+
