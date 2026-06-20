@@ -222,6 +222,7 @@ module.exports = {
         JOIN tb_m_factors tmfac ON tmfac.factor_id = trmv.mv_factor_id
         ${condDataNotDeleted}
         ${conditions}
+        ORDER BY trmv.mv_date_finding DESC, trmv.created_dt DESC
         ${qLimit} ${qOffset}
       `;
 
