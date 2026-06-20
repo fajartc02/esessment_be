@@ -193,21 +193,32 @@ module.exports = {
         }
         req.body.cm_judg = true;
       }
-      // add column identify for is_need_improvement flag & is_change_sop flag
-      const rawSubScheduleId = ` (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}') `;
-      const rawScheduleItemCheckKanbanId = ` (select schedule_item_check_kanban_id from ${table.tb_r_4s_schedule_item_check_kanbans} where uuid = '${req.body.schedule_item_check_kanban_id}') `;
-      const rawFindingPicId = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.finding_pic_id}') `;
-      const rawFindingPicSupervisorId = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.pic_supervisor_id}') `;
+      const uuidRegex = /^[0-9a-fA-F-]{32,36}$/;
+      const rawSubScheduleId = req.body.sub_schedule_id && uuidRegex.test(req.body.sub_schedule_id)
+        ? ` (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}') `
+        : null;
+      const rawScheduleItemCheckKanbanId = req.body.schedule_item_check_kanban_id && uuidRegex.test(req.body.schedule_item_check_kanban_id)
+        ? ` (select schedule_item_check_kanban_id from ${table.tb_r_4s_schedule_item_check_kanbans} where uuid = '${req.body.schedule_item_check_kanban_id}') `
+        : null;
+      const rawFindingPicId = req.body.finding_pic_id && uuidRegex.test(req.body.finding_pic_id)
+        ? ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.finding_pic_id}') `
+        : null;
+      const rawFindingPicSupervisorId = req.body.pic_supervisor_id && uuidRegex.test(req.body.pic_supervisor_id)
+        ? ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.pic_supervisor_id}') `
+        : null;
+
       const insertBody = {
         ...req.body,
         uuid: uuid(),
-        sub_schedule_id: req.body.sub_schedule_id ? rawSubScheduleId : null,
-        schedule_item_check_kanban_id: req.body.schedule_item_check_kanban_id
-          ? rawScheduleItemCheckKanbanId
-          : null,
+        sub_schedule_id: rawSubScheduleId,
+        schedule_item_check_kanban_id: rawScheduleItemCheckKanbanId,
         finding_pic_id: rawFindingPicId,
         pic_supervisor_id: rawFindingPicSupervisorId,
       };
+
+      // Ensure NOT NULL text columns have defaults
+      if (!insertBody.finding_desc) insertBody.finding_desc = '';
+      if (!insertBody.plan_cm_desc) insertBody.plan_cm_desc = '';
 
       if (req.body.line_id) {
         insertBody.line_id = `(select line_id from ${table.tb_m_lines} where uuid = '${req.body.line_id}')`;
@@ -243,8 +254,10 @@ module.exports = {
       }
       // console.log(insertBody, ' :insertBody');
 
-      if (req.body.actual_pic_id) {
+      if (req.body.actual_pic_id && uuidRegex.test(req.body.actual_pic_id)) {
         insertBody.actual_pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.actual_pic_id}') `;
+      } else {
+        insertBody.actual_pic_id = null;
       }
 
       const transaction = await queryTransaction(async (db) => {
@@ -288,7 +301,8 @@ module.exports = {
         finding_id: transaction.rows[0].uuid,
       });
     } catch (error) {
-      console.log(error);
+      console.log('post4sFinding ERROR:', error?.message || error);
+      console.log('post4sFinding req.body:', JSON.stringify(req.body, null, 2));
       response.failed(res, error);
     }
   },
@@ -313,24 +327,42 @@ module.exports = {
         throw "Can't find finding data by finding_id provide";
       }
 
+      const uuidRegex = /^[0-9a-fA-F-]{32,36}$/;
+      const rawSubScheduleId = req.body.sub_schedule_id && uuidRegex.test(req.body.sub_schedule_id)
+        ? ` (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}') `
+        : null;
+      const rawScheduleItemCheckKanbanId = req.body.schedule_item_check_kanban_id && uuidRegex.test(req.body.schedule_item_check_kanban_id)
+        ? ` (select schedule_item_check_kanban_id from ${table.tb_r_4s_schedule_item_check_kanbans} where uuid = '${req.body.schedule_item_check_kanban_id}') `
+        : null;
+      const rawFindingPicId = req.body.finding_pic_id && uuidRegex.test(req.body.finding_pic_id)
+        ? ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.finding_pic_id}') `
+        : null;
+      const rawFindingPicSupervisorId = req.body.pic_supervisor_id && uuidRegex.test(req.body.pic_supervisor_id)
+        ? ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.pic_supervisor_id}') `
+        : null;
+
       const updateBody = {
         ...req.body,
-        sub_schedule_id: ` (select sub_schedule_id from ${table.tb_r_4s_sub_schedules} where uuid = '${req.body.sub_schedule_id}') `,
-        schedule_item_check_kanban_id: ` (select schedule_item_check_kanban_id from ${table.tb_r_4s_schedule_item_check_kanbans} where uuid = '${req.body.schedule_item_check_kanban_id}') `,
-        finding_pic_id: ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.finding_pic_id}') `,
-        pic_supervisor_id: ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.pic_supervisor_id}') `,
+        sub_schedule_id: rawSubScheduleId,
+        schedule_item_check_kanban_id: rawScheduleItemCheckKanbanId,
+        finding_pic_id: rawFindingPicId,
+        pic_supervisor_id: rawFindingPicSupervisorId,
       };
 
       if (
         !req.body.sub_schedule_id ||
-        !req.body.schedule_item_check_kanban_id
+        !req.body.schedule_item_check_kanban_id ||
+        !uuidRegex.test(req.body.sub_schedule_id) ||
+        !uuidRegex.test(req.body.schedule_item_check_kanban_id)
       ) {
         delete updateBody.sub_schedule_id;
         delete updateBody.schedule_item_check_kanban_id;
       }
 
-      if (req.body.actual_pic_id) {
+      if (req.body.actual_pic_id && uuidRegex.test(req.body.actual_pic_id)) {
         updateBody.actual_pic_id = ` (select user_id from ${table.tb_m_users} where uuid = '${req.body.actual_pic_id}') `;
+      } else {
+        delete updateBody.actual_pic_id;
       }
 
       await queryTransaction(async (db) => {

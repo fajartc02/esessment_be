@@ -15,6 +15,10 @@ const {
   addSubSchedule,
   getMonthlyPicConfig,
   updateMonthlyPicConfig,
+  export4sScheduleToExcel,
+  getMemberRotations,
+  updateMemberRotations,
+  exportMemberRotationsToExcel,
 } = require("../../../controllers/operational/schedule4s.controllers")
 
 const auth = require("../../../helpers/auth")
@@ -179,12 +183,16 @@ router.get("/main-schedule", auth.verifyToken, get4sMainSchedule)
 router.delete("/main-schedule/delete/:id", auth.verifyToken, delete4sMainSchedule)
 
 router.get("/sub-schedule", auth.verifyToken, get4sSubSchedule)
+router.get("/sub-schedule/export-excel", auth.verifyToken, export4sScheduleToExcel)
 router.get("/new-sub-schedule", auth.verifyToken, getNew4sSubSchedule)
 router.get("/sub-schedule/today", auth.verifyToken, get4sSubScheduleTodayPlan)
 router.get("/sub-schedule/count", auth.verifyToken, get4sCountTotalSummary);
 router.get('/sub-schedule/sign/:sign_checker_id', auth.verifyToken, get4sSignCheckerBySignCheckerId)
 router.get("/sub-schedule/monthly-pic-config", auth.verifyToken, getMonthlyPicConfig)
 router.put("/sub-schedule/monthly-pic-config", auth.verifyToken, updateMonthlyPicConfig)
+router.get("/member-rotation", auth.verifyToken, getMemberRotations)
+router.put("/member-rotation", auth.verifyToken, updateMemberRotations)
+router.get("/member-rotation/export", auth.verifyToken, exportMemberRotationsToExcel)
 router.get("/sub-schedule/:id", auth.verifyToken, getDetail4sSubSchedule)
 
 router.put('/sub-schedule/edit/:id', auth.verifyToken, edi4sSubSchedule)
