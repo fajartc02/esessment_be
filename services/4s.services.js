@@ -36,7 +36,25 @@ const dateFormatted = (date = '') => (moment(date, 'YYYY-MM-DD').format('YYYY-MM
 
 const checkLineHasShifts = async (db, lineId) => {
     const lineQuery = await db.query(`select line_nm from tb_m_lines where line_id = ${lineId}`);
-    return lineQuery.rowCount > 0 && lineQuery.rows[0].line_nm.toLowerCase().includes('line');
+    if (lineQuery.rowCount > 0) {
+        const lineNm = lineQuery.rows[0].line_nm.toLowerCase();
+        const nonShiftKeywords = [
+            'staff',
+            'management',
+            'am / mgr',
+            'am/mgr',
+            'tps group',
+            'tps',
+            'logistic',
+            'utility',
+            'maintenance',
+            'quality'
+        ];
+        
+        const isNonShift = nonShiftKeywords.some(keyword => lineNm.includes(keyword));
+        return !isNonShift;
+    }
+    return false;
 }
 
 const baseMstScheduleQuery4S = async (
@@ -368,46 +386,17 @@ const genWeeklySchedulePlan = async (
         let planTimeWeeklyArr = [];
 
         if (shouldGeneratePlan) {
-            const morningShift = shiftRows.filter((item) => {
-                if (lineHasShifts) {
-                    return item.shift_type == 'morning_shift' && !item.is_holiday
-                }
-
-                return !item.is_holiday
-            })
-
-            if (morningShift.length > 0) {
-                let firstWeekNum = morningShift[0].week_num;
-                const firstWeekDays = morningShift.filter((item) => item.week_num == firstWeekNum);
-                
-                let firstDay = null;
-                if (firstWeekDays.length > 0) {
-                    firstDay = firstWeekDays[getRandomInt(0, firstWeekDays.length - 1)].date;
-                } else {
-                    firstDay = morningShift[0].date;
-                }
-
-                let currentPlanDay = moment(firstDay);
-                let targetMonthEnd = moment(`${yearNum}-${padTwoDigits(monthNum)}-01`).endOf('month');
-
-                while (currentPlanDay.isSameOrBefore(targetMonthEnd)) {
-                    let validDayStr = currentPlanDay.format('YYYY-MM-DD');
-                    let isValid = morningShift.some(m => dateFormatted(m.date) == validDayStr);
-                    
-                    if (isValid) {
-                        planTimeWeeklyArr.push(validDayStr);
-                    } else {
-                        // find the closest valid day by scanning forward
-                        for (let offset = 1; offset <= 6; offset++) {
-                            let altDayStr = currentPlanDay.clone().add(offset, 'days').format('YYYY-MM-DD');
-                            if (morningShift.some(m => dateFormatted(m.date) == altDayStr)) {
-                                planTimeWeeklyArr.push(altDayStr);
-                                break;
-                            }
-                        }
+            const workingShifts = shiftRows.filter((item) => !item.is_holiday);
+            
+            let lastWeekNum = 0;
+            for (let i = 0; i < workingShifts.length; i++) {
+                if (lastWeekNum != workingShifts[i].week_num) {
+                    const plan = workingShifts.filter((item) => item.week_num == workingShifts[i].week_num);
+                    if (plan.length > 0) {
+                        // Deterministic alignment: pick the first working day of the week
+                        planTimeWeeklyArr.push(dateFormatted(plan[0].date));
                     }
-                    
-                    currentPlanDay.add(7, 'days');
+                    lastWeekNum = workingShifts[i].week_num;
                 }
             }
         }
