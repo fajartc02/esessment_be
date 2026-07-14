@@ -323,14 +323,20 @@ const genDailySchedulePlan = async (
 
         for (let sIndex = 0; sIndex < shiftRows.length; sIndex++) {
             let planTime = null
-            if (
-                !shiftRows[sIndex].is_holiday
-                && lineHasShifts
-                && shiftRows[sIndex].shift_type == 'morning_shift'
-            ) {
-                planTime = dateFormatted(shiftRows[sIndex].date)
-            } else if (!shiftRows[sIndex].is_holiday && !lineHasShifts) {
-                planTime = dateFormatted(shiftRows[sIndex].date)
+            const isAssyLine = lineId == 8 || lineId == 9;
+
+            if (!shiftRows[sIndex].is_holiday) {
+                if (!lineHasShifts) {
+                    planTime = dateFormatted(shiftRows[sIndex].date)
+                } else {
+                    if (isAssyLine) {
+                        if (shiftRows[sIndex].shift_type == 'morning_shift') {
+                            planTime = dateFormatted(shiftRows[sIndex].date)
+                        }
+                    } else {
+                        planTime = dateFormatted(shiftRows[sIndex].date)
+                    }
+                }
             }
 
             result.push({
@@ -384,19 +390,40 @@ const genWeeklySchedulePlan = async (
         }
 
         let planTimeWeeklyArr = [];
+        const isAssyLine = lineId == 8 || lineId == 9;
 
         if (shouldGeneratePlan) {
-            const workingShifts = shiftRows.filter((item) => !item.is_holiday);
-            
-            let lastWeekNum = 0;
-            for (let i = 0; i < workingShifts.length; i++) {
-                if (lastWeekNum != workingShifts[i].week_num) {
-                    const plan = workingShifts.filter((item) => item.week_num == workingShifts[i].week_num);
-                    if (plan.length > 0) {
-                        // Deterministic alignment: pick the first working day of the week
-                        planTimeWeeklyArr.push(dateFormatted(plan[0].date));
+            if (isAssyLine) {
+                const morningShifts = shiftRows.filter((item) => !item.is_holiday && item.shift_type === 'morning_shift');
+                const weeks = {};
+                morningShifts.forEach(s => {
+                    if (!weeks[s.week_num]) weeks[s.week_num] = [];
+                    weeks[s.week_num].push(s);
+                });
+                for (let week in weeks) {
+                    let weekShifts = weeks[week];
+                    if (weekShifts.length > 0) {
+                        let randomDay = weekShifts[getRandomInt(0, weekShifts.length - 1)].date;
+                        planTimeWeeklyArr.push(dateFormatted(randomDay));
                     }
-                    lastWeekNum = workingShifts[i].week_num;
+                }
+            } else {
+                const workingShifts = shiftRows.filter((item) => !item.is_holiday);
+                
+                if (workingShifts.length > 0) {
+                    const firstWeekNum = workingShifts[0].week_num;
+                    const firstWeekShifts = workingShifts.filter((item) => item.week_num == firstWeekNum);
+                    
+                    if (firstWeekShifts.length > 0) {
+                        let randomFirstDay = firstWeekShifts[getRandomInt(0, firstWeekShifts.length - 1)].date;
+                        let currentDate = moment(randomFirstDay, 'YYYY-MM-DD');
+                        let targetMonthEnd = moment(`${yearNum}-${padTwoDigits(monthNum)}-01`, 'YYYY-MM-DD').endOf('month');
+                        
+                        while (currentDate.isSameOrBefore(targetMonthEnd)) {
+                            planTimeWeeklyArr.push(currentDate.format('YYYY-MM-DD'));
+                            currentDate.add(7, 'days');
+                        }
+                    }
                 }
             }
         }
