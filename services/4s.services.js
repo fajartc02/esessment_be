@@ -36,7 +36,25 @@ const dateFormatted = (date = '') => (moment(date, 'YYYY-MM-DD').format('YYYY-MM
 
 const checkLineHasShifts = async (db, lineId) => {
     const lineQuery = await db.query(`select line_nm from tb_m_lines where line_id = ${lineId}`);
-    return lineQuery.rowCount > 0 && lineQuery.rows[0].line_nm.toLowerCase().includes('line');
+    if (lineQuery.rowCount > 0) {
+        const lineNm = lineQuery.rows[0].line_nm.toLowerCase();
+        const nonShiftKeywords = [
+            'staff',
+            'management',
+            'am / mgr',
+            'am/mgr',
+            'tps group',
+            'tps',
+            'logistic',
+            'utility',
+            'maintenance',
+            'quality'
+        ];
+        
+        const isNonShift = nonShiftKeywords.some(keyword => lineNm.includes(keyword));
+        return !isNonShift;
+    }
+    return false;
 }
 
 const baseMstScheduleQuery4S = async (
@@ -305,14 +323,20 @@ const genDailySchedulePlan = async (
 
         for (let sIndex = 0; sIndex < shiftRows.length; sIndex++) {
             let planTime = null
-            if (
-                !shiftRows[sIndex].is_holiday
-                && lineHasShifts
-                && shiftRows[sIndex].shift_type == 'morning_shift'
-            ) {
-                planTime = dateFormatted(shiftRows[sIndex].date)
-            } else if (!shiftRows[sIndex].is_holiday && !lineHasShifts) {
-                planTime = dateFormatted(shiftRows[sIndex].date)
+            const isAssyLine = lineId == 8 || lineId == 9;
+
+            if (!shiftRows[sIndex].is_holiday) {
+                if (!lineHasShifts) {
+                    planTime = dateFormatted(shiftRows[sIndex].date)
+                } else {
+                    if (isAssyLine) {
+                        if (shiftRows[sIndex].shift_type == 'morning_shift') {
+                            planTime = dateFormatted(shiftRows[sIndex].date)
+                        }
+                    } else {
+                        planTime = dateFormatted(shiftRows[sIndex].date)
+                    }
+                }
             }
 
             result.push({
@@ -366,48 +390,40 @@ const genWeeklySchedulePlan = async (
         }
 
         let planTimeWeeklyArr = [];
+        const isAssyLine = lineId == 8 || lineId == 9;
 
         if (shouldGeneratePlan) {
-            const morningShift = shiftRows.filter((item) => {
-                if (lineHasShifts) {
-                    return item.shift_type == 'morning_shift' && !item.is_holiday
+            if (isAssyLine) {
+                const morningShifts = shiftRows.filter((item) => !item.is_holiday && item.shift_type === 'morning_shift');
+                const weeks = {};
+                morningShifts.forEach(s => {
+                    if (!weeks[s.week_num]) weeks[s.week_num] = [];
+                    weeks[s.week_num].push(s);
+                });
+                for (let week in weeks) {
+                    let weekShifts = weeks[week];
+                    if (weekShifts.length > 0) {
+                        let randomDay = weekShifts[getRandomInt(0, weekShifts.length - 1)].date;
+                        planTimeWeeklyArr.push(dateFormatted(randomDay));
+                    }
                 }
-
-                return !item.is_holiday
-            })
-
-            if (morningShift.length > 0) {
-                let firstWeekNum = morningShift[0].week_num;
-                const firstWeekDays = morningShift.filter((item) => item.week_num == firstWeekNum);
+            } else {
+                const workingShifts = shiftRows.filter((item) => !item.is_holiday);
                 
-                let firstDay = null;
-                if (firstWeekDays.length > 0) {
-                    firstDay = firstWeekDays[getRandomInt(0, firstWeekDays.length - 1)].date;
-                } else {
-                    firstDay = morningShift[0].date;
-                }
-
-                let currentPlanDay = moment(firstDay);
-                let targetMonthEnd = moment(`${yearNum}-${padTwoDigits(monthNum)}-01`).endOf('month');
-
-                while (currentPlanDay.isSameOrBefore(targetMonthEnd)) {
-                    let validDayStr = currentPlanDay.format('YYYY-MM-DD');
-                    let isValid = morningShift.some(m => dateFormatted(m.date) == validDayStr);
+                if (workingShifts.length > 0) {
+                    const firstWeekNum = workingShifts[0].week_num;
+                    const firstWeekShifts = workingShifts.filter((item) => item.week_num == firstWeekNum);
                     
-                    if (isValid) {
-                        planTimeWeeklyArr.push(validDayStr);
-                    } else {
-                        // find the closest valid day by scanning forward
-                        for (let offset = 1; offset <= 6; offset++) {
-                            let altDayStr = currentPlanDay.clone().add(offset, 'days').format('YYYY-MM-DD');
-                            if (morningShift.some(m => dateFormatted(m.date) == altDayStr)) {
-                                planTimeWeeklyArr.push(altDayStr);
-                                break;
-                            }
+                    if (firstWeekShifts.length > 0) {
+                        let randomFirstDay = firstWeekShifts[getRandomInt(0, firstWeekShifts.length - 1)].date;
+                        let currentDate = moment(randomFirstDay, 'YYYY-MM-DD');
+                        let targetMonthEnd = moment(`${yearNum}-${padTwoDigits(monthNum)}-01`, 'YYYY-MM-DD').endOf('month');
+                        
+                        while (currentDate.isSameOrBefore(targetMonthEnd)) {
+                            planTimeWeeklyArr.push(currentDate.format('YYYY-MM-DD'));
+                            currentDate.add(7, 'days');
                         }
                     }
-                    
-                    currentPlanDay.add(7, 'days');
                 }
             }
         }

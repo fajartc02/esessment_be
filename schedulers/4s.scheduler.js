@@ -75,7 +75,22 @@ const main = async (yearParam, monthParam, lineIdParam = null, groupIdParam = nu
         for (let lgIndex = 0; lgIndex < lineGroups.length; lgIndex++) {
             let shiftRows
 
-            if (lineGroups[lgIndex].line_nm.toLowerCase().includes('line')) {
+            const lineNm = lineGroups[lgIndex].line_nm.toLowerCase();
+            const nonShiftKeywords = [
+                'staff',
+                'management',
+                'am / mgr',
+                'am/mgr',
+                'tps group',
+                'tps',
+                'logistic',
+                'utility',
+                'maintenance',
+                'quality'
+            ];
+            const isNonShift = nonShiftKeywords.some(keyword => lineNm.includes(keyword));
+
+            if (!isNonShift) {
                 shiftRows = await shiftByGroupId(db, currentYear, currentMonth, lineGroups[lgIndex].line_id, lineGroups[lgIndex].group_id)
             }
             else {
