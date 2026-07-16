@@ -8,7 +8,7 @@ const uuidToId = require('../../helpers/uuidToId')
 
 const { database } = require('../../config/database');
 
-const register = async(req, res) => {
+const register = async (req, res) => {
     try {
         if (!req.body.noreg) {
             return response.failed(res, "Noreg is required")
@@ -26,10 +26,10 @@ const register = async(req, res) => {
         req.body.uuid = v4()
         req.body.line_id = await uuidToId(tb_m_lines, 'line_id', req.body.line_id)
         req.body.group_id = await uuidToId(tb_m_groups, 'group_id', req.body.group_id)
-        req.body.is_activated = false
+        req.body.is_activated = true
         delete req.body.id
-        delete req.body.text  
-        console.log(req.body);  
+        delete req.body.text
+        console.log(req.body);
         await queryPOST(tb_m_users, req.body)
             .then((result) => {
                 response.success(res, 'Success to create User', result)
