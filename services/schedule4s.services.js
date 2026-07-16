@@ -98,7 +98,13 @@ const getAllChildrenSubSchedulesOptimized2 = async (
                 AND (is_tl_1 = true OR is_gl = true OR is_sh = true)
             GROUP BY main_schedule_id, end_date
         ),
-        -- Pre-aggregate item checks
+        -- Pre-aggregate item checks (using JOIN instead of EXISTS for performance)
+        filtered_subs AS (
+            SELECT sub_schedule_id, uuid
+            FROM ${table.tb_r_4s_sub_schedules}
+            WHERE main_schedule_id = ${mainScheduleRealId}
+              AND deleted_dt IS NULL
+        ),
         item_checks_agg AS (
             SELECT 
                 rsick.sub_schedule_id,
@@ -106,41 +112,29 @@ const getAllChildrenSubSchedulesOptimized2 = async (
                 COUNT(CASE WHEN lower(tj.judgment_nm) = 'ng' THEN 1 END) as total_ng_checked,
                 COUNT(CASE WHEN lower(tj.judgment_nm) = 'ok (levelup)' THEN 1 END) as total_levelup_checked
             FROM ${table.tb_r_4s_schedule_item_check_kanbans} rsick
+            INNER JOIN filtered_subs fs2 ON fs2.sub_schedule_id = rsick.sub_schedule_id
             LEFT JOIN ${table.tb_m_judgments} tj ON rsick.judgment_id = tj.judgment_id
             WHERE rsick.deleted_dt IS NULL
-                AND EXISTS (
-                SELECT 1 FROM ${table.tb_r_4s_sub_schedules} tbrcs2
-                WHERE tbrcs2.sub_schedule_id = rsick.sub_schedule_id
-                    AND tbrcs2.main_schedule_id = ${mainScheduleRealId}
-            )
             GROUP BY rsick.sub_schedule_id
         ),
-        -- Pre-aggregate comments
+        -- Pre-aggregate comments (using JOIN instead of EXISTS)
         comments_agg AS (
             SELECT 
-                sub_schedule_id,
+                c.sub_schedule_id,
                 COUNT(*)::integer as total_comment
-            FROM ${table.tb_r_4s_comments}
-            WHERE EXISTS (
-                SELECT 1 FROM ${table.tb_r_4s_sub_schedules} tbrcs2
-                WHERE tbrcs2.sub_schedule_id = ${table.tb_r_4s_comments}.sub_schedule_id
-                    AND tbrcs2.main_schedule_id = ${mainScheduleRealId}
-            )
-            GROUP BY sub_schedule_id
+            FROM ${table.tb_r_4s_comments} c
+            INNER JOIN filtered_subs fs2 ON fs2.sub_schedule_id = c.sub_schedule_id
+            GROUP BY c.sub_schedule_id
         ),
-        -- Latest findings per sub_schedule
+        -- Latest findings per sub_schedule (using JOIN instead of EXISTS)
         latest_findings AS (
-            SELECT DISTINCT ON (sub_schedule_id)
-                sub_schedule_id,
-                finding_id
-            FROM ${table.v_4s_finding_list}
-            WHERE deleted_dt IS NULL
-                AND EXISTS (
-                    SELECT 1 FROM ${table.tb_r_4s_sub_schedules} tbrcs2
-                    WHERE tbrcs2.uuid = ${table.v_4s_finding_list}.sub_schedule_id
-                        AND tbrcs2.main_schedule_id = ${mainScheduleRealId}
-                )
-            ORDER BY sub_schedule_id, finding_date DESC
+            SELECT DISTINCT ON (v.sub_schedule_id)
+                v.sub_schedule_id,
+                v.finding_id
+            FROM ${table.v_4s_finding_list} v
+            INNER JOIN filtered_subs fs2 ON fs2.uuid = v.sub_schedule_id
+            WHERE v.deleted_dt IS NULL
+            ORDER BY v.sub_schedule_id, v.finding_date DESC
         )
         SELECT 
             tbrcs.uuid as sub_schedule_id,
