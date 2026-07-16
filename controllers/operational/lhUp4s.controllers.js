@@ -213,7 +213,7 @@ module.exports = {
       }
 
       if (line_id) {
-        filterCondition.push(`f.line_id = $${paramCount++}`);
+        filterCondition.push(`l.uuid = $${paramCount++}`);
         params.push(line_id);
       }
 
@@ -225,9 +225,15 @@ module.exports = {
         }
       }
 
+      if (req.query.found_by) {
+        filterCondition.push(`f.found_by = $${paramCount++}`);
+        params.push(req.query.found_by);
+      }
+
       const sqlCount = `
         SELECT count(*)::integer as count 
         FROM ${table.tb_r_4s_lh_up_findings} f
+        JOIN ${table.tb_m_lines} l ON f.line_id = l.line_id
         WHERE ${filterCondition.join(" AND ")}
       `;
       const countRes = await databasePool.query(sqlCount, params);
@@ -265,12 +271,27 @@ module.exports = {
         return item;
       });
 
+      // Calculate Best Contributor
+      const sqlBestContributor = `
+        SELECT u.user_id as found_by, u.fullname, count(f.lh_up_finding_id)::integer as finding_count
+        FROM ${table.tb_r_4s_lh_up_findings} f
+        JOIN ${table.tb_m_lines} l ON f.line_id = l.line_id
+        JOIN ${table.tb_m_users} u ON f.found_by = u.user_id
+        WHERE ${filterCondition.join(" AND ")}
+        GROUP BY u.user_id, u.fullname
+        ORDER BY finding_count DESC
+        LIMIT 1
+      `;
+      const bestContributorRes = await databasePool.query(sqlBestContributor, params);
+      const best_contributor = bestContributorRes.rows.length > 0 ? bestContributorRes.rows[0] : null;
+
       response.success(res, "Success to get 4S LH Up findings", {
         current_page,
         total_page: totalData > 0 ? Math.ceil(totalData / limit) : 0,
         total_data: totalData,
         limit,
         list,
+        best_contributor
       });
     } catch (error) {
       console.error(error);
