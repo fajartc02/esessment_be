@@ -477,7 +477,12 @@ module.exports = {
         return response.failed(res, "Invalid finding uuid");
       }
 
-      const attrsUpdate = await attrsUserUpdateData(req, { deleted_dt: new Date() });
+      const updateData = {
+        deleted_dt: moment().format("YYYY-MM-DD HH:mm:ss"),
+        deleted_by: req.user?.fullname || "SYSTEM",
+      };
+
+      const attrsUpdate = await attrsUserUpdateData(req, updateData);
       await queryPUT(table.tb_r_4s_lh_up_findings, attrsUpdate, `WHERE uuid = '${uuid}'`);
 
       response.success(res, "Success to delete finding");
