@@ -95,8 +95,12 @@ app.disable('x-powered-by');
 // 2. CORS - Restrictive policy (hanya domain yang diizinkan)
 const allowedOrigins = [
     'http://localhost:8080',
+    'http://localhost:8081',
     'http://localhost:3000',
     'http://localhost:3200',
+    'http://127.0.0.1:8080',
+    'http://127.0.0.1:8081',
+    'http://127.0.0.1:3000',
     'https://mt-system.id',
     process.env.APP_HOST
 ].filter(Boolean);
